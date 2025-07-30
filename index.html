@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Universo de Partículas com Buraco Negro</title>
+    <title>Universo de Partículas Premium</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
             background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
+            font-family: Arial, sans-serif;
         }
 
         canvas {
@@ -24,7 +25,6 @@
             padding: 10px;
             border-radius: 5px;
             color: white;
-            font-family: Arial, sans-serif;
         }
 
         button {
@@ -51,6 +51,16 @@
             vertical-align: middle;
         }
 
+        .stats {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+            color: white;
+        }
+
         .black-hole {
             position: absolute;
             border-radius: 50%;
@@ -59,7 +69,7 @@
                 rgba(0,0,0,0) 50%, 
                 rgba(70,10,140,0.8) 70%, 
                 rgba(0,0,0,1) 100%);
-            box-shadow: 0 0 40px 10px rgba(100, 0, 255, 0.6);
+            box-shadow: 0 0 60px 15px rgba(100, 0, 255, 0.7);
             transform: translate(-50%, -50%);
             pointer-events: none;
             transition: all 0.3s;
@@ -67,18 +77,22 @@
             display: none;
         }
 
-        .black-hole::after {
-            content: '';
+        .accretion-disk {
             position: absolute;
-            top: -20%;
-            left: -20%;
-            right: -20%;
-            bottom: -20%;
-            background: radial-gradient(circle, 
-                rgba(255,255,255,0.1) 0%, 
-                rgba(255,255,255,0) 70%);
+            width: 300%;
+            height: 300%;
+            top: -100%;
+            left: -100%;
+            background: conic-gradient(
+                from 0deg at 50% 50%,
+                transparent 0%,
+                #7e00ffaa 30%,
+                #ff00c8aa 70%,
+                transparent 100%
+            );
             border-radius: 50%;
-            animation: rotate 20s linear infinite;
+            animation: rotate 8s linear infinite;
+            opacity: 0.7;
         }
 
         @keyframes rotate {
@@ -86,46 +100,35 @@
             100% { transform: rotate(360deg); }
         }
 
-        .black-hole::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            right: -50%;
-            bottom: -50%;
-            background: 
-                radial-gradient(circle at 30% 30%, 
-                    rgba(255,255,255,0.8) 0%, 
-                    rgba(255,255,255,0) 50%) no-repeat,
-                radial-gradient(circle at 70% 70%, 
-                    rgba(255,255,255,0.5) 0%, 
-                    rgba(255,255,255,0) 50%) no-repeat;
-            animation: swirl 5s linear infinite;
-        }
-
-        @keyframes swirl {
-            0% { transform: rotate(0deg) scale(1); }
-            50% { transform: rotate(180deg) scale(1.2); }
-            100% { transform: rotate(360deg) scale(1); }
+        .particle-count {
+            margin-top: 5px;
+            font-size: 0.9em;
         }
     </style>
 </head>
 <body>
     <div class="controls">
-        <button id="attract">Modo Atração (Buraco Negro)</button>
-        <button id="repel">Modo Repulsão</button>
-        <span>Partículas: <span id="count">150</span></span>
-        <input type="range" id="particleRange" min="10" max="500" value="150">
+        <button id="attract">🌌 Modo Buraco Negro</button>
+        <button id="repel">✨ Modo Repulsão</button>
+        <div class="particle-count">
+            Partículas: <span id="count">150</span> | 
+            Devoradas: <span id="score">0</span>
+            <input type="range" id="particleRange" min="10" max="500" value="150">
+        </div>
     </div>
     <canvas id="particleCanvas"></canvas>
-    <div class="black-hole"></div>
+    <div class="black-hole">
+        <div class="accretion-disk"></div>
+    </div>
 
     <script>
+        // Elementos do DOM
         const canvas = document.getElementById("particleCanvas");
         const ctx = canvas.getContext("2d");
         const attractBtn = document.getElementById("attract");
         const repelBtn = document.getElementById("repel");
         const countDisplay = document.getElementById("count");
+        const scoreDisplay = document.getElementById("score");
         const particleRange = document.getElementById("particleRange");
         const blackHoleElement = document.querySelector('.black-hole');
 
@@ -135,49 +138,82 @@
 
         const config = {
             particleCount: 150,
-            mouseRadius: 100,
+            mouseRadius: 120,
             mode: 'repel',
-            lineThreshold: 100,
-            starCount: 200
+            lineThreshold: 120,
+            starCount: 300,
+            blackHoleStrength: 0.7
         };
 
-        const blackHole = {
-            element: blackHoleElement,
-            active: false,
-            size: 0
-        };
+        // Estado do jogo
+        let consumedParticles = 0;
+        const mouse = { x: null, y: null };
+        let particles = [];
+
+        // Efeito sonoro (opcional - descomente se quiser usar)
+        // const blackHoleSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-space-rumble-1283.mp3');
 
         // Estrelas de fundo
         const stars = Array.from({ length: config.starCount }, () => ({
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height,
             size: Math.random() * 1.5,
-            opacity: Math.random()
+            opacity: Math.random(),
+            speed: Math.random() * 0.2
         }));
 
-        // Partículas
-        let particles = [];
-        const mouse = { x: null, y: null };
+        // Classe do Buraco Negro
+        class BlackHole {
+            constructor() {
+                this.size = 0;
+                this.maxSize = 180;
+                this.element = blackHoleElement;
+                this.active = false;
+            }
 
-        function getRandomColor() {
-            const colors = [
-                '#4A00E0', '#8E2DE2', '#00F5A0', '#00D4FF', 
-                '#FF5F6D', '#FFC371', '#7F00FF', '#E100FF'
-            ];
-            return colors[Math.floor(Math.random() * colors.length)];
+            update(x, y) {
+                if (this.active) {
+                    this.size = Math.min(this.size + 3, this.maxSize);
+                    this.element.style.display = 'block';
+                    // blackHoleSound.play(); // Descomente para ativar som
+                } else {
+                    this.size = Math.max(0, this.size - 6);
+                    if (this.size === 0) this.element.style.display = 'none';
+                    // blackHoleSound.pause(); // Descomente para ativar som
+                }
+                
+                this.element.style.width = `${this.size}px`;
+                this.element.style.height = `${this.size}px`;
+                this.element.style.left = `${x}px`;
+                this.element.style.top = `${y}px`;
+            }
         }
 
+        const blackHole = new BlackHole();
+
+        // Classe da Partícula
         class Particle {
             constructor() {
+                this.reset();
+                this.originalSize = this.size;
+            }
+
+            reset() {
                 this.x = Math.random() * canvas.width;
                 this.y = Math.random() * canvas.height;
-                this.size = Math.random() * 3 + 1;
+                this.size = Math.random() * 4 + 1;
                 this.speedX = Math.random() * 2 - 1;
                 this.speedY = Math.random() * 2 - 1;
-                this.color = getRandomColor();
-                this.baseColor = this.color;
+                this.color = this.getRandomColor();
                 this.highlight = false;
-                this.originalSize = this.size;
+            }
+
+            getRandomColor() {
+                const colors = [
+                    '#4A00E0', '#8E2DE2', '#00F5A0', '#00D4FF', 
+                    '#FF5F6D', '#FFC371', '#7F00FF', '#E100FF'
+                ];
+                return colors[Math.floor(Math.random() * colors.length)];
             }
 
             update() {
@@ -185,42 +221,43 @@
                 this.x += this.speedX;
                 this.y += this.speedY;
 
-                // Limites da tela
-                if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
-                if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+                // Limites da tela com elasticidade
+                if (this.x < 0 || this.x > canvas.width) {
+                    this.speedX *= -1;
+                    this.x = Math.max(0, Math.min(this.x, canvas.width));
+                }
+                if (this.y < 0 || this.y > canvas.height) {
+                    this.speedY *= -1;
+                    this.y = Math.max(0, Math.min(this.y, canvas.height));
+                }
 
-                // Interação com o mouse
+                // Interação com o mouse/buraco negro
                 if (mouse.x && mouse.y) {
                     const dx = mouse.x - this.x;
                     const dy = mouse.y - this.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
                     
                     if (distance < config.mouseRadius * 2) {
-                        const force = Math.pow(config.mouseRadius * 2 / distance, 2);
                         const angle = Math.atan2(dy, dx);
                         
                         if (config.mode === 'attract') {
-                            // Efeito buraco negro - atração forte
-                            this.x += Math.cos(angle) * force * 0.5;
-                            this.y += Math.sin(angle) * force * 0.5;
-                            this.size = Math.max(0.1, this.size * 0.99);
+                            // Física do buraco negro
+                            const force = Math.pow(config.mouseRadius * 2 / distance, 2.5) * config.blackHoleStrength;
+                            this.x += dx * force;
+                            this.y += dy * force;
+                            this.size = Math.max(0.1, this.size * 0.98);
                             
-                            if (!blackHole.active) {
-                                blackHole.active = true;
-                                blackHole.element.style.display = 'block';
+                            if (distance < 20) {
+                                this.consume();
                             }
                             
-                            if (distance < 15) {
-                                this.x = -1000;
-                                this.y = -1000;
-                            }
+                            this.highlight = true;
                         } else {
-                            // Modo repulsão normal
-                            this.x -= Math.cos(angle) * force * 0.1;
-                            this.y -= Math.sin(angle) * force * 0.1;
+                            // Modo repulsão
+                            const force = (config.mouseRadius * 2 / distance) * 0.1;
+                            this.x -= dx * force;
+                            this.y -= dy * force;
                         }
-                        
-                        this.highlight = true;
                     } else {
                         this.highlight = false;
                         this.size = this.originalSize;
@@ -228,23 +265,25 @@
                 }
             }
 
+            consume() {
+                consumedParticles++;
+                scoreDisplay.textContent = consumedParticles;
+                this.reset();
+                this.x = -1000; // Move para fora da tela
+                this.y = -1000;
+            }
+
             draw() {
-                if (this.highlight) {
-                    ctx.shadowBlur = 15;
-                    ctx.shadowColor = this.color;
-                } else {
-                    ctx.shadowBlur = 5;
-                }
-                
+                ctx.shadowBlur = this.highlight ? 20 : 5;
+                ctx.shadowColor = this.color;
                 ctx.fillStyle = this.color;
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.closePath();
                 ctx.fill();
-                ctx.shadowBlur = 0;
             }
         }
 
+        // Funções do sistema
         function drawStars() {
             ctx.fillStyle = 'white';
             stars.forEach(star => {
@@ -252,6 +291,13 @@
                 ctx.beginPath();
                 ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
                 ctx.fill();
+                
+                // Movimento leve das estrelas
+                star.y += star.speed;
+                if (star.y > canvas.height) {
+                    star.y = 0;
+                    star.x = Math.random() * canvas.width;
+                }
             });
             ctx.globalAlpha = 1;
         }
@@ -259,14 +305,16 @@
         function drawConnections() {
             particles.forEach(p1 => {
                 particles.forEach(p2 => {
+                    if (p1 === p2) return;
+                    
                     const dx = p1.x - p2.x;
                     const dy = p1.y - p2.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
                     
                     if (distance < config.lineThreshold) {
                         const opacity = 1 - (distance / config.lineThreshold);
-                        ctx.strokeStyle = `rgba(150, 150, 255, ${opacity * 0.3})`;
-                        ctx.lineWidth = 0.5;
+                        ctx.strokeStyle = `rgba(150, 150, 255, ${opacity * 0.2})`;
+                        ctx.lineWidth = opacity * 1.5;
                         ctx.beginPath();
                         ctx.moveTo(p1.x, p1.y);
                         ctx.lineTo(p2.x, p2.y);
@@ -281,6 +329,7 @@
             for (let i = 0; i < config.particleCount; i++) {
                 particles.push(new Particle());
             }
+            countDisplay.textContent = config.particleCount;
         }
 
         function animate() {
@@ -294,20 +343,8 @@
                 particle.draw();
             });
             
-            // Anima o buraco negro
-            if (blackHole.active) {
-                blackHole.size = Math.min(blackHole.size + 2, 150);
-                blackHole.element.style.width = `${blackHole.size}px`;
-                blackHole.element.style.height = `${blackHole.size}px`;
-                blackHole.element.style.left = `${mouse.x}px`;
-                blackHole.element.style.top = `${mouse.y}px`;
-            } else if (blackHole.size > 0) {
-                blackHole.size = Math.max(0, blackHole.size - 5);
-                blackHole.element.style.width = `${blackHole.size}px`;
-                blackHole.element.style.height = `${blackHole.size}px`;
-                if (blackHole.size === 0) {
-                    blackHole.element.style.display = 'none';
-                }
+            if (mouse.x && mouse.y) {
+                blackHole.update(mouse.x, mouse.y, config.mode === 'attract');
             }
             
             requestAnimationFrame(animate);
@@ -340,12 +377,7 @@
 
         particleRange.addEventListener('input', (e) => {
             config.particleCount = parseInt(e.target.value);
-            countDisplay.textContent = config.particleCount;
             initParticles();
-        });
-
-        window.addEventListener('mouseout', () => {
-            blackHole.active = false;
         });
 
         // Inicialização

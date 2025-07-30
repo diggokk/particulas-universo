@@ -194,3 +194,28 @@ particleRange.addEventListener('input', (e) => {
 initParticles();
 repelBtn.classList.add('active'); // Modo repulsão ativo por padrão
 animate();
+// Configuração otimizada do buraco negro
+class BlackHole {
+    constructor() {
+        this.size = 0;
+        this.maxSize = 150;
+        this.element = document.createElement('div');
+        this.element.className = 'black-hole';
+        document.body.appendChild(this.element);
+    }
+
+    update(x, y, active) {
+        if (active) {
+            this.size = Math.min(this.size + 3, this.maxSize);
+            this.element.style.display = 'block';
+        } else {
+            this.size = Math.max(0, this.size - 6);
+            if (this.size === 0) this.element.style.display = 'none';
+        }
+        
+        this.element.style.width = `${this.size}px`;
+        this.element.style.height = `${this.size}px`;
+        this.element.style.left = `${x}px`;
+        this.element.style.top = `${y}px`;
+    }
+}
