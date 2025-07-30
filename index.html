@@ -3,386 +3,114 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Universo de Partículas Premium</title>
+    <title>Universo Leve</title>
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
-            font-family: Arial, sans-serif;
-        }
-
-        canvas {
-            display: block;
-        }
-
+        body { margin: 0; overflow: hidden; background: #000; }
+        canvas { display: block; }
         .controls {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            z-index: 100;
-            background: rgba(0,0,0,0.7);
-            padding: 10px;
-            border-radius: 5px;
-            color: white;
+            position: fixed; top: 10px; left: 10px;
+            background: rgba(0,0,0,0.5); padding: 8px;
+            border-radius: 5px; color: white; font-family: Arial;
+            font-size: 12px;
         }
-
         button {
-            background: #4A00E0;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            margin-right: 5px;
-            border-radius: 3px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        button:hover {
-            background: #8E2DE2;
-        }
-
-        button.active {
-            background: #00F5A0;
-            color: #111;
-        }
-
-        input[type="range"] {
-            vertical-align: middle;
-        }
-
-        .stats {
-            position: fixed;
-            bottom: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.7);
-            padding: 10px;
-            border-radius: 5px;
-            color: white;
-        }
-
-        .black-hole {
-            position: absolute;
-            border-radius: 50%;
-            background: radial-gradient(circle, 
-                rgba(0,0,0,0) 0%, 
-                rgba(0,0,0,0) 50%, 
-                rgba(70,10,140,0.8) 70%, 
-                rgba(0,0,0,1) 100%);
-            box-shadow: 0 0 60px 15px rgba(100, 0, 255, 0.7);
-            transform: translate(-50%, -50%);
-            pointer-events: none;
-            transition: all 0.3s;
-            z-index: 10;
-            display: none;
-        }
-
-        .accretion-disk {
-            position: absolute;
-            width: 300%;
-            height: 300%;
-            top: -100%;
-            left: -100%;
-            background: conic-gradient(
-                from 0deg at 50% 50%,
-                transparent 0%,
-                #7e00ffaa 30%,
-                #ff00c8aa 70%,
-                transparent 100%
-            );
-            border-radius: 50%;
-            animation: rotate 8s linear infinite;
-            opacity: 0.7;
-        }
-
-        @keyframes rotate {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .particle-count {
-            margin-top: 5px;
-            font-size: 0.9em;
+            background: #4A00E0; color: white; border: none;
+            padding: 4px 8px; margin-right: 4px; border-radius: 3px;
+            cursor: pointer; font-size: 11px;
         }
     </style>
 </head>
 <body>
     <div class="controls">
-        <button id="attract">🌌 Modo Buraco Negro</button>
-        <button id="repel">✨ Modo Repulsão</button>
-        <div class="particle-count">
-            Partículas: <span id="count">150</span> | 
-            Devoradas: <span id="score">0</span>
-            <input type="range" id="particleRange" min="10" max="500" value="150">
-        </div>
+        <button id="attract">Buraco Negro</button>
+        <button id="repel">Repulsão</button>
+        <span id="count">100 partículas</span>
     </div>
-    <canvas id="particleCanvas"></canvas>
-    <div class="black-hole">
-        <div class="accretion-disk"></div>
-    </div>
+    <canvas id="canvas"></canvas>
 
     <script>
-        // Elementos do DOM
-        const canvas = document.getElementById("particleCanvas");
-        const ctx = canvas.getContext("2d");
-        const attractBtn = document.getElementById("attract");
-        const repelBtn = document.getElementById("repel");
-        const countDisplay = document.getElementById("count");
-        const scoreDisplay = document.getElementById("score");
-        const particleRange = document.getElementById("particleRange");
-        const blackHoleElement = document.querySelector('.black-hole');
+        // Configurações LEVES
+        const config = {
+            particleCount: 200,  // Reduzido
+            mouseRadius: 100,
+            mode: 'repel'
+        };
 
-        // Configurações
+        // Elementos
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        const config = {
-            particleCount: 150,
-            mouseRadius: 120,
-            mode: 'repel',
-            lineThreshold: 120,
-            starCount: 300,
-            blackHoleStrength: 0.7
-        };
+        // Partículas SIMPLIFICADAS
+        const particles = [];
+        for (let i = 0; i < config.particleCount; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: Math.random() * 2 + 1,
+                speedX: Math.random() * 2 - 1,
+                speedY: Math.random() * 2 - 1
+            });
+        }
 
-        // Estado do jogo
-        let consumedParticles = 0;
+        // Mouse
         const mouse = { x: null, y: null };
-        let particles = [];
-
-        // Efeito sonoro (opcional - descomente se quiser usar)
-        // const blackHoleSound = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-space-rumble-1283.mp3');
-
-        // Estrelas de fundo
-        const stars = Array.from({ length: config.starCount }, () => ({
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            size: Math.random() * 1.5,
-            opacity: Math.random(),
-            speed: Math.random() * 0.2
-        }));
-
-        // Classe do Buraco Negro
-        class BlackHole {
-            constructor() {
-                this.size = 0;
-                this.maxSize = 180;
-                this.element = blackHoleElement;
-                this.active = false;
-            }
-
-            update(x, y) {
-                if (this.active) {
-                    this.size = Math.min(this.size + 3, this.maxSize);
-                    this.element.style.display = 'block';
-                    // blackHoleSound.play(); // Descomente para ativar som
-                } else {
-                    this.size = Math.max(0, this.size - 6);
-                    if (this.size === 0) this.element.style.display = 'none';
-                    // blackHoleSound.pause(); // Descomente para ativar som
-                }
-                
-                this.element.style.width = `${this.size}px`;
-                this.element.style.height = `${this.size}px`;
-                this.element.style.left = `${x}px`;
-                this.element.style.top = `${y}px`;
-            }
-        }
-
-        const blackHole = new BlackHole();
-
-        // Classe da Partícula
-        class Particle {
-            constructor() {
-                this.reset();
-                this.originalSize = this.size;
-            }
-
-            reset() {
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * canvas.height;
-                this.size = Math.random() * 4 + 1;
-                this.speedX = Math.random() * 2 - 1;
-                this.speedY = Math.random() * 2 - 1;
-                this.color = this.getRandomColor();
-                this.highlight = false;
-            }
-
-            getRandomColor() {
-                const colors = [
-                    '#4A00E0', '#8E2DE2', '#00F5A0', '#00D4FF', 
-                    '#FF5F6D', '#FFC371', '#7F00FF', '#E100FF'
-                ];
-                return colors[Math.floor(Math.random() * colors.length)];
-            }
-
-            update() {
-                // Movimento básico
-                this.x += this.speedX;
-                this.y += this.speedY;
-
-                // Limites da tela com elasticidade
-                if (this.x < 0 || this.x > canvas.width) {
-                    this.speedX *= -1;
-                    this.x = Math.max(0, Math.min(this.x, canvas.width));
-                }
-                if (this.y < 0 || this.y > canvas.height) {
-                    this.speedY *= -1;
-                    this.y = Math.max(0, Math.min(this.y, canvas.height));
-                }
-
-                // Interação com o mouse/buraco negro
-                if (mouse.x && mouse.y) {
-                    const dx = mouse.x - this.x;
-                    const dy = mouse.y - this.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    
-                    if (distance < config.mouseRadius * 2) {
-                        const angle = Math.atan2(dy, dx);
-                        
-                        if (config.mode === 'attract') {
-                            // Física do buraco negro
-                            const force = Math.pow(config.mouseRadius * 2 / distance, 2.5) * config.blackHoleStrength;
-                            this.x += dx * force;
-                            this.y += dy * force;
-                            this.size = Math.max(0.1, this.size * 0.98);
-                            
-                            if (distance < 20) {
-                                this.consume();
-                            }
-                            
-                            this.highlight = true;
-                        } else {
-                            // Modo repulsão
-                            const force = (config.mouseRadius * 2 / distance) * 0.1;
-                            this.x -= dx * force;
-                            this.y -= dy * force;
-                        }
-                    } else {
-                        this.highlight = false;
-                        this.size = this.originalSize;
-                    }
-                }
-            }
-
-            consume() {
-                consumedParticles++;
-                scoreDisplay.textContent = consumedParticles;
-                this.reset();
-                this.x = -1000; // Move para fora da tela
-                this.y = -1000;
-            }
-
-            draw() {
-                ctx.shadowBlur = this.highlight ? 20 : 5;
-                ctx.shadowColor = this.color;
-                ctx.fillStyle = this.color;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-
-        // Funções do sistema
-        function drawStars() {
-            ctx.fillStyle = 'white';
-            stars.forEach(star => {
-                ctx.globalAlpha = star.opacity;
-                ctx.beginPath();
-                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Movimento leve das estrelas
-                star.y += star.speed;
-                if (star.y > canvas.height) {
-                    star.y = 0;
-                    star.x = Math.random() * canvas.width;
-                }
-            });
-            ctx.globalAlpha = 1;
-        }
-
-        function drawConnections() {
-            particles.forEach(p1 => {
-                particles.forEach(p2 => {
-                    if (p1 === p2) return;
-                    
-                    const dx = p1.x - p2.x;
-                    const dy = p1.y - p2.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    
-                    if (distance < config.lineThreshold) {
-                        const opacity = 1 - (distance / config.lineThreshold);
-                        ctx.strokeStyle = `rgba(150, 150, 255, ${opacity * 0.2})`;
-                        ctx.lineWidth = opacity * 1.5;
-                        ctx.beginPath();
-                        ctx.moveTo(p1.x, p1.y);
-                        ctx.lineTo(p2.x, p2.y);
-                        ctx.stroke();
-                    }
-                });
-            });
-        }
-
-        function initParticles() {
-            particles = [];
-            for (let i = 0; i < config.particleCount; i++) {
-                particles.push(new Particle());
-            }
-            countDisplay.textContent = config.particleCount;
-        }
-
-        function animate() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            drawStars();
-            drawConnections();
-            
-            particles.forEach(particle => {
-                particle.update();
-                particle.draw();
-            });
-            
-            if (mouse.x && mouse.y) {
-                blackHole.update(mouse.x, mouse.y, config.mode === 'attract');
-            }
-            
-            requestAnimationFrame(animate);
-        }
-
-        // Event Listeners
         window.addEventListener('mousemove', (e) => {
             mouse.x = e.x;
             mouse.y = e.y;
         });
 
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        });
-
-        attractBtn.addEventListener('click', () => {
+        // Controles
+        document.getElementById("attract").addEventListener('click', () => {
             config.mode = 'attract';
-            attractBtn.classList.add('active');
-            repelBtn.classList.remove('active');
-            blackHole.active = true;
         });
-
-        repelBtn.addEventListener('click', () => {
+        document.getElementById("repel").addEventListener('click', () => {
             config.mode = 'repel';
-            repelBtn.classList.add('active');
-            attractBtn.classList.remove('active');
-            blackHole.active = false;
         });
 
-        particleRange.addEventListener('input', (e) => {
-            config.particleCount = parseInt(e.target.value);
-            initParticles();
-        });
+        // Animação OTIMIZADA
+        function animate() {
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';  // Traço suave
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Inicialização
-        initParticles();
-        repelBtn.classList.add('active');
+            particles.forEach(p => {
+                // Movimento básico
+                p.x += p.speedX;
+                p.y += p.speedY;
+
+                // Limites
+                if (p.x < 0 || p.x > canvas.width) p.speedX *= -1;
+                if (p.y < 0 || p.y > canvas.height) p.speedY *= -1;
+
+                // Interação (versão leve)
+                if (mouse.x && mouse.y) {
+                    const dx = mouse.x - p.x;
+                    const dy = mouse.y - p.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < config.mouseRadius) {
+                        const force = (config.mouseRadius - distance) / 50;
+                        if (config.mode === 'attract') {
+                            p.x += dx * force;
+                            p.y += dy * force;
+                        } else {
+                            p.x -= dx * force;
+                            p.y -= dy * force;
+                        }
+                    }
+                }
+
+                // Desenho
+                ctx.fillStyle = '#8E2DE2';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
         animate();
     </script>
 </body>
