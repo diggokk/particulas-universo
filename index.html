@@ -3,37 +3,122 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Universo Leve</title>
+    <title>Universo com Inimigos!</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; }
-        canvas { display: block; }
+        body { 
+            margin: 0; 
+            overflow: hidden; 
+            background: #000; 
+            font-family: Arial, sans-serif;
+        }
+        canvas { 
+            display: block; 
+        }
         .controls {
-            position: fixed; top: 10px; left: 10px;
-            background: rgba(0,0,0,0.5); padding: 8px;
-            border-radius: 5px; color: white; font-family: Arial;
-            font-size: 12px;
+            position: fixed; 
+            top: 10px; 
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7); 
+            padding: 10px;
+            border-radius: 8px; 
+            color: white;
+            z-index: 100;
         }
         button {
-            background: #4A00E0; color: white; border: none;
-            padding: 4px 8px; margin-right: 4px; border-radius: 3px;
-            cursor: pointer; font-size: 11px;
+            background: #4A00E0; 
+            color: white; 
+            border: none;
+            padding: 8px 12px; 
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+        button:hover {
+            background: #8E2DE2;
+        }
+        button.active {
+            background: #00F5A0;
+            color: #000;
+        }
+        .powerup {
+            position: absolute;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+            z-index: 50;
+        }
+        .enemy {
+            position: absolute;
+            border-radius: 50%;
+            z-index: 40;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+        .score {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+        }
+        .game-over {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            color: #FF5F6D;
+            font-size: 32px;
+            font-weight: bold;
+            text-align: center;
+            display: none;
+            z-index: 200;
+        }
+        .restart-btn {
+            background: #FF5F6D;
+            margin-top: 20px;
+            font-size: 18px;
         }
     </style>
 </head>
 <body>
     <div class="controls">
-        <button id="attract">Buraco Negro</button>
-        <button id="repel">Repulsão</button>
-        <span id="count">100 partículas</span>
+        <button id="attract">🌀 Buraco Negro</button>
+        <button id="repel">✨ Repulsão</button>
+        <button id="gravity">🌍 Gravidade</button>
+    </div>
+    <div class="score">
+        Partículas: <span id="particleCount">0</span> | 
+        Poder: <span id="power">0</span> |
+        Vida: <span id="health">100</span>%
+    </div>
+    <div class="game-over">
+        GAME OVER!
+        <button class="restart-btn" onclick="restartGame()">Jogar Novamente</button>
     </div>
     <canvas id="canvas"></canvas>
 
     <script>
-        // Configurações LEVES
+        // Configurações
         const config = {
-            particleCount: 200,  // Reduzido
-            mouseRadius: 100,
-            mode: 'repel'
+            particleCount: 100,
+            mouseRadius: 120,
+            mode: 'normal',
+            powerUps: [],
+            enemies: [],
+            power: 0,
+            health: 100,
+            gravity: { x: 0, y: 0 },
+            gameOver: false
         };
 
         // Elementos
@@ -41,18 +126,6 @@
         const ctx = canvas.getContext("2d");
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
-
-        // Partículas SIMPLIFICADAS
-        const particles = [];
-        for (let i = 0; i < config.particleCount; i++) {
-            particles.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                size: Math.random() * 2 + 1,
-                speedX: Math.random() * 2 - 1,
-                speedY: Math.random() * 2 - 1
-            });
-        }
 
         // Mouse
         const mouse = { x: null, y: null };
@@ -64,54 +137,332 @@
         // Controles
         document.getElementById("attract").addEventListener('click', () => {
             config.mode = 'attract';
+            document.getElementById("attract").classList.add('active');
+            document.getElementById("repel").classList.remove('active');
+            document.getElementById("gravity").classList.remove('active');
         });
         document.getElementById("repel").addEventListener('click', () => {
             config.mode = 'repel';
+            document.getElementById("repel").classList.add('active');
+            document.getElementById("attract").classList.remove('active');
+            document.getElementById("gravity").classList.remove('active');
+        });
+        document.getElementById("gravity").addEventListener('click', () => {
+            config.mode = 'gravity';
+            document.getElementById("gravity").classList.add('active');
+            document.getElementById("attract").classList.remove('active');
+            document.getElementById("repel").classList.remove('active');
+            config.gravity = {
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height
+            };
         });
 
-        // Animação OTIMIZADA
+        // Power-ups
+        function spawnPowerUp() {
+            if (Math.random() > 0.98 && config.powerUps.length < 3) {
+                const types = ['extraParticles', 'blackHole', 'superSpeed', 'heal'];
+                const type = types[Math.floor(Math.random() * types.length)];
+                const powerUp = {
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    type: type,
+                    size: 15,
+                    color: type === 'extraParticles' ? '#00F5A0' : 
+                           type === 'blackHole' ? '#8E2DE2' : 
+                           type === 'heal' ? '#FF5F6D' : '#00D4FF'
+                };
+                config.powerUps.push(powerUp);
+
+                // Cria elemento visual
+                const el = document.createElement('div');
+                el.className = 'powerup';
+                el.style.width = `${powerUp.size * 2}px`;
+                el.style.height = `${powerUp.size * 2}px`;
+                el.style.left = `${powerUp.x - powerUp.size}px`;
+                el.style.top = `${powerUp.y - powerUp.size}px`;
+                el.style.backgroundColor = powerUp.color;
+                el.dataset.id = config.powerUps.length - 1;
+                document.body.appendChild(el);
+            }
+        }
+
+        // Inimigos
+        function spawnEnemy() {
+            if (Math.random() > 0.99 && config.enemies.length < 5 && !config.gameOver) {
+                const enemy = {
+                    x: Math.random() > 0.5 ? 0 : canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: 20 + Math.random() * 20,
+                    speedX: (Math.random() * 3 + 1) * (Math.random() > 0.5 ? 1 : -1),
+                    speedY: Math.random() * 2 - 1,
+                    health: 3
+                };
+                config.enemies.push(enemy);
+
+                // Cria elemento visual
+                const el = document.createElement('div');
+                el.className = 'enemy';
+                el.style.width = `${enemy.size * 2}px`;
+                el.style.height = `${enemy.size * 2}px`;
+                el.style.left = `${enemy.x - enemy.size}px`;
+                el.style.top = `${enemy.y - enemy.size}px`;
+                el.style.backgroundColor = `hsl(${Math.random() * 60}, 70%, 40%)`;
+                el.dataset.id = config.enemies.length - 1;
+                document.body.appendChild(el);
+            }
+        }
+
+        // Partículas
+        const particles = [];
+        for (let i = 0; i < config.particleCount; i++) {
+            particles.push(createParticle());
+        }
+
+        function createParticle() {
+            return {
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: Math.random() * 3 + 1,
+                speedX: Math.random() * 2 - 1,
+                speedY: Math.random() * 2 - 1,
+                color: `hsl(${Math.random() * 360}, 70%, 50%)`,
+                life: 1000 + Math.random() * 2000
+            };
+        }
+
+        // Buraco Negro Realista
+        function drawBlackHole(x, y, size) {
+            // Disco de acreção
+            ctx.beginPath();
+            ctx.arc(x, y, size * 1.5, 0, Math.PI * 2);
+            const gradient = ctx.createRadialGradient(x, y, size * 0.8, x, y, size * 1.5);
+            gradient.addColorStop(0, 'rgba(70, 10, 140, 0)');
+            gradient.addColorStop(0.7, 'rgba(100, 0, 255, 0.8)');
+            gradient.addColorStop(1, 'rgba(200, 50, 255, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Horizonte de eventos
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
+            ctx.fill();
+
+            // Efeito de lente gravitacional
+            ctx.beginPath();
+            ctx.arc(x, y, size * 0.8, 0, Math.PI * 2);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+
+        // Colisão
+        function checkCollision(x1, y1, r1, x2, y2, r2) {
+            const dx = x1 - x2;
+            const dy = y1 - y2;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            return distance < r1 + r2;
+        }
+
+        // Game Over
+        function showGameOver() {
+            config.gameOver = true;
+            document.querySelector('.game-over').style.display = 'block';
+        }
+
+        function restartGame() {
+            config.health = 100;
+            config.power = 0;
+            config.gameOver = false;
+            document.querySelector('.game-over').style.display = 'none';
+            
+            // Remove todos os inimigos e power-ups visuais
+            document.querySelectorAll('.enemy, .powerup').forEach(el => el.remove());
+            config.enemies = [];
+            config.powerUps = [];
+        }
+
+        // Animação
         function animate() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';  // Traço suave
+            if (config.gameOver) return;
+
+            // Fundo com rastro
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            particles.forEach(p => {
+            // Atualiza e desenha partículas
+            particles.forEach((p, i) => {
                 // Movimento básico
                 p.x += p.speedX;
                 p.y += p.speedY;
+                p.life--;
 
-                // Limites
-                if (p.x < 0 || p.x > canvas.width) p.speedX *= -1;
-                if (p.y < 0 || p.y > canvas.height) p.speedY *= -1;
+                // Renova partículas antigas
+                if (p.life <= 0) {
+                    particles[i] = createParticle();
+                    return;
+                }
 
-                // Interação (versão leve)
-                if (mouse.x && mouse.y) {
+                // Limites com elasticidade
+                if (p.x < 0 || p.x > canvas.width) p.speedX *= -0.9;
+                if (p.y < 0 || p.y > canvas.height) p.speedY *= -0.9;
+
+                // Interações
+                if (config.mode === 'attract' && mouse.x && mouse.y) {
+                    // Atração do buraco negro
+                    const dx = mouse.x - p.x;
+                    const dy = mouse.y - p.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < config.mouseRadius * 2) {
+                        const force = Math.pow(config.mouseRadius * 2 / distance, 2) * 0.3;
+                        p.x += dx * force;
+                        p.y += dy * force;
+                        p.size = Math.max(0.5, p.size * 0.99);
+                    }
+                } 
+                else if (config.mode === 'repel' && mouse.x && mouse.y) {
+                    // Repulsão
                     const dx = mouse.x - p.x;
                     const dy = mouse.y - p.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
                     
                     if (distance < config.mouseRadius) {
-                        const force = (config.mouseRadius - distance) / 50;
-                        if (config.mode === 'attract') {
-                            p.x += dx * force;
-                            p.y += dy * force;
-                        } else {
-                            p.x -= dx * force;
-                            p.y -= dy * force;
-                        }
+                        const force = (config.mouseRadius - distance) / 20;
+                        p.x -= dx * force;
+                        p.y -= dy * force;
                     }
                 }
+                else if (config.mode === 'gravity') {
+                    // Gravidade para um ponto
+                    const dx = config.gravity.x - p.x;
+                    const dy = config.gravity.y - p.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const force = 100 / (distance * distance + 1);
+                    p.speedX += dx * force * 0.01;
+                    p.speedY += dy * force * 0.01;
+                }
+
+                // Power-ups
+                config.powerUps.forEach((pu, j) => {
+                    if (checkCollision(p.x, p.y, p.size, pu.x, pu.y, pu.size)) {
+                        // Coletou power-up!
+                        if (pu.type === 'extraParticles') {
+                            for (let n = 0; n < 10; n++) {
+                                particles.push(createParticle());
+                            }
+                        } 
+                        else if (pu.type === 'blackHole') {
+                            config.power += 50;
+                        }
+                        else if (pu.type === 'superSpeed') {
+                            p.speedX *= 2;
+                            p.speedY *= 2;
+                        }
+                        else if (pu.type === 'heal') {
+                            config.health = Math.min(100, config.health + 20);
+                        }
+                        
+                        // Remove power-up
+                        const el = document.querySelector(`[data-id="${j}"]`);
+                        if (el) el.remove();
+                        config.powerUps.splice(j, 1);
+                    }
+                });
 
                 // Desenho
-                ctx.fillStyle = '#8E2DE2';
+                ctx.fillStyle = p.color;
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
                 ctx.fill();
             });
 
+            // Atualiza e desenha inimigos
+            config.enemies.forEach((enemy, i) => {
+                enemy.x += enemy.speedX;
+                enemy.y += enemy.speedY;
+                
+                // Remove inimigos que saíram da tela
+                if (enemy.x < -50 || enemy.x > canvas.width + 50 || 
+                    enemy.y < -50 || enemy.y > canvas.height + 50) {
+                    const el = document.querySelector(`[data-id="${i}"]`);
+                    if (el) el.remove();
+                    config.enemies.splice(i, 1);
+                    return;
+                }
+                
+                // Atualiza elemento visual
+                const el = document.querySelector(`[data-id="${i}"]`);
+                if (el) {
+                    el.style.left = `${enemy.x - enemy.size}px`;
+                    el.style.top = `${enemy.y - enemy.size}px`;
+                }
+                
+                // Desenho
+                ctx.fillStyle = `hsl(${Math.random() * 60}, 70%, 40%)`;
+                ctx.beginPath();
+                ctx.arc(enemy.x, enemy.y, enemy.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Colisão com o mouse (dano)
+                if (mouse.x && mouse.y && checkCollision(mouse.x, mouse.y, 10, enemy.x, enemy.y, enemy.size)) {
+                    config.health -= 1;
+                    if (config.health <= 0) {
+                        showGameOver();
+                    }
+                }
+                
+                // Colisão com partículas no modo buraco negro (dano ao inimigo)
+                if (config.mode === 'attract' && mouse.x && mouse.y) {
+                    const dx = mouse.x - enemy.x;
+                    const dy = mouse.y - enemy.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < config.mouseRadius + enemy.size) {
+                        enemy.health -= 0.1;
+                        if (enemy.health <= 0) {
+                            const el = document.querySelector(`[data-id="${i}"]`);
+                            if (el) el.remove();
+                            config.enemies.splice(i, 1);
+                            config.power += 10;
+                        }
+                    }
+                }
+            });
+
+            // Desenha buraco negro se no modo atração
+            if (config.mode === 'attract' && mouse.x && mouse.y) {
+                drawBlackHole(mouse.x, mouse.y, 30 + config.power / 10);
+            }
+
+            // Desenha ponto de gravidade se no modo gravidade
+            if (config.mode === 'gravity') {
+                ctx.fillStyle = '#00F5A0';
+                ctx.beginPath();
+                ctx.arc(config.gravity.x, config.gravity.y, 10, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Spawn de power-ups e inimigos
+            spawnPowerUp();
+            spawnEnemy();
+
+            // Atualiza UI
+            document.getElementById("particleCount").textContent = particles.length;
+            document.getElementById("power").textContent = Math.floor(config.power);
+            document.getElementById("health").textContent = Math.floor(config.health);
+
             requestAnimationFrame(animate);
         }
 
         animate();
+
+        // Redimensionamento
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
     </script>
 </body>
 </html>
