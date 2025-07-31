@@ -535,6 +535,16 @@
         }
 
         init();
-    </script>
+
+<!-- Adicione ANTES do </body> -->
+<script>
+    // Verificação final
+    console.log("Sistema verificado!");
+    if (typeof particles === 'undefined') {
+        console.error("Erro: Partículas não carregadas");
+    } else {
+        console.log(`✅ ${particles.length} partículas carregadas`);
+    }
+</script>
 </body>
 </html>
