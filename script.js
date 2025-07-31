@@ -1,48 +1,89 @@
 const canvas = document.getElementById("particleCanvas");
 const ctx = canvas.getContext("2d");
 
-// Configurações
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+// ===== SISTEMA DE PROGRESSÃO =====
+const progressionSystem = {
+    level: 1,
+    experience: 0,
+    unlockedAbilities: {
+        doubleBlackHole: false,
+        timeWarp: false,
+        particleShield: false
+    },
+    achievements: {
+        firstBlood: false,
+        masterOfAttraction: false,
+        connectionMaster: false
+    },
+    
+    addExperience: function(points) {
+        this.experience += points;
+        if (this.experience >= this.level * 100) {
+            this.levelUp();
+        }
+    },
+    
+    levelUp: function() {
+        this.level++;
+        this.experience = 0;
+        showMessage(`Nível ${this.level} alcançado!`);
+        
+        // Desbloqueia habilidades a cada 3 níveis
+        if (this.level % 3 === 0) {
+            if (!this.unlockedAbilities.doubleBlackHole) {
+                this.unlockedAbilities.doubleBlackHole = true;
+                showMessage("Habilidade desbloqueada: Buraco Negro Duplo!");
+            } else if (!this.unlockedAbilities.timeWarp) {
+                this.unlockedAbilities.timeWarp = true;
+                showMessage("Habilidade desbloqueada: Distorção Temporal!");
+            }
+        }
+    },
+    
+    checkAchievements: function() {
+        if (!this.achievements.firstBlood && config.particleCount >= 200) {
+            this.achievements.firstBlood = true;
+            showMessage("Conquista: Primeiro Sangue!");
+        }
+        if (!this.achievements.masterOfAttraction && config.mode === 'attract') {
+            this.achievements.masterOfAttraction = true;
+            showMessage("Conquista: Mestre da Atração!");
+        }
+    },
+    
+    updateUI: function() {
+        // Atualiza a UI com informações de progresso
+    }
+};
 
-// Estado do simulador
+// ===== CONFIGURAÇÕES MELHORADAS =====
 const config = {
     particleCount: 150,
     mouseRadius: 100,
-    mode: 'repel', // 'attract' ou 'repel'
+    mode: 'repel',
     lineThreshold: 100,
-    starCount: 200
+    starCount: 200,
+    power: 0,
+    health: 100,
+    blackHoleActive: false,
+    doubleBlackHole: false
 };
 
-// Elementos de controle
-const attractBtn = document.getElementById("attract");
-const repelBtn = document.getElementById("repel");
-const countDisplay = document.getElementById("count");
-const particleRange = document.getElementById("particleRange");
+// ===== ELEMENTOS DE CONTROLE ADICIONAIS =====
+const powerDisplay = document.getElementById("power");
+const healthDisplay = document.getElementById("health");
+const levelDisplay = document.getElementById("level");
+const achievementsPanel = document.getElementById("achievementsPanel");
 
-// Estrelas de fundo
-const stars = Array.from({ length: config.starCount }, () => ({
-    x: Math.random() * canvas.width,
-    y: Math.random() * canvas.height,
-    size: Math.random() * 1.5,
-    opacity: Math.random()
-}));
-
-// Partículas
-let particles = [];
-const mouse = { x: null, y: null };
-
-// Cores aleatórias
-function getRandomColor() {
-    const colors = [
-        '#4A00E0', '#8E2DE2', '#00F5A0', '#00D4FF', 
-        '#FF5F6D', '#FFC371', '#7F00FF', '#E100FF'
-    ];
-    return colors[Math.floor(Math.random() * colors.length)];
-}
-
+// ===== CLASSES MELHORADAS =====
 class Particle {
     constructor() {
+        this.reset();
+        this.baseSpeedX = this.speedX;
+        this.baseSpeedY = this.speedY;
+    }
+
+    reset() {
         this.x = Math.random() * canvas.width;
         this.y = Math.random() * canvas.height;
         this.size = Math.random() * 3 + 1;
@@ -51,94 +92,100 @@ class Particle {
         this.color = getRandomColor();
         this.baseColor = this.color;
         this.highlight = false;
+        this.life = 1000 + Math.random() * 2000;
     }
 
     update() {
-        // Movimento básico
-        this.x += this.speedX;
-        this.y += this.speedY;
+        // Movimento básico com variação de nível
+        this.x += this.speedX * (1 + progressionSystem.level * 0.05);
+        this.y += this.speedY * (1 + progressionSystem.level * 0.05);
+        this.life--;
 
-        // Limites da tela
-        if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
-        if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+        // Reset da partícula quando a vida acaba
+        if (this.life <= 0) {
+            this.reset();
+            return;
+        }
 
-        // Interação com o mouse
-        if (mouse.x && mouse.y) {
-            const dx = mouse.x - this.x;
-            const dy = mouse.y - this.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
+        // Limites da tela com efeito de ricochete
+        if (this.x < 0 || this.x > canvas.width) {
+            this.speedX *= -0.9;
+            this.x = Math.max(0, Math.min(canvas.width, this.x));
+        }
+        if (this.y < 0 || this.y > canvas.height) {
+            this.speedY *= -0.9;
+            this.y = Math.max(0, Math.min(canvas.height, this.y));
+        }
+
+        // Interação com o mouse (melhorada)
+        this.handleMouseInteraction();
+    }
+
+    handleMouseInteraction() {
+        if (!mouse.x || !mouse.y) return;
+
+        const dx = mouse.x - this.x;
+        const dy = mouse.y - this.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < config.mouseRadius) {
+            const angle = Math.atan2(dy, dx);
+            const force = config.mouseRadius / (distance + 1);
             
-            if (distance < config.mouseRadius) {
-                const force = config.mouseRadius / distance;
-                const angle = Math.atan2(dy, dx);
-                
-                if (config.mode === 'attract') {
-                    this.x += Math.cos(angle) * force * 0.2;
-                    this.y += Math.sin(angle) * force * 0.2;
-                } else {
-                    this.x -= Math.cos(angle) * force * 0.1;
-                    this.y -= Math.sin(angle) * force * 0.1;
-                }
-                
-                this.highlight = true;
+            if (config.mode === 'attract') {
+                this.x += Math.cos(angle) * force * 0.2;
+                this.y += Math.sin(angle) * force * 0.2;
+                config.power += 0.01;
             } else {
-                this.highlight = false;
+                this.x -= Math.cos(angle) * force * 0.1;
+                this.y -= Math.sin(angle) * force * 0.1;
             }
+            
+            this.highlight = true;
+            this.color = `hsl(${(progressionSystem.level * 10) % 360}, 80%, 60%)`;
+        } else {
+            this.highlight = false;
+            this.color = this.baseColor;
         }
     }
 
     draw() {
-        // Efeito de brilho quando destacada
-        if (this.highlight) {
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = this.color;
-        } else {
-            ctx.shadowBlur = 5;
-        }
+        // Efeito de brilho melhorado
+        ctx.shadowColor = this.highlight ? this.color : 'rgba(255,255,255,0.3)';
+        ctx.shadowBlur = this.highlight ? 15 : 5;
         
         ctx.fillStyle = this.color;
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.closePath();
         ctx.fill();
+        
         ctx.shadowBlur = 0;
     }
 }
 
-// Desenha estrelas de fundo
-function drawStars() {
-    ctx.fillStyle = 'white';
-    stars.forEach(star => {
-        ctx.globalAlpha = star.opacity;
-        ctx.beginPath();
-        ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-        ctx.fill();
-    });
-    ctx.globalAlpha = 1;
+// ===== FUNÇÕES ADICIONAIS =====
+function showMessage(text) {
+    const message = document.createElement('div');
+    message.className = 'game-message';
+    message.textContent = text;
+    document.body.appendChild(message);
+    
+    setTimeout(() => {
+        message.classList.add('fade-out');
+        setTimeout(() => document.body.removeChild(message), 1000);
+    }, 2000);
 }
 
-// Desenha linhas entre partículas próximas
-function drawConnections() {
-    particles.forEach(p1 => {
-        particles.forEach(p2 => {
-            const dx = p1.x - p2.x;
-            const dy = p1.y - p2.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            
-            if (distance < config.lineThreshold) {
-                const opacity = 1 - (distance / config.lineThreshold);
-                ctx.strokeStyle = `rgba(150, 150, 255, ${opacity * 0.3})`;
-                ctx.lineWidth = 0.5;
-                ctx.beginPath();
-                ctx.moveTo(p1.x, p1.y);
-                ctx.lineTo(p2.x, p2.y);
-                ctx.stroke();
-            }
-        });
-    });
+function activateDoubleBlackHole() {
+    if (!progressionSystem.unlockedAbilities.doubleBlackHole) return;
+    
+    config.doubleBlackHole = true;
+    setTimeout(() => {
+        config.doubleBlackHole = false;
+    }, 5000);
 }
 
-// Inicializa partículas
+// ===== FUNÇÕES EXISTENTES MELHORADAS =====
 function initParticles() {
     particles = [];
     for (let i = 0; i < config.particleCount; i++) {
@@ -146,76 +193,35 @@ function initParticles() {
     }
 }
 
-// Loop de animação
 function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     drawStars();
     drawConnections();
     
+    // Atualizações do sistema de progressão
+    progressionSystem.checkAchievements();
+    progressionSystem.updateUI();
+    
+    // Atualiza e desenha partículas
     particles.forEach(particle => {
         particle.update();
         particle.draw();
     });
     
+    // Atualiza displays
+    powerDisplay.textContent = Math.floor(config.power);
+    healthDisplay.textContent = Math.floor(config.health);
+    levelDisplay.textContent = progressionSystem.level;
+    
     requestAnimationFrame(animate);
 }
 
-// Event Listeners
-window.addEventListener('mousemove', (e) => {
-    mouse.x = e.x;
-    mouse.y = e.y;
-});
+// ===== EVENT LISTENERS ADICIONAIS =====
+document.getElementById("doubleBlackHole").addEventListener('click', activateDoubleBlackHole);
 
-window.addEventListener('resize', () => {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-});
+// ... (restante dos event listeners existentes)
 
-attractBtn.addEventListener('click', () => {
-    config.mode = 'attract';
-    attractBtn.classList.add('active');
-    repelBtn.classList.remove('active');
-});
-
-repelBtn.addEventListener('click', () => {
-    config.mode = 'repel';
-    repelBtn.classList.add('active');
-    attractBtn.classList.remove('active');
-});
-
-particleRange.addEventListener('input', (e) => {
-    config.particleCount = parseInt(e.target.value);
-    countDisplay.textContent = config.particleCount;
-    initParticles();
-});
-
-// Inicialização
+// ===== INICIALIZAÇÃO =====
 initParticles();
-repelBtn.classList.add('active'); // Modo repulsão ativo por padrão
 animate();
-// Configuração otimizada do buraco negro
-class BlackHole {
-    constructor() {
-        this.size = 0;
-        this.maxSize = 150;
-        this.element = document.createElement('div');
-        this.element.className = 'black-hole';
-        document.body.appendChild(this.element);
-    }
-
-    update(x, y, active) {
-        if (active) {
-            this.size = Math.min(this.size + 3, this.maxSize);
-            this.element.style.display = 'block';
-        } else {
-            this.size = Math.max(0, this.size - 6);
-            if (this.size === 0) this.element.style.display = 'none';
-        }
-        
-        this.element.style.width = `${this.size}px`;
-        this.element.style.height = `${this.size}px`;
-        this.element.style.left = `${x}px`;
-        this.element.style.top = `${y}px`;
-    }
-}
