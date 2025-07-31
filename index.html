@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Universo com Inimigos!</title>
+    <title>Universo de Partículas com Habilidades</title>
     <style>
         body { 
             margin: 0; 
             overflow: hidden; 
             background: #000; 
             font-family: Arial, sans-serif;
+            user-select: none;
         }
         canvas { 
             display: block; 
@@ -42,6 +43,10 @@
             background: #00F5A0;
             color: #000;
         }
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
         .powerup {
             position: absolute;
             border-radius: 50%;
@@ -67,6 +72,36 @@
             border-radius: 8px;
             color: white;
             font-size: 16px;
+        }
+        .abilities {
+            position: fixed;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+        .ability-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            position: relative;
+        }
+        .cooldown {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0,0,0,0.5);
+            border-radius: 0 0 50% 50%;
+            overflow: hidden;
+            height: 0%;
+            transition: height 0.1s linear;
         }
         .game-over {
             position: fixed;
@@ -101,6 +136,11 @@
         Poder: <span id="power">0</span> |
         Vida: <span id="health">100</span>%
     </div>
+    <div class="abilities">
+        <button class="ability-btn" id="ability1" title="Tempestade de Partículas (1)">🌪️<div class="cooldown"></div></button>
+        <button class="ability-btn" id="ability2" title="Campo de Força (2)">🛡️<div class="cooldown"></div></button>
+        <button class="ability-btn" id="ability3" title="Explosão Gravitacional (3)">💥<div class="cooldown"></div></button>
+    </div>
     <div class="game-over">
         GAME OVER!
         <button class="restart-btn" onclick="restartGame()">Jogar Novamente</button>
@@ -118,7 +158,14 @@
             power: 0,
             health: 100,
             gravity: { x: 0, y: 0 },
-            gameOver: false
+            gameOver: false,
+            abilities: {
+                storm: { cooldown: 0, maxCooldown: 100, active: false },
+                shield: { cooldown: 0, maxCooldown: 200, active: false, duration: 300 },
+                explosion: { cooldown: 0, maxCooldown: 150, active: false }
+            },
+            shieldEndTime: 0,
+            lastTime: 0
         };
 
         // Elementos
@@ -158,10 +205,92 @@
             };
         });
 
+        // Habilidades
+        document.getElementById("ability1").addEventListener('click', () => activateAbility('storm'));
+        document.getElementById("ability2").addEventListener('click', () => activateAbility('shield'));
+        document.getElementById("ability3").addEventListener('click', () => activateAbility('explosion'));
+
+        // Teclas numéricas para habilidades
+        window.addEventListener('keydown', (e) => {
+            if (e.key === '1') activateAbility('storm');
+            if (e.key === '2') activateAbility('shield');
+            if (e.key === '3') activateAbility('explosion');
+        });
+
+        function activateAbility(ability) {
+            if (config.abilities[ability].cooldown <= 0 && !config.gameOver) {
+                config.abilities[ability].cooldown = config.abilities[ability].maxCooldown;
+                config.abilities[ability].active = true;
+                
+                if (ability === 'storm') particleStorm();
+                if (ability === 'shield') {
+                    config.shieldEndTime = config.lastTime + config.abilities.shield.duration;
+                }
+                if (ability === 'explosion') gravitationalExplosion();
+                
+                updateAbilityButtons();
+            }
+        }
+
+        function particleStorm() {
+            // Acelera todas as partículas
+            particles.forEach(p => {
+                p.speedX = (Math.random() - 0.5) * 15;
+                p.speedY = (Math.random() - 0.5) * 15;
+            });
+            
+            // Dano em inimigos
+            config.enemies.forEach(enemy => {
+                enemy.health -= 2;
+                if (enemy.health <= 0) {
+                    destroyEnemy(enemy);
+                    config.power += 10;
+                }
+            });
+        }
+
+        function gravitationalExplosion() {
+            // Empurra tudo para longe do mouse
+            if (!mouse.x || !mouse.y) return;
+            
+            particles.forEach(p => {
+                const dx = p.x - mouse.x;
+                const dy = p.y - mouse.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const force = 1000 / (distance + 1);
+                p.speedX += dx * force * 0.01;
+                p.speedY += dy * force * 0.01;
+            });
+            
+            config.enemies.forEach(enemy => {
+                const dx = enemy.x - mouse.x;
+                const dy = enemy.y - mouse.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const force = 500 / (distance + 1);
+                enemy.speedX += dx * force * 0.01;
+                enemy.speedY += dy * force * 0.01;
+                enemy.health -= 1;
+                if (enemy.health <= 0) {
+                    destroyEnemy(enemy);
+                    config.power += 10;
+                }
+            });
+        }
+
+        function updateAbilityButtons() {
+            Object.keys(config.abilities).forEach((ability, i) => {
+                const btn = document.getElementById(`ability${i+1}`);
+                const cooldown = btn.querySelector('.cooldown');
+                const percent = (config.abilities[ability].cooldown / config.abilities[ability].maxCooldown) * 100;
+                cooldown.style.height = `${percent}%`;
+                btn.disabled = config.abilities[ability].cooldown > 0;
+            });
+        }
+
         // Power-ups
         function spawnPowerUp() {
             if (Math.random() > 0.98 && config.powerUps.length < 3) {
-                const types = ['extraParticles', 'blackHole', 'superSpeed', 'heal'];
+                const types = ['extraParticles', 'blackHole', 'superSpeed', 'heal', 'abilityCharge'];
                 const type = types[Math.floor(Math.random() * types.length)];
                 const powerUp = {
                     x: Math.random() * canvas.width,
@@ -170,7 +299,8 @@
                     size: 15,
                     color: type === 'extraParticles' ? '#00F5A0' : 
                            type === 'blackHole' ? '#8E2DE2' : 
-                           type === 'heal' ? '#FF5F6D' : '#00D4FF'
+                           type === 'heal' ? '#FF5F6D' : 
+                           type === 'abilityCharge' ? '#00D4FF' : '#FFC371'
                 };
                 config.powerUps.push(powerUp);
 
@@ -189,14 +319,16 @@
 
         // Inimigos
         function spawnEnemy() {
-            if (Math.random() > 0.99 && config.enemies.length < 5 && !config.gameOver) {
+            if (Math.random() > 0.99 && config.enemies.length < 5 + Math.floor(config.power / 100) && !config.gameOver) {
+                const size = 20 + Math.random() * 20 + Math.floor(config.power / 50);
                 const enemy = {
-                    x: Math.random() > 0.5 ? 0 : canvas.width,
+                    x: Math.random() > 0.5 ? -size : canvas.width + size,
                     y: Math.random() * canvas.height,
-                    size: 20 + Math.random() * 20,
-                    speedX: (Math.random() * 3 + 1) * (Math.random() > 0.5 ? 1 : -1),
+                    size: size,
+                    speedX: (Math.random() * 3 + 1 + Math.floor(config.power / 100)) * (Math.random() > 0.5 ? 1 : -1),
                     speedY: Math.random() * 2 - 1,
-                    health: 3
+                    health: 3 + Math.floor(config.power / 50),
+                    id: Math.random().toString(36).substr(2, 9)
                 };
                 config.enemies.push(enemy);
 
@@ -208,9 +340,16 @@
                 el.style.left = `${enemy.x - enemy.size}px`;
                 el.style.top = `${enemy.y - enemy.size}px`;
                 el.style.backgroundColor = `hsl(${Math.random() * 60}, 70%, 40%)`;
-                el.dataset.id = config.enemies.length - 1;
+                el.dataset.id = enemy.id;
                 document.body.appendChild(el);
             }
+        }
+
+        function destroyEnemy(enemy) {
+            const el = document.querySelector(`[data-id="${enemy.id}"]`);
+            if (el) el.remove();
+            config.enemies = config.enemies.filter(e => e.id !== enemy.id);
+            createExplosion(enemy.x, enemy.y, enemy.size);
         }
 
         // Partículas
@@ -227,8 +366,23 @@
                 speedX: Math.random() * 2 - 1,
                 speedY: Math.random() * 2 - 1,
                 color: `hsl(${Math.random() * 360}, 70%, 50%)`,
-                life: 1000 + Math.random() * 2000
+                life: 1000 + Math.random() * 2000,
+                id: Math.random().toString(36).substr(2, 9)
             };
+        }
+
+        // Efeitos
+        function createExplosion(x, y, size = 10) {
+            for (let i = 0; i < size * 2; i++) {
+                particles.push({
+                    x, y,
+                    size: Math.random() * size/2 + 1,
+                    speedX: (Math.random() - 0.5) * 10,
+                    speedY: (Math.random() - 0.5) * 10,
+                    color: `hsl(${Math.random() * 60 + 10}, 100%, 50%)`,
+                    life: 30 + Math.random() * 30
+                });
+            }
         }
 
         // Buraco Negro Realista
@@ -281,11 +435,43 @@
             document.querySelectorAll('.enemy, .powerup').forEach(el => el.remove());
             config.enemies = [];
             config.powerUps = [];
+            
+            // Reset habilidades
+            Object.keys(config.abilities).forEach(ability => {
+                config.abilities[ability].cooldown = 0;
+                config.abilities[ability].active = false;
+            });
+            updateAbilityButtons();
         }
 
-        // Animação
-        function animate() {
+        // Animação principal
+        function animate(timestamp) {
+            if (!config.lastTime) config.lastTime = timestamp;
+            const deltaTime = timestamp - config.lastTime;
+            config.lastTime = timestamp;
+
             if (config.gameOver) return;
+
+            // Atualiza cooldowns
+            Object.keys(config.abilities).forEach(ability => {
+                if (config.abilities[ability].cooldown > 0) {
+                    config.abilities[ability].cooldown -= deltaTime / 16; // Aprox. 60fps
+                    if (config.abilities[ability].cooldown <= 0) {
+                        config.abilities[ability].cooldown = 0;
+                        if (ability === 'shield' && config.abilities.shield.active) {
+                            config.abilities.shield.active = false;
+                        }
+                        updateAbilityButtons();
+                    }
+                }
+            });
+
+            // Verifica fim do escudo
+            if (config.abilities.shield.active && timestamp > config.shieldEndTime) {
+                config.abilities.shield.active = false;
+                config.abilities.shield.cooldown = config.abilities.shield.maxCooldown;
+                updateAbilityButtons();
+            }
 
             // Fundo com rastro
             ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
@@ -294,8 +480,8 @@
             // Atualiza e desenha partículas
             particles.forEach((p, i) => {
                 // Movimento básico
-                p.x += p.speedX;
-                p.y += p.speedY;
+                p.x += p.speedX * (config.abilities.storm.active ? 1.5 : 1);
+                p.y += p.speedY * (config.abilities.storm.active ? 1.5 : 1);
                 p.life--;
 
                 // Renova partículas antigas
@@ -363,6 +549,17 @@
                         else if (pu.type === 'heal') {
                             config.health = Math.min(100, config.health + 20);
                         }
+                        else if (pu.type === 'abilityCharge') {
+                            Object.keys(config.abilities).forEach(ability => {
+                                if (config.abilities[ability].cooldown > 0) {
+                                    config.abilities[ability].cooldown -= config.abilities[ability].maxCooldown * 0.5;
+                                    if (config.abilities[ability].cooldown < 0) {
+                                        config.abilities[ability].cooldown = 0;
+                                    }
+                                }
+                            });
+                            updateAbilityButtons();
+                        }
                         
                         // Remove power-up
                         const el = document.querySelector(`[data-id="${j}"]`);
@@ -384,16 +581,16 @@
                 enemy.y += enemy.speedY;
                 
                 // Remove inimigos que saíram da tela
-                if (enemy.x < -50 || enemy.x > canvas.width + 50 || 
-                    enemy.y < -50 || enemy.y > canvas.height + 50) {
-                    const el = document.querySelector(`[data-id="${i}"]`);
+                if (enemy.x < -enemy.size*2 || enemy.x > canvas.width + enemy.size*2 || 
+                    enemy.y < -enemy.size*2 || enemy.y > canvas.height + enemy.size*2) {
+                    const el = document.querySelector(`[data-id="${enemy.id}"]`);
                     if (el) el.remove();
                     config.enemies.splice(i, 1);
                     return;
                 }
                 
                 // Atualiza elemento visual
-                const el = document.querySelector(`[data-id="${i}"]`);
+                const el = document.querySelector(`[data-id="${enemy.id}"]`);
                 if (el) {
                     el.style.left = `${enemy.x - enemy.size}px`;
                     el.style.top = `${enemy.y - enemy.size}px`;
@@ -407,9 +604,11 @@
                 
                 // Colisão com o mouse (dano)
                 if (mouse.x && mouse.y && checkCollision(mouse.x, mouse.y, 10, enemy.x, enemy.y, enemy.size)) {
-                    config.health -= 1;
-                    if (config.health <= 0) {
-                        showGameOver();
+                    if (!config.abilities.shield.active) {
+                        config.health -= 1;
+                        if (config.health <= 0) {
+                            showGameOver();
+                        }
                     }
                 }
                 
@@ -422,9 +621,7 @@
                     if (distance < config.mouseRadius + enemy.size) {
                         enemy.health -= 0.1;
                         if (enemy.health <= 0) {
-                            const el = document.querySelector(`[data-id="${i}"]`);
-                            if (el) el.remove();
-                            config.enemies.splice(i, 1);
+                            destroyEnemy(enemy);
                             config.power += 10;
                         }
                     }
@@ -444,6 +641,15 @@
                 ctx.fill();
             }
 
+            // Desenha escudo se ativo
+            if (config.abilities.shield.active && mouse.x && mouse.y) {
+                ctx.strokeStyle = 'rgba(0, 245, 160, 0.5)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(mouse.x, mouse.y, 50, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
             // Spawn de power-ups e inimigos
             spawnPowerUp();
             spawnEnemy();
@@ -456,7 +662,10 @@
             requestAnimationFrame(animate);
         }
 
-        animate();
+        // Inicialização
+        updateAbilityButtons();
+        document.getElementById("repel").classList.add('active');
+        animate(0);
 
         // Redimensionamento
         window.addEventListener('resize', () => {
