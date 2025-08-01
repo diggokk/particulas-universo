@@ -2,46 +2,44 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Universo de Partículas PRO</title>
     <style>
-        body { 
-            margin: 0; 
-            overflow: hidden; 
-            background: #000; 
-            font-family: Arial, sans-serif;
-            user-select: none;
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
             touch-action: manipulation;
         }
-        canvas { 
-            display: block; 
+        canvas {
+            display: block;
             width: 100vw;
             height: 100vh;
-            touch-action: none;
         }
         .controls {
-            position: fixed; 
-            top: 10px; 
+            position: fixed;
+            top: 10px;
             left: 10px;
-            background: rgba(0, 0, 0, 0.7); 
-            padding: 10px;
-            border-radius: 8px; 
-            color: white;
             z-index: 100;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+            color: white;
+            font-family: Arial, sans-serif;
             display: flex;
             flex-wrap: wrap;
+            gap: 5px;
             max-width: 300px;
         }
         button {
-            background: #4A00E0; 
-            color: white; 
+            background: #4A00E0;
+            color: white;
             border: none;
-            padding: 8px 12px; 
-            margin: 5px;
+            padding: 8px 12px;
             border-radius: 5px;
             cursor: pointer;
-            font-weight: bold;
             transition: all 0.3s;
+            font-size: 14px;
             flex-grow: 1;
         }
         button:hover {
@@ -49,1110 +47,164 @@
         }
         button.active {
             background: #00F5A0;
-            color: #000;
-            box-shadow: 0 0 15px currentColor;
-        }
-        button:disabled {
-            background: #555;
-            cursor: not-allowed;
-        }
-        #vortex { background: linear-gradient(to right, #8E2DE2, #4A00E0); }
-        #lightning { background: linear-gradient(to right, #00B4DB, #0083B0); }
-        #wormhole { background: linear-gradient(to right, #f12711, #f5af19); }
-        .score {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px;
-            border-radius: 8px;
-            color: white;
-            font-size: 16px;
-            text-align: right;
-        }
-        .abilities {
-            position: fixed;
-            bottom: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 10px;
-            z-index: 100;
-        }
-        .ability-btn {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            position: relative;
-            background: rgba(0, 0, 0, 0.5);
-            border: 2px solid #4A00E0;
-            color: white;
-        }
-        .cooldown {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 0 0 50% 50%;
-            overflow: hidden;
-            height: 0%;
-            transition: height 0.1s linear;
-        }
-        .game-over {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.9);
-            padding: 20px;
-            border-radius: 10px;
-            color: #FF5F6D;
-            font-size: 32px;
-            font-weight: bold;
-            text-align: center;
-            display: none;
-            z-index: 200;
-        }
-        .restart-btn {
-            background: #FF5F6D;
-            margin-top: 20px;
-            font-size: 18px;
-            padding: 10px 20px;
+            color: #111;
+            box-shadow: 0 0 10px #00F5A0;
         }
         .mobile-controls {
             display: none;
             position: fixed;
-            bottom: 20px;
+            bottom: 15px;
             left: 0;
             right: 0;
-            justify-content: space-around;
+            justify-content: center;
+            gap: 10px;
             padding: 10px;
             z-index: 100;
         }
         .mobile-btn {
-            width: 70px;
-            height: 70px;
+            width: 55px;
+            height: 55px;
             border-radius: 50%;
-            background: rgba(74, 0, 224, 0.7);
-            border: 2px solid white;
+            background: rgba(74, 0, 224, 0.9);
+            border: 2px solid rgba(255,255,255,0.2);
             color: white;
-            font-size: 30px;
+            font-size: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
-            touch-action: manipulation;
+            cursor: pointer;
+            transition: transform 0.1s;
         }
-        .boss-health {
-            position: fixed;
-            top: 50px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 200px;
-            height: 20px;
-            background: rgba(255, 0, 0, 0.3);
-            border-radius: 10px;
-            overflow: hidden;
-            display: none;
-            z-index: 90;
-        }
-        .boss-health-bar {
-            height: 100%;
-            width: 100%;
-            background: linear-gradient(to right, #ff0000, #ff5a00);
-            transition: width 0.3s;
-        }
-        .supernova-active {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 70%);
-            animation: supernova 1.5s ease-out;
-            z-index: 999;
-            pointer-events: none;
-            display: none;
-        }
-        .progression-container {
-            position: fixed;
-            bottom: 80px;
-            left: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px;
-            border-radius: 8px;
-            color: white;
-            z-index: 100;
-            border: 1px solid #4A00E0;
-        }
-        .progression-bar {
-            width: 200px;
-            height: 10px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 5px;
-            margin-top: 8px;
-            overflow: hidden;
-        }
-        .progression-fill {
-            height: 100%;
-            background: linear-gradient(to right, #4A00E0, #8E2DE2);
-            width: 0%;
-            transition: width 0.3s ease-out;
-        }
-        .achievements-panel {
-            position: fixed;
-            bottom: 80px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 10px;
-            border-radius: 8px;
-            color: white;
-            max-width: 250px;
-            z-index: 100;
-            border: 1px solid #00F5A0;
-        }
-        .achievement {
-            display: flex;
-            align-items: center;
-            padding: 8px;
-            margin: 5px 0;
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 4px;
-            opacity: 0.5;
-            transition: all 0.3s;
-        }
-        .achievement.unlocked {
-            opacity: 1;
-            border-left: 3px solid #00F5A0;
-            background: rgba(74, 0, 224, 0.2);
-        }
-        .achievement-icon {
-            width: 24px;
-            height: 24px;
-            background: #8E2DE2;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 10px;
-            font-size: 12px;
-        }
-        .game-message {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.9);
-            color: #00F5A0;
-            padding: 15px 25px;
-            border-radius: 8px;
-            z-index: 1000;
-            text-align: center;
-            box-shadow: 0 0 20px rgba(0, 245, 160, 0.5);
-            animation: fadeIn 0.5s forwards;
-            border: 1px solid #00F5A0;
-            max-width: 80%;
-        }
-
-        @keyframes supernova {
-            0% { transform: scale(0); opacity: 0; }
-            50% { opacity: 1; }
-            100% { transform: scale(3); opacity: 0; }
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translate(-50%, -40px); }
-            to { opacity: 1; transform: translate(-50%, -50%); }
+        .mobile-btn:active {
+            transform: scale(0.9);
+            background: rgba(142, 45, 226, 0.9);
         }
         @media (max-width: 768px) {
-            .abilities, .controls { display: none; }
+            .controls { display: none; }
             .mobile-controls { display: flex; }
-            .progression-container, .achievements-panel {
-                bottom: 150px;
+        }
+        @media (max-width: 400px) {
+            .mobile-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 18px;
             }
         }
+        #mobileAttract { background: linear-gradient(135deg, #8E2DE2, #4A00E0); }
+        #mobileRepel { background: linear-gradient(135deg, #00B4DB, #0083B0); }
+        #mobileVortex { background: linear-gradient(135deg, #f12711, #f5af19); }
     </style>
 </head>
 <body>
     <div class="controls">
         <button id="attract">🌀 Buraco Negro</button>
+        <button id="repel">✨ Repulsão</button>
         <button id="vortex">🌪️ Vórtice</button>
-        <button id="lightning">⚡ Raios</button>
-        <button id="wormhole">🌀 Minhoca</button>
-        <button id="supernova" disabled>💥 Supernova</button>
     </div>
-    <div class="score">
-        Partículas: <span id="particleCount">0</span><br>
-        Poder: <span id="power">0</span><br>
-        Vida: <span id="health">100</span>%<br>
-        Nível: <span id="level">1</span>
-    </div>
-    <div class="boss-health" id="bossHealth">
-        <div class="boss-health-bar" id="bossHealthBar"></div>
-    </div>
-    <div class="abilities">
-        <button class="ability-btn" id="ability1" title="Tempestade de Partículas (1)">🌪️<div class="cooldown"></div></button>
-        <button class="ability-btn" id="ability2" title="Campo de Força (2)">🛡️<div class="cooldown"></div></button>
-        <button class="ability-btn" id="ability3" title="Explosão Gravitacional (3)">💥<div class="cooldown"></div></button>
-    </div>
+    
     <div class="mobile-controls">
         <button class="mobile-btn" id="mobileAttract">🌀</button>
         <button class="mobile-btn" id="mobileRepel">✨</button>
         <button class="mobile-btn" id="mobileVortex">🌪️</button>
-        <button class="mobile-btn" id="mobileSupernova">💥</button>
     </div>
-    <div class="progression-container">
-        <div>Progresso: <span id="currentLevel">1</span></div>
-        <div class="progression-bar">
-            <div class="progression-fill" id="progressionFill"></div>
-        </div>
-    </div>
-    <div class="achievements-panel">
-        <h3>Conquistas</h3>
-        <div class="achievement" id="achievement1">
-            <div class="achievement-icon">1️⃣</div>
-            <div>
-                <div class="achievement-name">Primeiras Partículas</div>
-                <div class="achievement-desc">Inicie o jogo</div>
-            </div>
-        </div>
-        <div class="achievement" id="achievement2">
-            <div class="achievement-icon">🌀</div>
-            <div>
-                <div class="achievement-name">Mestre do Buraco Negro</div>
-                <div class="achievement-desc">Alcance nível 3</div>
-            </div>
-        </div>
-        <div class="achievement" id="achievement3">
-            <div class="achievement-icon">👾</div>
-            <div>
-                <div class="achievement-name">Destruidor de Matéria</div>
-                <div class="achievement-desc">Derrote o chefão</div>
-            </div>
-        </div>
-    </div>
-    <div class="game-over">
-        GAME OVER!
-        <button class="restart-btn" onclick="restartGame()">Jogar Novamente</button>
-    </div>
-    <div class="supernova-active" id="supernovaEffect"></div>
+
     <canvas id="canvas"></canvas>
-    <div class="cursor-halo" id="cursorHalo"></div>
 
     <script>
-        // Configurações
+        // Configurações do jogo
         const config = {
             particleCount: 100,
             mouseRadius: 120,
-            mode: 'normal',
-            powerUps: [],
-            enemies: [],
-            power: 0,
-            health: 100,
-            gameOver: false,
-            abilities: {
-                storm: { cooldown: 0, maxCooldown: 100, active: false },
-                shield: { cooldown: 0, maxCooldown: 200, active: false, duration: 300 },
-                explosion: { cooldown: 0, maxCooldown: 150, active: false }
-            },
-            shieldEndTime: 0,
-            lastTime: 0,
-            level: 1,
-            experience: 0,
-            supernovaReady: false,
-            bossActive: false,
-            achievements: {
-                firstParticles: false,
-                blackHoleMaster: false,
-                bossDestroyer: false
-            },
-            vortexPower: 0.0005,
-            wormholeCooldown: 0
+            mode: 'normal'
         };
 
-        // Elementos DOM
+        // Inicialização do canvas
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
-        const cursorHalo = document.getElementById("cursorHalo");
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        // Expressões dos inimigos
-        const enemyExpressions = [">:)", ">:(", ">:O", ">:D", ">:P", ">:S", ">:X", ">:B"];
-        const bossExpressions = ["X_X", "X_O", "X_X", "X-O", "X_X", "X|X"];
-
-        // Inicializa partículas
+        // Partículas
         let particles = [];
         function initParticles() {
             particles = [];
             for (let i = 0; i < config.particleCount; i++) {
-                particles.push(createParticle());
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 3 + 1,
+                    color: `hsl(${Math.random() * 360}, 70%, 50%)`,
+                    speedX: (Math.random() - 0.5) * 2,
+                    speedY: (Math.random() - 0.5) * 2
+                });
             }
-            if (!config.achievements.firstParticles) {
-                config.achievements.firstParticles = true;
-                document.getElementById("achievement1").classList.add('unlocked');
-                showMessage("Conquista: Primeiras Partículas!");
-            }
         }
-
-        function createParticle() {
-            const size = Math.random() * 3 + 1;
-            return {
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                size: size,
-                baseSize: size,
-                speedX: (Math.random() - 0.5) * 2,
-                speedY: (Math.random() - 0.5) * 2,
-                color: `hsl(${Math.random() * 360}, 70%, 50%)`,
-                life: 1000 + Math.random() * 2000
-            };
-        }
-
-        // Event listeners para mobile
-        document.getElementById("mobileAttract").addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            config.mode = 'attract';
-            resetActiveButtons();
-            document.getElementById("attract").classList.add('active');
-        });
-
-        document.getElementById("mobileRepel").addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            config.mode = 'repel';
-            resetActiveButtons();
-            document.getElementById("repel").classList.add('active');
-        });
-
-        document.getElementById("mobileVortex").addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            config.mode = 'vortex';
-            resetActiveButtons();
-            document.getElementById("vortex").classList.add('active');
-        });
-
-        document.getElementById("mobileSupernova").addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            activateSupernova();
-        });
-
-        // Mouse/touch
-        const mouse = { x: null, y: null };
-        function handleMove(e) {
-            const pos = e.touches ? e.touches[0] : e;
-            mouse.x = pos.clientX;
-            mouse.y = pos.clientY;
-            
-            cursorHalo.style.left = `${mouse.x}px`;
-            cursorHalo.style.top = `${mouse.y}px`;
-            
-            const pulse = 10 + Math.sin(Date.now() * 0.01) * 5;
-            cursorHalo.style.width = `${config.mouseRadius * 2 + pulse}px`;
-            cursorHalo.style.height = `${config.mouseRadius * 2 + pulse}px`;
-        }
-
-        canvas.addEventListener('mousemove', handleMove);
-        canvas.addEventListener('touchmove', handleMove, { passive: false });
 
         // Controles
         document.getElementById("attract").addEventListener('click', () => {
             config.mode = 'attract';
-            resetActiveButtons();
-            this.classList.add('active');
         });
-
         document.getElementById("repel").addEventListener('click', () => {
             config.mode = 'repel';
-            resetActiveButtons();
-            this.classList.add('active');
         });
-
         document.getElementById("vortex").addEventListener('click', () => {
             config.mode = 'vortex';
-            resetActiveButtons();
-            this.classList.add('active');
         });
 
-        document.getElementById("lightning").addEventListener('click', () => {
-            config.mode = 'lightning';
-            resetActiveButtons();
-            this.classList.add('active');
+        // Controles mobile
+        document.getElementById("mobileAttract").addEventListener('click', () => {
+            config.mode = 'attract';
+        });
+        document.getElementById("mobileRepel").addEventListener('click', () => {
+            config.mode = 'repel';
+        });
+        document.getElementById("mobileVortex").addEventListener('click', () => {
+            config.mode = 'vortex';
         });
 
-        document.getElementById("wormhole").addEventListener('click', () => {
-            config.mode = 'wormhole';
-            resetActiveButtons();
-            this.classList.add('active');
+        // Mouse
+        const mouse = { x: null, y: null };
+        canvas.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
         });
 
-        document.getElementById("supernova").addEventListener('click', activateSupernova);
-
-        // Função para resetar botões ativos
-        function resetActiveButtons() {
-            document.querySelectorAll('.controls button, .mobile-controls button').forEach(btn => {
-                btn.classList.remove('active');
-            });
-        }
-
-        // Habilidades
-        document.getElementById("ability1").addEventListener('click', () => activateAbility('storm'));
-        document.getElementById("ability2").addEventListener('click', () => activateAbility('shield'));
-        document.getElementById("ability3").addEventListener('click', () => activateAbility('explosion'));
-
-        // Teclas numéricas para habilidades
-        window.addEventListener('keydown', (e) => {
-            if (e.key === '1') activateAbility('storm');
-            if (e.key === '2') activateAbility('shield');
-            if (e.key === '3') activateAbility('explosion');
-            if (e.key === '4' && config.supernovaReady) activateSupernova();
-        });
-
-        function activateAbility(ability) {
-            if (config.abilities[ability].cooldown <= 0 && !config.gameOver) {
-                config.abilities[ability].cooldown = config.abilities[ability].maxCooldown;
-                config.abilities[ability].active = true;
-                
-                if (ability === 'storm') particleStorm();
-                if (ability === 'shield') {
-                    config.shieldEndTime = config.lastTime + config.abilities.shield.duration;
-                }
-                if (ability === 'explosion') gravitationalExplosion();
-                
-                updateAbilityButtons();
-            }
-        }
-
-        function activateSupernova() {
-            if (!config.supernovaReady || config.gameOver) return;
-            
-            config.supernovaReady = false;
-            document.getElementById("supernova").disabled = true;
-            document.getElementById("mobileSupernova").disabled = true;
-            
-            // Efeito visual
-            const effect = document.getElementById("supernovaEffect");
-            effect.style.display = 'block';
-            setTimeout(() => effect.style.display = 'none', 1500);
-            
-            // Destroi todos os inimigos
-            config.enemies.forEach(enemy => {
-                createExplosion(enemy.x, enemy.y, enemy.size * 2);
-                if (enemy.isBoss) {
-                    addExperience(50);
-                    if (!config.achievements.bossDestroyer) {
-                        config.achievements.bossDestroyer = true;
-                        document.getElementById("achievement3").classList.add('unlocked');
-                        showMessage("Conquista: Destruidor de Matéria!");
-                    }
-                } else {
-                    addExperience(10);
-                }
-            });
-            
-            config.enemies = [];
-            if (config.bossActive) {
-                config.bossActive = false;
-                document.getElementById("bossHealth").style.display = 'none';
-            }
-            
-            updateScore();
-        }
-
-        function particleStorm() {
-            particles.forEach(p => {
-                p.speedX = (Math.random() - 0.5) * 15;
-                p.speedY = (Math.random() - 0.5) * 15;
-            });
-            
-            config.enemies.forEach(enemy => {
-                enemy.health -= 2;
-                if (enemy.health <= 0) {
-                    destroyEnemy(enemy);
-                    config.power += 10;
-                    addExperience(5);
-                }
-            });
-            
-            updateScore();
-        }
-
-        function gravitationalExplosion() {
-            if (!mouse.x || !mouse.y) return;
-            
-            particles.forEach(p => {
-                const dx = p.x - mouse.x;
-                const dy = p.y - mouse.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                const force = 1000 / (distance + 1);
-                p.speedX += dx * force * 0.01;
-                p.speedY += dy * force * 0.01;
-            });
-            
-            config.enemies.forEach(enemy => {
-                const dx = enemy.x - mouse.x;
-                const dy = enemy.y - mouse.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-                const force = 500 / (distance + 1);
-                enemy.speedX += dx * force * 0.01;
-                enemy.speedY += dy * force * 0.01;
-                enemy.health -= 1;
-                if (enemy.health <= 0) {
-                    destroyEnemy(enemy);
-                    config.power += 10;
-                    addExperience(5);
-                }
-            });
-            
-            updateScore();
-        }
-
-        function updateAbilityButtons() {
-            Object.keys(config.abilities).forEach((ability, i) => {
-                const btn = document.getElementById(`ability${i+1}`);
-                const cooldown = btn.querySelector('.cooldown');
-                const percent = (config.abilities[ability].cooldown / config.abilities[ability].maxCooldown) * 100;
-                cooldown.style.height = `${percent}%`;
-                btn.disabled = config.abilities[ability].cooldown > 0;
-            });
-        }
-
-        // Power-ups
-        function spawnPowerUp() {
-            if (Math.random() > 0.98 && config.powerUps.length < 3) {
-                const types = ['extraParticles', 'blackHole', 'superSpeed', 'heal', 'abilityCharge'];
-                const type = types[Math.floor(Math.random() * types.length)];
-                const powerUp = {
-                    x: Math.random() * canvas.width,
-                    y: Math.random() * canvas.height,
-                    type: type,
-                    size: 15,
-                    color: type === 'extraParticles' ? '#00F5A0' : 
-                           type === 'blackHole' ? '#8E2DE2' : 
-                           type === 'heal' ? '#FF5F6D' : 
-                           type === 'abilityCharge' ? '#00D4FF' : '#FFC371'
-                };
-                config.powerUps.push(powerUp);
-            }
-        }
-
-        // Inimigos
-        function spawnEnemy() {
-            if (Math.random() > 0.99 && config.enemies.length < 5 + Math.floor(config.level / 2) && !config.gameOver) {
-                const size = 20 + Math.random() * 20 + Math.floor(config.power / 50);
-                const enemy = {
-                    x: Math.random() > 0.5 ? -size : canvas.width + size,
-                    y: Math.random() * canvas.height,
-                    size: size,
-                    speedX: (Math.random() * 3 + 1 + Math.floor(config.power / 100)) * (Math.random() > 0.5 ? 1 : -1),
-                    speedY: Math.random() * 2 - 1,
-                    health: 3 + Math.floor(config.power / 50),
-                    expression: enemyExpressions[Math.floor(Math.random() * enemyExpressions.length)],
-                    color: `hsl(${Math.random() * 60}, 70%, 50%)`,
-                    id: Math.random().toString(36).substr(2, 9),
-                    isBoss: false
-                };
-                config.enemies.push(enemy);
-            }
-            
-            // Spawn boss a cada 5 níveis
-            if (config.level % 5 === 0 && !config.bossActive && config.enemies.length < 3 && Math.random() > 0.95) {
-                spawnBoss();
-            }
-        }
-
-        function spawnBoss() {
-            config.bossActive = true;
-            const boss = {
-                x: canvas.width / 2,
-                y: -100,
-                size: 70,
-                health: 20 + config.level * 2,
-                maxHealth: 20 + config.level * 2,
-                speedX: 0,
-                speedY: 2,
-                expression: bossExpressions[Math.floor(Math.random() * bossExpressions.length)],
-                color: "#ff0000",
-                id: "boss-" + Math.random().toString(36).substr(2, 9),
-                isBoss: true,
-                attackCooldown: 0,
-                attackPattern: Math.floor(Math.random() * 3)
-            };
-            config.enemies.push(boss);
-            document.getElementById("bossHealth").style.display = 'block';
-            document.getElementById("bossHealthBar").style.width = '100%';
-        }
-
-        function updateBossHealth() {
-            const boss = config.enemies.find(e => e.isBoss);
-            if (boss) {
-                const percent = (boss.health / boss.maxHealth) * 100;
-                document.getElementById("bossHealthBar").style.width = `${percent}%`;
-            }
-        }
-
-        function destroyEnemy(enemy) {
-            createExplosion(enemy.x, enemy.y, enemy.size);
-            config.enemies = config.enemies.filter(e => e.id !== enemy.id);
-            
-            if (enemy.isBoss) {
-                config.bossActive = false;
-                document.getElementById("bossHealth").style.display = 'none';
-                config.level++;
-                document.getElementById("level").textContent = config.level;
-                document.getElementById("currentLevel").textContent = config.level;
-                
-                if (!config.achievements.bossDestroyer) {
-                    config.achievements.bossDestroyer = true;
-                    document.getElementById("achievement3").classList.add('unlocked');
-                    showMessage("Conquista: Destruidor de Matéria!");
-                }
-            }
-            
-            updateScore();
-        }
-
-        // Efeitos
-        function createExplosion(x, y, size = 10) {
-            for (let i = 0; i < size * 2; i++) {
-                particles.push({
-                    x, y,
-                    size: Math.random() * size/2 + 1,
-                    speedX: (Math.random() - 0.5) * 10,
-                    speedY: (Math.random() - 0.5) * 10,
-                    color: `hsl(${Math.random() * 60 + 10}, 100%, 50%)`,
-                    life: 30 + Math.random() * 30
-                });
-            }
-        }
-
-        // Desenha inimigo como carinha
-        function drawEnemy(enemy) {
-            // Corpo redondo
-            ctx.fillStyle = enemy.color;
-            ctx.beginPath();
-            ctx.arc(enemy.x, enemy.y, enemy.size, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Olhos e boca (expressão)
-            ctx.fillStyle = '#000';
-            ctx.font = `${enemy.size * 0.6}px monospace`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(enemy.expression, enemy.x, enemy.y);
-        }
-
-        // Buraco Negro Feliz ":D"
-        function drawBlackHole(x, y, size) {
-            // Disco de acreção colorido
-            ctx.beginPath();
-            ctx.arc(x, y, size * 1.5, 0, Math.PI * 2);
-            const gradient = ctx.createRadialGradient(x, y, size * 0.5, x, y, size * 1.5);
-            gradient.addColorStop(0, 'rgba(100, 0, 255, 0.8)');
-            gradient.addColorStop(0.7, 'rgba(200, 50, 255, 0.4)');
-            gradient.addColorStop(1, 'rgba(255, 100, 255, 0)');
-            ctx.fillStyle = gradient;
-            ctx.fill();
-
-            // Corpo do buraco negro
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';
-            ctx.beginPath();
-            ctx.arc(x, y, size, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Carinha feliz ":D"
-            ctx.fillStyle = '#FFF';
-            ctx.font = `${size * 0.8}px monospace`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(":D", x, y);
-            
-            // Efeito de distorção
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.arc(x, y, size * 0.8, 0, Math.PI * 2);
-            ctx.stroke();
-        }
-
-        // Encontra a partícula mais próxima (para modo Raios)
-        function findNearestParticle(p, particles) {
-            let nearest = null;
-            let minDist = Infinity;
-            particles.forEach(other => {
-                if (other === p) return;
-                const dist = Math.hypot(p.x - other.x, p.y - other.y);
-                if (dist < minDist && dist < 100) {
-                    minDist = dist;
-                    nearest = other;
-                }
-            });
-            return nearest;
-        }
-
-        // Sistema de progressão
-        function addExperience(amount) {
-            config.experience += amount;
-            const needed = config.level * 100;
-            
-            if (config.experience >= needed) {
-                config.level++;
-                config.experience = config.experience - needed;
-                document.getElementById("level").textContent = config.level;
-                document.getElementById("currentLevel").textContent = config.level;
-                showMessage(`Nível ${config.level} alcançado!`);
-                
-                // Desbloqueia Supernova no nível 3
-                if (config.level === 3 && !config.achievements.blackHoleMaster) {
-                    config.achievements.blackHoleMaster = true;
-                    document.getElementById("achievement2").classList.add('unlocked');
-                    showMessage("Conquista: Mestre do Buraco Negro!");
-                }
-                
-                // Ativa Supernova quando atingir nível 3
-                if (config.level >= 3 && !config.supernovaReady) {
-                    config.supernovaReady = true;
-                    document.getElementById("supernova").disabled = false;
-                    document.getElementById("mobileSupernova").disabled = false;
-                }
-            }
-            
-            updateProgressionBar();
-        }
-
-        function updateProgressionBar() {
-            const percent = (config.experience / (config.level * 100)) * 100;
-            document.getElementById("progressionFill").style.width = `${percent}%`;
-        }
-
-        function showMessage(text) {
-            const message = document.createElement('div');
-            message.className = 'game-message';
-            message.textContent = text;
-            document.body.appendChild(message);
-            
-            setTimeout(() => {
-                message.classList.add('fade-out');
-                setTimeout(() => document.body.removeChild(message), 1000);
-            }, 2000);
-        }
-
-        // Colisão
-        function checkCollision(x1, y1, r1, x2, y2, r2) {
-            const dx = x1 - x2;
-            const dy = y1 - y2;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            return distance < r1 + r2;
-        }
-
-        function updateScore() {
-            document.getElementById("particleCount").textContent = particles.length;
-            document.getElementById("power").textContent = Math.floor(config.power);
-            document.getElementById("health").textContent = Math.floor(config.health);
-        }
-
-        // Game Over
-        function showGameOver() {
-            config.gameOver = true;
-            document.querySelector('.game-over').style.display = 'block';
-        }
-
-        function restartGame() {
-            config.health = 100;
-            config.power = 0;
-            config.level = 1;
-            config.experience = 0;
-            config.gameOver = false;
-            config.bossActive = false;
-            config.supernovaReady = false;
-            document.querySelector('.game-over').style.display = 'none';
-            document.getElementById("supernova").disabled = true;
-            document.getElementById("mobileSupernova").disabled = true;
-            config.enemies = [];
-            config.powerUps = [];
-            document.getElementById("bossHealth").style.display = 'none';
-            
-            Object.keys(config.abilities).forEach(ability => {
-                config.abilities[ability].cooldown = 0;
-                config.abilities[ability].active = false;
-            });
-            
-            updateAbilityButtons();
-            initParticles();
-            updateScore();
-            updateProgressionBar();
-        }
-
-        // Animação principal
-        function animate(timestamp) {
-            if (!config.lastTime) config.lastTime = timestamp;
-            const deltaTime = timestamp - config.lastTime;
-            config.lastTime = timestamp;
-
-            if (config.gameOver) return;
-
-            // Atualiza cooldowns
-            Object.keys(config.abilities).forEach(ability => {
-                if (config.abilities[ability].cooldown > 0) {
-                    config.abilities[ability].cooldown -= deltaTime / 16;
-                    if (config.abilities[ability].cooldown <= 0) {
-                        config.abilities[ability].cooldown = 0;
-                        if (ability === 'shield' && config.abilities.shield.active) {
-                            config.abilities.shield.active = false;
-                        }
-                        updateAbilityButtons();
-                    }
-                }
-            });
-
-            // Verifica fim do escudo
-            if (config.abilities.shield.active && timestamp > config.shieldEndTime) {
-                config.abilities.shield.active = false;
-                config.abilities.shield.cooldown = config.abilities.shield.maxCooldown;
-                updateAbilityButtons();
-            }
-
-            // Fundo com rastro
+        // Loop de animação
+        function animate() {
             ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Atualiza e desenha partículas
-            particles.forEach((p, i) => {
-                p.x += p.speedX * (config.abilities.storm.active ? 1.5 : 1);
-                p.y += p.speedY * (config.abilities.storm.active ? 1.5 : 1);
-                p.life--;
-
-                if (p.life <= 0) {
-                    particles[i] = createParticle();
-                    return;
-                }
-
-                if (p.x < 0 || p.x > canvas.width) p.speedX *= -0.9;
-                if (p.y < 0 || p.y > canvas.height) p.speedY *= -0.9;
-
-                // Modos de interação
+            particles.forEach(p => {
+                // Atualiza posição
+                p.x += p.speedX;
+                p.y += p.speedY;
+                
+                // Interações
                 if (config.mode === 'attract' && mouse.x && mouse.y) {
                     const dx = mouse.x - p.x;
                     const dy = mouse.y - p.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
-                    
-                    if (distance < config.mouseRadius * 2) {
-                        const force = Math.pow(config.mouseRadius * 2 / distance, 2) * 0.3;
-                        p.x += dx * force;
-                        p.y += dy * force;
-                        p.size = Math.max(0.5, p.size * 0.99);
-                    }
-                } 
-                else if (config.mode === 'repel' && mouse.x && mouse.y) {
-                    const dx = mouse.x - p.x;
-                    const dy = mouse.y - p.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    
                     if (distance < config.mouseRadius) {
-                        const force = (config.mouseRadius - distance) / 20;
-                        p.x -= dx * force;
-                        p.y -= dy * force;
+                        p.x += dx * 0.05;
+                        p.y += dy * 0.05;
                     }
                 }
-                else if (config.mode === 'vortex') {
-                    const centerX = canvas.width / 2;
-                    const centerY = canvas.height / 2;
-                    const dx = p.x - centerX;
-                    const dy = p.y - centerY;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    const force = distance * config.vortexPower;
-                    
-                    p.speedX += dx * force - dy * 0.05;
-                    p.speedY += dy * force + dx * 0.05;
-                }
-                else if (config.mode === 'wormhole' && mouse.x && mouse.y) {
-                    const dx = mouse.x - p.x;
-                    const dy = mouse.y - p.y;
-                    if (Math.sqrt(dx * dx + dy * dy) < 30 && config.wormholeCooldown <= 0) {
-                        p.x = Math.random() * canvas.width;
-                        p.y = Math.random() * canvas.height;
-                        createExplosion(p.x, p.y, 15);
-                        config.wormholeCooldown = 10;
-                    }
-                }
-
-                // Interação com power-ups
-                config.powerUps.forEach((pu, j) => {
-                    if (checkCollision(p.x, p.y, p.size, pu.x, pu.y, pu.size)) {
-                        if (pu.type === 'extraParticles') {
-                            for (let n = 0; n < 10; n++) {
-                                particles.push(createParticle());
-                            }
-                            config.power += 5;
-                        } 
-                        else if (pu.type === 'blackHole') {
-                            config.power += 50;
-                        }
-                        else if (pu.type === 'superSpeed') {
-                            p.speedX *= 2;
-                            p.speedY *= 2;
-                            config.power += 5;
-                        }
-                        else if (pu.type === 'heal') {
-                            config.health = Math.min(100, config.health + 20);
-                            config.power += 5;
-                        }
-                        else if (pu.type === 'abilityCharge') {
-                            Object.keys(config.abilities).forEach(ability => {
-                                if (config.abilities[ability].cooldown > 0) {
-                                    config.abilities[ability].cooldown -= config.abilities[ability].maxCooldown * 0.5;
-                                    if (config.abilities[ability].cooldown < 0) {
-                                        config.abilities[ability].cooldown = 0;
-                                    }
-                                }
-                            });
-                            updateAbilityButtons();
-                            config.power += 10;
-                        }
-                        
-                        config.powerUps.splice(j, 1);
-                        addExperience(5);
-                    }
-                });
-
-                // Desenha partícula com brilho
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = p.color;
+                
+                // Desenha partícula
                 ctx.fillStyle = p.color;
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
                 ctx.fill();
-                ctx.shadowBlur = 0;
             });
-
-            // Modo Raios (conexões entre partículas)
-            if (config.mode === 'lightning') {
-                ctx.strokeStyle = 'rgba(100, 200, 255, 0.3)';
-                ctx.lineWidth = 1;
-                for (let i = 0; i < particles.length; i += 5) {
-                    const p1 = particles[i];
-                    const nearest = findNearestParticle(p1, particles);
-                    if (nearest) {
-                        ctx.beginPath();
-                        ctx.moveTo(p1.x, p1.y);
-                        ctx.lineTo(nearest.x, nearest.y);
-                        ctx.stroke();
-                    }
-                }
-            }
-
-            // Atualiza cooldown do wormhole
-            if (config.wormholeCooldown > 0) {
-                config.wormholeCooldown--;
-            }
-
-            // Atualiza e desenha inimigos
-            config.enemies.forEach((enemy, i) => {
-                // Movimento do chefão
-                if (enemy.isBoss) {
-                    if (enemy.y < canvas.height * 0.3) {
-                        enemy.y += enemy.speedY;
-                    } else {
-                        enemy.attackCooldown -= deltaTime;
-                        if (enemy.attackCooldown <= 0) {
-                            // Padrões de ataque do chefão
-                            if (enemy.attackPattern === 0) {
-                                enemy.speedX = 3 * (Math.random() > 0.5 ? 1 : -1);
-                            } else if (enemy.attackPattern === 1) {
-                                enemy.speedX = Math.sin(Date.now() * 0.005) * 5;
-                            } else {
-                                enemy.speedX = (mouse.x - enemy.x) * 0.02;
-                            }
-                            enemy.attackCooldown = 1000;
-                        }
-                    }
-                }
-                
-                enemy.x += enemy.speedX;
-                enemy.y += enemy.speedY;
-                
-                if (enemy.x < -enemy.size*2 || enemy.x > canvas.width + enemy.size*2 || 
-                    enemy.y < -enemy.size*2 || enemy.y > canvas.height + enemy.size*2) {
-                    config.enemies.splice(i, 1);
-                    if (enemy.isBoss) {
-                        config.bossActive = false;
-                        document.getElementById("bossHealth").style.display = 'none';
-                    }
-                    return;
-                }
-                
-                drawEnemy(enemy);
-                
-                // Colisão com jogador
-                if (mouse.x && mouse.y && checkCollision(mouse.x, mouse.y, 10, enemy.x, enemy.y, enemy.size)) {
-                    if (!config.abilities.shield.active) {
-                        config.health -= enemy.isBoss ? 5 : 1;
-                        if (config.health <= 0) {
-                            showGameOver();
-                        }
-                    }
-                }
-                
-                // Dano do buraco negro
-                if (config.mode === 'attract' && mouse.x && mouse.y) {
-                    const dx = mouse.x - enemy.x;
-                    const dy = mouse.y - enemy.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    
-                    if (distance < config.mouseRadius + enemy.size) {
-                        enemy.health -= 0.1;
-                        if (enemy.health <= 0) {
-                            destroyEnemy(enemy);
-                            config.power += enemy.isBoss ? 50 : 10;
-                            addExperience(enemy.isBoss ? 50 : 10);
-                        }
-                    }
-                }
-            });
-
-            // Atualiza saúde do chefão
-            if (config.bossActive) {
-                updateBossHealth();
-            }
-
-            // Desenha buraco negro se no modo atração
-            if (config.mode === 'attract' && mouse.x && mouse.y) {
-                drawBlackHole(mouse.x, mouse.y, 30 + config.power / 10);
-            }
-
-            // Desenha vórtice central no modo vortex
-            if (config.mode === 'vortex') {
-                ctx.fillStyle = 'rgba(100, 0, 255, 0.5)';
-                ctx.beginPath();
-                ctx.arc(canvas.width/2, canvas.height/2, 50, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            // Desenha escudo se ativo
-            if (config.abilities.shield.active && mouse.x && mouse.y) {
-                ctx.strokeStyle = 'rgba(0, 245, 160, 0.5)';
-                ctx.lineWidth = 3;
-                ctx.beginPath();
-                ctx.arc(mouse.x, mouse.y, 50, 0, Math.PI * 2);
-                ctx.stroke();
-            }
-
-            spawnPowerUp();
-            spawnEnemy();
-
-            updateScore();
 
             requestAnimationFrame(animate);
         }
 
-        // Inicialização
+        // Inicia o jogo
         initParticles();
-        document.getElementById("repel").classList.add('active');
-        updateProgressionBar();
-        animate(0);
+        animate();
 
+        // Redimensionamento
         window.addEventListener('resize', () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
