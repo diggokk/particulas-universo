@@ -50,11 +50,15 @@
         button.active {
             background: #00F5A0;
             color: #000;
+            box-shadow: 0 0 15px currentColor;
         }
         button:disabled {
             background: #555;
             cursor: not-allowed;
         }
+        #vortex { background: linear-gradient(to right, #8E2DE2, #4A00E0); }
+        #lightning { background: linear-gradient(to right, #00B4DB, #0083B0); }
+        #wormhole { background: linear-gradient(to right, #f12711, #f5af19); }
         .score {
             position: fixed;
             top: 10px;
@@ -120,7 +124,6 @@
             font-size: 18px;
             padding: 10px 20px;
         }
-       
         .mobile-controls {
             display: none;
             position: fixed;
@@ -254,7 +257,7 @@
             border: 1px solid #00F5A0;
             max-width: 80%;
         }
-        
+
         @keyframes supernova {
             0% { transform: scale(0); opacity: 0; }
             50% { opacity: 1; }
@@ -276,10 +279,9 @@
 <body>
     <div class="controls">
         <button id="attract">🌀 Buraco Negro</button>
-       
-<button id="vortex">🌪️ Vórtice</button>
-<button id="lightning">⚡ Raios</button>
-<button id="wormhole">🌀 Minhoca</button>
+        <button id="vortex">🌪️ Vórtice</button>
+        <button id="lightning">⚡ Raios</button>
+        <button id="wormhole">🌀 Minhoca</button>
         <button id="supernova" disabled>💥 Supernova</button>
     </div>
     <div class="score">
@@ -299,7 +301,7 @@
     <div class="mobile-controls">
         <button class="mobile-btn" id="mobileAttract">🌀</button>
         <button class="mobile-btn" id="mobileRepel">✨</button>
-        <button class="mobile-btn" id="mobileGravity">🌍</button>
+        <button class="mobile-btn" id="mobileVortex">🌪️</button>
         <button class="mobile-btn" id="mobileSupernova">💥</button>
     </div>
     <div class="progression-container">
@@ -350,7 +352,6 @@
             enemies: [],
             power: 0,
             health: 100,
-            gravity: { x: 0, y: 0 },
             gameOver: false,
             abilities: {
                 storm: { cooldown: 0, maxCooldown: 100, active: false },
@@ -368,7 +369,8 @@
                 blackHoleMaster: false,
                 bossDestroyer: false
             },
-            doubleBlackHole: { active: false, endTime: 0, holes: [] }
+            vortexPower: 0.0005,
+            wormholeCooldown: 0
         };
 
         // Elementos DOM
@@ -414,29 +416,22 @@
         document.getElementById("mobileAttract").addEventListener('touchstart', (e) => {
             e.preventDefault();
             config.mode = 'attract';
+            resetActiveButtons();
             document.getElementById("attract").classList.add('active');
-            document.getElementById("repel").classList.remove('active');
-            document.getElementById("gravity").classList.remove('active');
         });
 
         document.getElementById("mobileRepel").addEventListener('touchstart', (e) => {
             e.preventDefault();
             config.mode = 'repel';
+            resetActiveButtons();
             document.getElementById("repel").classList.add('active');
-            document.getElementById("attract").classList.remove('active');
-            document.getElementById("gravity").classList.remove('active');
         });
 
-        document.getElementById("mobileGravity").addEventListener('touchstart', (e) => {
+        document.getElementById("mobileVortex").addEventListener('touchstart', (e) => {
             e.preventDefault();
-            config.mode = 'gravity';
-            document.getElementById("gravity").classList.add('active');
-            document.getElementById("attract").classList.remove('active');
-            document.getElementById("repel").classList.remove('active');
-            config.gravity = {
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height
-            };
+            config.mode = 'vortex';
+            resetActiveButtons();
+            document.getElementById("vortex").classList.add('active');
         });
 
         document.getElementById("mobileSupernova").addEventListener('touchstart', (e) => {
@@ -465,30 +460,42 @@
         // Controles
         document.getElementById("attract").addEventListener('click', () => {
             config.mode = 'attract';
-            document.getElementById("attract").classList.add('active');
-            document.getElementById("repel").classList.remove('active');
-            document.getElementById("gravity").classList.remove('active');
+            resetActiveButtons();
+            this.classList.add('active');
         });
 
         document.getElementById("repel").addEventListener('click', () => {
             config.mode = 'repel';
-            document.getElementById("repel").classList.add('active');
-            document.getElementById("attract").classList.remove('active');
-            document.getElementById("gravity").classList.remove('active');
+            resetActiveButtons();
+            this.classList.add('active');
         });
 
-        document.getElementById("gravity").addEventListener('click', () => {
-            config.mode = 'gravity';
-            document.getElementById("gravity").classList.add('active');
-            document.getElementById("attract").classList.remove('active');
-            document.getElementById("repel").classList.remove('active');
-            config.gravity = {
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height
-            };
+        document.getElementById("vortex").addEventListener('click', () => {
+            config.mode = 'vortex';
+            resetActiveButtons();
+            this.classList.add('active');
+        });
+
+        document.getElementById("lightning").addEventListener('click', () => {
+            config.mode = 'lightning';
+            resetActiveButtons();
+            this.classList.add('active');
+        });
+
+        document.getElementById("wormhole").addEventListener('click', () => {
+            config.mode = 'wormhole';
+            resetActiveButtons();
+            this.classList.add('active');
         });
 
         document.getElementById("supernova").addEventListener('click', activateSupernova);
+
+        // Função para resetar botões ativos
+        function resetActiveButtons() {
+            document.querySelectorAll('.controls button, .mobile-controls button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+        }
 
         // Habilidades
         document.getElementById("ability1").addEventListener('click', () => activateAbility('storm'));
@@ -770,6 +777,21 @@
             ctx.stroke();
         }
 
+        // Encontra a partícula mais próxima (para modo Raios)
+        function findNearestParticle(p, particles) {
+            let nearest = null;
+            let minDist = Infinity;
+            particles.forEach(other => {
+                if (other === p) return;
+                const dist = Math.hypot(p.x - other.x, p.y - other.y);
+                if (dist < minDist && dist < 100) {
+                    minDist = dist;
+                    nearest = other;
+                }
+            });
+            return nearest;
+        }
+
         // Sistema de progressão
         function addExperience(amount) {
             config.experience += amount;
@@ -910,6 +932,7 @@
                 if (p.x < 0 || p.x > canvas.width) p.speedX *= -0.9;
                 if (p.y < 0 || p.y > canvas.height) p.speedY *= -0.9;
 
+                // Modos de interação
                 if (config.mode === 'attract' && mouse.x && mouse.y) {
                     const dx = mouse.x - p.x;
                     const dy = mouse.y - p.y;
@@ -933,13 +956,26 @@
                         p.y -= dy * force;
                     }
                 }
-                else if (config.mode === 'gravity') {
-                    const dx = config.gravity.x - p.x;
-                    const dy = config.gravity.y - p.y;
+                else if (config.mode === 'vortex') {
+                    const centerX = canvas.width / 2;
+                    const centerY = canvas.height / 2;
+                    const dx = p.x - centerX;
+                    const dy = p.y - centerY;
                     const distance = Math.sqrt(dx * dx + dy * dy);
-                    const force = 100 / (distance * distance + 1);
-                    p.speedX += dx * force * 0.01;
-                    p.speedY += dy * force * 0.01;
+                    const force = distance * config.vortexPower;
+                    
+                    p.speedX += dx * force - dy * 0.05;
+                    p.speedY += dy * force + dx * 0.05;
+                }
+                else if (config.mode === 'wormhole' && mouse.x && mouse.y) {
+                    const dx = mouse.x - p.x;
+                    const dy = mouse.y - p.y;
+                    if (Math.sqrt(dx * dx + dy * dy) < 30 && config.wormholeCooldown <= 0) {
+                        p.x = Math.random() * canvas.width;
+                        p.y = Math.random() * canvas.height;
+                        createExplosion(p.x, p.y, 15);
+                        config.wormholeCooldown = 10;
+                    }
                 }
 
                 // Interação com power-ups
@@ -981,12 +1017,36 @@
                     }
                 });
 
-                // Desenha partícula
+                // Desenha partícula com brilho
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = p.color;
                 ctx.fillStyle = p.color;
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
                 ctx.fill();
+                ctx.shadowBlur = 0;
             });
+
+            // Modo Raios (conexões entre partículas)
+            if (config.mode === 'lightning') {
+                ctx.strokeStyle = 'rgba(100, 200, 255, 0.3)';
+                ctx.lineWidth = 1;
+                for (let i = 0; i < particles.length; i += 5) {
+                    const p1 = particles[i];
+                    const nearest = findNearestParticle(p1, particles);
+                    if (nearest) {
+                        ctx.beginPath();
+                        ctx.moveTo(p1.x, p1.y);
+                        ctx.lineTo(nearest.x, nearest.y);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // Atualiza cooldown do wormhole
+            if (config.wormholeCooldown > 0) {
+                config.wormholeCooldown--;
+            }
 
             // Atualiza e desenha inimigos
             config.enemies.forEach((enemy, i) => {
@@ -1062,11 +1122,11 @@
                 drawBlackHole(mouse.x, mouse.y, 30 + config.power / 10);
             }
 
-            // Desenha ponto de gravidade se no modo gravidade
-            if (config.mode === 'gravity') {
-                ctx.fillStyle = '#00F5A0';
+            // Desenha vórtice central no modo vortex
+            if (config.mode === 'vortex') {
+                ctx.fillStyle = 'rgba(100, 0, 255, 0.5)';
                 ctx.beginPath();
-                ctx.arc(config.gravity.x, config.gravity.y, 10, 0, Math.PI * 2);
+                ctx.arc(canvas.width/2, canvas.height/2, 50, 0, Math.PI * 2);
                 ctx.fill();
             }
 
@@ -1097,11 +1157,6 @@
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
         });
-
-        // Verifica se é mobile
-        function isMobile() {
-            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        }
     </script>
 </body>
 </html>
