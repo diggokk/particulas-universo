@@ -82,7 +82,7 @@ function drawMouseDisk() {
     
     // Desenha o anel
     ctx.beginPath();
-    ctx.arc(mouse.x, mouse.y, ringRadius, 0, Math.PI * 2);
+    ctx.arc(mouse.x, mouse.y, ringRadius, 0, Math.PI * 0);
     ctx.strokeStyle = gradient;
     ctx.lineWidth = ringWidth;
     ctx.stroke();
@@ -90,7 +90,7 @@ function drawMouseDisk() {
     // Opcional: pequeno ponto central para referência
     ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
     ctx.beginPath();
-    ctx.arc(mouse.x, mouse.y, 2, 0, Math.PI * 2);
+    ctx.arc(mouse.x, mouse.y, 0, 0, Math.PI * 0);
     ctx.fill();
 }
 
