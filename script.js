@@ -67,11 +67,31 @@ function drawConnections() {
 function drawMouseDisk() {
     if (!mouse.x || !mouse.y) return;
     
+    // Configurações ajustáveis
+    const ringWidth = 5; // Largura do anel
+    const ringRadius = config.mouseRadius * 0.8; // Raio reduzido para ficar proporcional
+    
+    // Cria gradiente colorido
+    const gradient = ctx.createRadialGradient(
+        mouse.x, mouse.y, ringRadius - ringWidth,
+        mouse.x, mouse.y, ringRadius
+    );
+    gradient.addColorStop(0, 'rgba(100, 200, 255, 0)');
+    gradient.addColorStop(0.7, 'rgba(255, 100, 200, 0.8)');
+    gradient.addColorStop(1, 'rgba(100, 200, 255, 0)');
+    
+    // Desenha o anel
     ctx.beginPath();
-    ctx.arc(mouse.x, mouse.y, config.mouseRadius, 0, Math.PI * 2);
-    ctx.strokeStyle = `rgba(255, 255, 255, 0.1)`;
-    ctx.lineWidth = 1;
+    ctx.arc(mouse.x, mouse.y, ringRadius, 0, Math.PI * 2);
+    ctx.strokeStyle = gradient;
+    ctx.lineWidth = ringWidth;
     ctx.stroke();
+    
+    // Opcional: pequeno ponto central para referência
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.beginPath();
+    ctx.arc(mouse.x, mouse.y, 2, 0, Math.PI * 2);
+    ctx.fill();
 }
 
 // ===== SISTEMA DE SUPERNOVA (MELHORADO) =====
