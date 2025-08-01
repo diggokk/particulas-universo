@@ -266,34 +266,6 @@ class Particle {
     }
 }
 
-// ===== DISCO DO MOUSE (CORREÇÃO DE CENTRALIZAÇÃO) =====
-function drawMouseDisk() {
-    if (!mouse.x || !mouse.y) return;
-    
-    const diskRadius = 15;
-    
-    // CORREÇÃO: Removido offset desnecessário
-    ctx.beginPath();
-    ctx.arc(mouse.x, mouse.y, diskRadius, 0, Math.PI * 2);
-    
-    // Estilo melhorado
-    ctx.fillStyle = `hsla(${(progressionSystem.level * 15 % 360)}, 100%, 50%, 0.6)`;
-    ctx.fill();
-    
-    // Borda mais visível
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-    ctx.lineWidth = 2.5;
-    ctx.stroke();
-    
-    // Efeito de pulsação sutil (opcional)
-    const pulseSize = diskRadius * (1 + 0.05 * Math.sin(Date.now() * 0.005));
-    ctx.beginPath();
-    ctx.arc(mouse.x, mouse.y, pulseSize, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-    ctx.lineWidth = 1;
-    ctx.stroke();
-}
-
 // Certifique-se que o objeto mouse está definido:
 const mouse = { x: 0, y: 0 };
 
