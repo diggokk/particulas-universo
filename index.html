@@ -276,6 +276,69 @@
                 bottom: 150px;
             }
         }
+    
+         #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            font-family: Arial;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        
+        #achievementsPanel {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            color: white;
+            border-radius: 5px;
+            font-family: Arial;
+        }
+        
+        .game-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: Arial;
+            z-index: 100;
+        }
+        
+        .fade-out {
+            animation: fadeOut 1s forwards;
+        }
+        
+        @keyframes fadeOut {
+            to { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particleCanvas"></canvas>
+    
+    <div id="ui">
+        <div>Partículas: <span id="particleCount">100</span></div>
+        <div>Poder: <span id="power">0</span></div>
+        <div>Vida: <span id="health">100</span>%</div>
+        <div>Nível: <span id="level">1</span></div>
+    </div>
+    
+    <div id="achievementsPanel">
+        <h3>Conquistas</h3>
+        <ul>
+            <li id="achv1">Primeiras Partículas</li>
+            <li id="achv2">Mestre do Buraco Negro</li>
+        </ul>
+    </div>
+<script src="script.js"></script>
     </style>
 </head>
 <body>
