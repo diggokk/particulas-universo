@@ -2,12 +2,16 @@ body {
     margin: 0;
     overflow: hidden;
     background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
+    touch-action: manipulation; /* Impede zoom acidental */
 }
 
 canvas {
     display: block;
+    width: 100vw;
+    height: 100vh;
 }
 
+/* ===== CONTROLES DESKTOP ===== */
 .controls {
     position: fixed;
     top: 10px;
@@ -18,17 +22,22 @@ canvas {
     border-radius: 5px;
     color: white;
     font-family: Arial, sans-serif;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    max-width: 300px;
 }
 
 button {
     background: #4A00E0;
     color: white;
     border: none;
-    padding: 5px 10px;
-    margin-right: 5px;
-    border-radius: 3px;
+    padding: 8px 12px;
+    border-radius: 5px;
     cursor: pointer;
     transition: all 0.3s;
+    font-size: 14px;
+    flex-grow: 1;
 }
 
 button:hover {
@@ -38,8 +47,69 @@ button:hover {
 button.active {
     background: #00F5A0;
     color: #111;
+    box-shadow: 0 0 10px #00F5A0;
 }
 
 input[type="range"] {
-    vertical-align: middle;
+    width: 100%;
+    margin: 5px 0;
 }
+
+/* ===== CONTROLES MOBILE ===== */
+.mobile-controls {
+    display: none;
+    position: fixed;
+    bottom: 15px;
+    left: 0;
+    right: 0;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px;
+    z-index: 100;
+}
+
+.mobile-btn {
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    background: rgba(74, 0, 224, 0.9);
+    border: 2px solid rgba(255,255,255,0.2);
+    color: white;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+.mobile-btn:active {
+    transform: scale(0.9);
+    background: rgba(142, 45, 226, 0.9);
+}
+
+/* Esconde controles desktop em mobile */
+@media (max-width: 768px) {
+    .controls {
+        display: none;
+    }
+    .mobile-controls {
+        display: flex;
+    }
+    
+    /* Ajuste para celulares muito pequenos */
+    @media (max-width: 400px) {
+        .mobile-btn {
+            width: 50px;
+            height: 50px;
+            font-size: 18px;
+        }
+    }
+}
+
+/* ===== MELHORIAS VISUAIS ===== */
+#mobileAttract { background: linear-gradient(135deg, #8E2DE2, #4A00E0); }
+#mobileRepel { background: linear-gradient(135deg, #00B4DB, #0083B0); }
+#mobileVortex { background: linear-gradient(135deg, #f12711, #f5af19); }
+#mobileWormhole { background: linear-gradient(135deg, #7b4397, #dc2430); }
+#mobileSupernova { background: linear-gradient(135deg, #FF5F6D, #FFC371); }
