@@ -64,6 +64,9 @@ function drawConnections() {
     }
 }
 
+function drawMouseDisk() {
+    // Função vazia - não desenha mais nada!
+}
 // ===== SISTEMA DE SUPERNOVA (MELHORADO) =====
 const supernova = {
     active: false,
