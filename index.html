@@ -4,211 +4,217 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Universo de Partículas PRO</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
-            touch-action: manipulation;
-        }
-        canvas {
-            display: block;
-            width: 100vw;
-            height: 100vh;
-        }
-        .controls {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            z-index: 100;
-            background: rgba(0,0,0,0.7);
-            padding: 10px;
-            border-radius: 5px;
-            color: white;
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
-            max-width: 300px;
-        }
-        button {
-            background: #4A00E0;
-            color: white;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 14px;
-            flex-grow: 1;
-        }
-        button:hover {
-            background: #8E2DE2;
-        }
-        button.active {
-            background: #00F5A0;
-            color: #111;
-            box-shadow: 0 0 10px #00F5A0;
-        }
-        .mobile-controls {
-            display: none;
-            position: fixed;
-            bottom: 15px;
-            left: 0;
-            right: 0;
-            justify-content: center;
-            gap: 10px;
-            padding: 10px;
-            z-index: 100;
-        }
-        .mobile-btn {
-            width: 55px;
-            height: 55px;
-            border-radius: 50%;
-            background: rgba(74, 0, 224, 0.9);
-            border: 2px solid rgba(255,255,255,0.2);
-            color: white;
-            font-size: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
-        .mobile-btn:active {
-            transform: scale(0.9);
-            background: rgba(142, 45, 226, 0.9);
-        }
-        @media (max-width: 768px) {
-            .controls { display: none; }
-            .mobile-controls { display: flex; }
-        }
-        @media (max-width: 400px) {
-            .mobile-btn {
-                width: 50px;
-                height: 50px;
-                font-size: 18px;
-            }
-        }
-        #mobileAttract { background: linear-gradient(135deg, #8E2DE2, #4A00E0); }
-        #mobileRepel { background: linear-gradient(135deg, #00B4DB, #0083B0); }
-        #mobileVortex { background: linear-gradient(135deg, #f12711, #f5af19); }
+        /* ===== BASE ===== */
+body {
+    margin: 0;
+    overflow: hidden;
+    background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
+    touch-action: manipulation;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+canvas {
+    display: block;
+    width: 100vw;
+    height: 100vh;
+}
+
+/* ===== CONTROLES ===== */
+.controls {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 100;
+    background: rgba(0,0,0,0.7);
+    padding: 10px;
+    border-radius: 5px;
+    color: white;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    max-width: 300px;
+    backdrop-filter: blur(5px);
+}
+
+button {
+    background: linear-gradient(135deg, #4A00E0, #8E2DE2);
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 14px;
+    flex-grow: 1;
+}
+
+button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(142, 45, 226, 0.4);
+}
+
+button.active {
+    background: linear-gradient(135deg, #00F5A0, #00D2FF);
+    color: #111;
+    box-shadow: 0 0 15px #00F5A0;
+}
+
+/* ===== MOBILE ===== */
+.mobile-controls {
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    justify-content: center;
+    gap: 15px;
+    padding: 10px;
+    z-index: 100;
+}
+
+.mobile-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(74, 0, 224, 0.9);
+    border: 2px solid rgba(255,255,255,0.3);
+    color: white;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.mobile-btn:active {
+    transform: scale(0.9);
+}
+
+.wormhole {
+    animation: pulse 2s infinite alternate;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 5px currentColor; }
+    100% { box-shadow: 0 0 20px currentColor; }
+}
+
+/* ===== DEBUG PANEL ===== */
+#debug-panel {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: rgba(0,0,0,0.7);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    backdrop-filter: blur(5px);
+}
+
+/* ===== RESPONSIVO ===== */
+@media (max-width: 768px) {
+    .controls { display: none; }
+    .mobile-controls { display: flex; }
+    
+    #debug-panel {
+        top: auto;
+        bottom: 80px;
+        right: 50%;
+        transform: translateX(50%);
+    }
+}
     </style>
 </head>
 <body>
+    <!-- Painel de Controle -->
     <div class="controls">
         <button id="attract">🌀 Buraco Negro</button>
         <button id="repel">✨ Repulsão</button>
         <button id="vortex">🌪️ Vórtice</button>
-    </div>
-    
-    <div class="mobile-controls">
-        <button class="mobile-btn" id="mobileAttract">🌀</button>
-        <button class="mobile-btn" id="mobileRepel">✨</button>
-        <button class="mobile-btn" id="mobileVortex">🌪️</button>
+        <input type="range" id="particleRange" min="50" max="1000" value="150">
     </div>
 
-    <canvas id="canvas"></canvas>
+    <!-- Controles Mobile -->
+    <div class="mobile-controls">
+        <button class="mobile-btn wormhole" id="mobileAttract">🌀</button>
+        <button class="mobile-btn wormhole" id="mobileRepel">✨</button>
+        <button class="mobile-btn wormhole" id="mobileVortex">🌪️</button>
+    </div>
+
+    <!-- Painel Debug -->
+    <div id="debug-panel">
+        FPS: <span id="fps-counter">0</span> | 
+        Partículas: <span id="particle-counter">0</span>
+    </div>
+
+    <canvas id="particleCanvas"></canvas>
 
     <script>
-        // Configurações do jogo
+        // ===== CONFIGURAÇÕES =====
         const config = {
-            particleCount: 100,
+            particleCount: 150,
             mouseRadius: 120,
-            mode: 'normal'
+            mode: 'attract',
+            lineThreshold: 100,
+            starCount: 200,
+            power: 0,
+            health: 100,
+            blackHoleActive: false,
+            doubleBlackHole: false
         };
 
-        // Inicialização do canvas
-        const canvas = document.getElementById("canvas");
+        // ===== ELEMENTOS DOM =====
+        const canvas = document.getElementById("particleCanvas");
         const ctx = canvas.getContext("2d");
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        const fpsCounter = document.getElementById("fps-counter");
+        const particleCounter = document.getElementById("particle-counter");
 
-        // Partículas
-        let particles = [];
-        function initParticles() {
-            particles = [];
-            for (let i = 0; i < config.particleCount; i++) {
-                particles.push({
-                    x: Math.random() * canvas.width,
-                    y: Math.random() * canvas.height,
-                    size: Math.random() * 3 + 1,
-                    color: `hsl(${Math.random() * 360}, 70%, 50%)`,
-                    speedX: (Math.random() - 0.5) * 2,
-                    speedY: (Math.random() - 0.5) * 2
-                });
+        // ===== SISTEMA DE POOL DE PARTÍCULAS =====
+        class Particle {
+            constructor() {
+                this.reset();
+                this.trail = [];
+                this.maxTrailLength = 5;
+            }
+            
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 3 + 1;
+                this.speedX = (Math.random() - 0.5) * 2;
+                this.speedY = (Math.random() - 0.5) * 2;
+                this.color = `hsl(${Math.random() * 360}, 80%, 60%)`;
+                this.alive = true;
             }
         }
 
-        // Controles
-        document.getElementById("attract").addEventListener('click', () => {
-            config.mode = 'attract';
-        });
-        document.getElementById("repel").addEventListener('click', () => {
-            config.mode = 'repel';
-        });
-        document.getElementById("vortex").addEventListener('click', () => {
-            config.mode = 'vortex';
-        });
+        // ... (TODO o restante do novo JavaScript que te enviei) ...
 
-        // Controles mobile
-        document.getElementById("mobileAttract").addEventListener('click', () => {
-            config.mode = 'attract';
-        });
-        document.getElementById("mobileRepel").addEventListener('click', () => {
-            config.mode = 'repel';
-        });
-        document.getElementById("mobileVortex").addEventListener('click', () => {
-            config.mode = 'vortex';
-        });
-
-        // Mouse
-        const mouse = { x: null, y: null };
-        canvas.addEventListener('mousemove', (e) => {
-            mouse.x = e.clientX;
-            mouse.y = e.clientY;
-        });
-
-        // Loop de animação
+        // ===== ANIMAÇÃO PRINCIPAL =====
         function animate() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillStyle = 'rgba(0, 0, 20, 0.1)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+            drawStars();
+            updateWormholes();
+
             particles.forEach(p => {
-                // Atualiza posição
-                p.x += p.speedX;
-                p.y += p.speedY;
-                
-                // Interações
-                if (config.mode === 'attract' && mouse.x && mouse.y) {
-                    const dx = mouse.x - p.x;
-                    const dy = mouse.y - p.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    if (distance < config.mouseRadius) {
-                        p.x += dx * 0.05;
-                        p.y += dy * 0.05;
-                    }
-                }
-                
-                // Desenha partícula
-                ctx.fillStyle = p.color;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fill();
+                p.update();
+                p.draw();
             });
 
             requestAnimationFrame(animate);
         }
 
-        // Inicia o jogo
-        initParticles();
+        // Inicialização
+        initStars();
         animate();
-
-        // Redimensionamento
-        window.addEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        });
     </script>
 </body>
 </html>
