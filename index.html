@@ -84,7 +84,7 @@
         
         #score-panel {
             position: fixed;
-            bottom: 20px;
+            bottom: 80px;
             left: 50%;
             transform: translateX(-50%);
             background: rgba(0,0,0,0.7);
@@ -108,14 +108,91 @@
             color: #00F5A0;
         }
         
+        #ability-bar {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            backdrop-filter: blur(5px);
+            z-index: 100;
+        }
+        
+        #ability-button {
+            background: linear-gradient(135deg, #FF5F6D, #FFC371);
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 0 10px rgba(255,95,109,0.5);
+            transition: all 0.3s;
+        }
+        
+        #ability-button:disabled {
+            background: #555;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        
+        #ability-button.ready {
+            animation: pulse-glow 1.5s infinite;
+        }
+        
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 5px #FF5F6D; }
+            50% { box-shadow: 0 0 20px #FFC371; }
+            100% { box-shadow: 0 0 5px #FF5F6D; }
+        }
+        
+        #xp-bar {
+            height: 10px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 5px;
+            overflow: hidden;
+            flex-grow: 1;
+            max-width: 200px;
+        }
+        
+        #xp-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #4A00E0, #8E2DE2);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .level-up {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 72px;
+            color: #00F5A0;
+            text-shadow: 0 0 20px rgba(0,245,160,0.7);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.5s;
+            z-index: 1000;
+        }
+        
         @media (max-width: 768px) {
             .controls { max-width: 200px; }
             #debug-panel, #score-panel { font-size: 12px; }
             #score-panel {
-                bottom: 10px;
+                bottom: 100px;
                 padding: 8px 12px;
                 flex-direction: column;
                 gap: 5px;
+            }
+            #ability-bar {
+                bottom: 10px;
+                width: 90%;
             }
         }
     </style>
@@ -132,7 +209,8 @@
 
     <div id="debug-panel">
         FPS: <span id="fps">0</span> | 
-        Partículas: <span id="particle-count">0</span>
+        Partículas: <span id="particle-count">0</span> |
+        Nível: <span id="level">1</span>
     </div>
 
     <div id="score-panel">
@@ -142,10 +220,17 @@
         <div class="objective" id="obj3">🌪️ <span id="obj3-count">0</span>/20</div>
     </div>
 
+    <div id="ability-bar">
+        <div id="xp-bar"><div id="xp-progress"></div></div>
+        <button id="ability-button" disabled>Supernova</button>
+    </div>
+    
+    <div class="level-up">LEVEL UP!</div>
+
     <script>
         // ===== CONFIG =====
         const config = {
-            particleCount: 300, // Número FIXO de partículas
+            particleCount: 300,
             mouseRadius: 150,
             modes: ['attract', 'repel', 'vortex'],
             currentMode: 'attract',
@@ -159,7 +244,7 @@
                     vortex: { target: 20, current: 0 }
                 },
                 lastInteractionTime: 0,
-                interactionCooldown: 500 // ms
+                interactionCooldown: 500
             }
         };
 
@@ -175,6 +260,61 @@
         let lastTime = 0;
         let fps = 0;
         let lastSpawnTime = 0;
+        let abilityActive = false;
+        let abilityEndTime = 0;
+
+        // ===== SISTEMA DE PROGRESSÃO =====
+        const progression = {
+            level: 1,
+            xp: 0,
+            xpToNextLevel: 100,
+            abilityReady: false,
+            
+            addXP: function(amount) {
+                this.xp += amount;
+                document.getElementById('xp-progress').style.width = `${(this.xp/this.xpToNextLevel)*100}%`;
+                
+                if (this.xp >= this.xpToNextLevel) {
+                    this.levelUp();
+                }
+            },
+            
+            levelUp: function() {
+                this.level++;
+                this.xp = 0;
+                this.xpToNextLevel = Math.floor(this.xpToNextLevel * 1.3);
+                document.getElementById('level').textContent = this.level;
+                
+                // Mostrar animação
+                const levelUp = document.querySelector('.level-up');
+                levelUp.textContent = `LEVEL ${this.level}!`;
+                levelUp.style.opacity = '1';
+                
+                setTimeout(() => {
+                    levelUp.style.opacity = '0';
+                }, 2000);
+                
+                // Recarregar habilidade
+                this.abilityReady = true;
+                updateAbilityButton();
+            },
+            
+            useAbility: function() {
+                if (!this.abilityReady || abilityActive) return;
+                
+                activateSuperAbility();
+                this.abilityReady = false;
+                abilityActive = true;
+                abilityEndTime = Date.now() + 3000; // 3 segundos de duração
+                updateAbilityButton();
+            }
+        };
+        
+        function updateAbilityButton() {
+            const btn = document.getElementById('ability-button');
+            btn.disabled = !progression.abilityReady || abilityActive;
+            btn.classList.toggle('ready', progression.abilityReady && !abilityActive);
+        }
 
         // ===== STARFIELD =====
         function initStarfield() {
@@ -230,14 +370,23 @@
                 speedY: (Math.random() - 0.5) * 2,
                 color: `hsl(${Math.random() * 360}, 80%, 60%)`,
                 trail: [],
-                alive: true
+                alive: true,
+                baseSize: Math.random() * 3 + 1
             });
         }
 
         function updateParticles() {
             const now = Date.now();
             
-            // Verifica se precisa respawnar partículas
+            // Verificar fim da habilidade
+            if (abilityActive && now > abilityEndTime) {
+                abilityActive = false;
+                particles.forEach(p => {
+                    p.size = p.baseSize;
+                });
+            }
+            
+            // Respawn de partículas
             const aliveCount = particles.filter(p => p.alive).length;
             if (aliveCount < config.particleCount && now - lastSpawnTime > 100) {
                 spawnParticle();
@@ -273,19 +422,28 @@
                         updateScore();
                     }
                     
-                    switch(config.currentMode) {
-                        case 'attract':
-                            p.x += Math.cos(angle) * force * 3;
-                            p.y += Math.sin(angle) * force * 3;
-                            break;
-                        case 'repel':
-                            p.x -= Math.cos(angle) * force * 3;
-                            p.y -= Math.sin(angle) * force * 3;
-                            break;
-                        case 'vortex':
-                            p.x += Math.cos(angle + Math.PI/2) * force * 2;
-                            p.y += Math.sin(angle + Math.PI/2) * force * 2;
-                            break;
+                    // Efeito diferente durante a habilidade
+                    if (abilityActive) {
+                        const superForce = force * 2;
+                        p.speedX = Math.cos(angle) * superForce * 3;
+                        p.speedY = Math.sin(angle) * superForce * 3;
+                        p.color = `hsl(${(now/50) % 360}, 100%, 70%)`;
+                        p.size = p.baseSize * 1.5;
+                    } else {
+                        switch(config.currentMode) {
+                            case 'attract':
+                                p.x += Math.cos(angle) * force * 3;
+                                p.y += Math.sin(angle) * force * 3;
+                                break;
+                            case 'repel':
+                                p.x -= Math.cos(angle) * force * 3;
+                                p.y -= Math.sin(angle) * force * 3;
+                                break;
+                            case 'vortex':
+                                p.x += Math.cos(angle + Math.PI/2) * force * 2;
+                                p.y += Math.sin(angle + Math.PI/2) * force * 2;
+                                break;
+                        }
                     }
                 }
             });
@@ -322,6 +480,47 @@
             });
         }
 
+        // ===== HABILIDADE ESPECIAL - SUPERNOVA =====
+        function activateSuperAbility() {
+            // Efeito visual
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            
+            const gradient = ctx.createRadialGradient(
+                mouse.x, mouse.y, 10,
+                mouse.x, mouse.y, 300
+            );
+            gradient.addColorStop(0, 'rgba(255, 245, 150, 0.8)');
+            gradient.addColorStop(0.7, 'rgba(255, 100, 0, 0.6)');
+            gradient.addColorStop(1, 'rgba(100, 50, 255, 0)');
+            
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(mouse.x, mouse.y, 300, 0, Math.PI*2);
+            ctx.fill();
+            
+            ctx.restore();
+            
+            // Aplicar força nas partículas
+            particles.forEach(p => {
+                const dx = p.x - mouse.x;
+                const dy = p.y - mouse.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                if (dist < 400) {
+                    const force = (400 - dist) / 400 * 10;
+                    const angle = Math.atan2(dy, dx);
+                    
+                    p.speedX = Math.cos(angle) * force * (dist < 200 ? -1 : 1);
+                    p.speedY = Math.sin(angle) * force * (dist < 200 ? -1 : 1);
+                    
+                    // Efeito visual
+                    p.color = `hsl(${(Date.now()/50) % 360}, 100%, 70%)`;
+                    p.size = p.baseSize * 1.5;
+                }
+            });
+        }
+
         // ===== GAME SYSTEM =====
         function updateScore() {
             config.game.score += 1;
@@ -332,6 +531,11 @@
             
             // Update UI
             updateObjectivesDisplay();
+            
+            // Add XP (mais XP para modos mais difíceis)
+            let xpGain = 2 + progression.level;
+            if (config.currentMode === 'vortex') xpGain *= 1.5;
+            progression.addXP(xpGain);
             
             // Check if objective is completed
             checkObjectives();
@@ -359,7 +563,6 @@
             }
             
             if (allCompleted) {
-                // All objectives completed!
                 alert('Parabéns! Você completou todos os objetivos!');
                 resetObjectives();
             }
@@ -389,6 +592,30 @@
             updateParticles();
             drawParticles();
             
+            // Se habilidade ativa, desenhar efeito continuo
+            if (abilityActive) {
+                const progress = (abilityEndTime - Date.now()) / 3000;
+                if (progress > 0) {
+                    ctx.save();
+                    ctx.globalCompositeOperation = 'lighter';
+                    ctx.globalAlpha = progress * 0.3;
+                    
+                    const gradient = ctx.createRadialGradient(
+                        mouse.x, mouse.y, 0,
+                        mouse.x, mouse.y, 300 * progress
+                    );
+                    gradient.addColorStop(0, 'rgba(255, 245, 150, 0.8)');
+                    gradient.addColorStop(1, 'rgba(255, 100, 0, 0)');
+                    
+                    ctx.fillStyle = gradient;
+                    ctx.beginPath();
+                    ctx.arc(mouse.x, mouse.y, 300 * progress, 0, Math.PI*2);
+                    ctx.fill();
+                    
+                    ctx.restore();
+                }
+            }
+            
             requestAnimationFrame(animate);
         }
 
@@ -416,9 +643,15 @@
                 document.getElementById(mode).classList.add('active');
             });
         });
+        
+        // Ability button
+        document.getElementById('ability-button').addEventListener('click', () => {
+            progression.useAbility();
+        });
 
         // ===== START GAME =====
         resizeCanvases();
+        document.getElementById('level').textContent = progression.level;
         requestAnimationFrame(animate);
     </script>
 </body>
