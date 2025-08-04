@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Universo de Partículas PRO</title>
+    <title>Universo de Partículas PRO - Modo Buraco Negro</title>
     <style>
         body {
             margin: 0;
@@ -181,6 +181,85 @@
             z-index: 1000;
         }
         
+        .enemy {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ff0000 0%, #800000 70%);
+            box-shadow: 0 0 20px #ff0000;
+            z-index: 2;
+        }
+        
+        #combo-display {
+            position: fixed;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 24px;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+            backdrop-filter: blur(5px);
+        }
+        
+        #combo-counter {
+            font-size: 36px;
+            font-weight: bold;
+            color: #00F5A0;
+            text-shadow: 0 0 10px #00F5A0;
+        }
+        
+        #health-bar {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 10px;
+            background: rgba(255,0,0,0.2);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        #health-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #FF5F6D, #00F5A0);
+            width: 100%;
+            transition: width 0.3s;
+        }
+        
+        .accretion-disk {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            transform-origin: center;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.5s;
+            background: conic-gradient(
+                from 0rad,
+                #FF00FF, #4A00E0, #00F5A0, #8E2DE2, #FF00FF
+            );
+            width: 240px;
+            height: 60px;
+            mix-blend-mode: screen;
+        }
+        
+        .event-horizon {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, #000000 30%, #4A00E0 100%);
+            box-shadow: 0 0 30px #8E2DE2;
+            pointer-events: none;
+            z-index: 11;
+            width: 80px;
+            height: 80px;
+        }
+        
         @media (max-width: 768px) {
             .controls { max-width: 200px; }
             #debug-panel, #score-panel { font-size: 12px; }
@@ -194,6 +273,16 @@
                 bottom: 10px;
                 width: 90%;
             }
+            
+            .accretion-disk {
+                width: 180px;
+                height: 45px;
+            }
+            
+            .event-horizon {
+                width: 60px;
+                height: 60px;
+            }
         }
     </style>
 </head>
@@ -202,7 +291,7 @@
     <canvas id="gameCanvas"></canvas>
 
     <div class="controls">
-        <button id="attract" class="active">🌀 Atrair</button>
+        <button id="attract" class="active">🌀 Buraco Negro</button>
         <button id="repel">✨ Repelir</button>
         <button id="vortex">🌪️ Vórtice</button>
     </div>
@@ -226,9 +315,11 @@
     </div>
     
     <div class="level-up">LEVEL UP!</div>
+    <div id="accretion-disk" class="accretion-disk"></div>
+    <div id="event-horizon" class="event-horizon"></div>
 
     <script>
-        // ===== CONFIG =====
+        // ===== CONFIGURAÇÕES =====
         const config = {
             particleCount: 300,
             mouseRadius: 150,
@@ -245,10 +336,33 @@
                 },
                 lastInteractionTime: 0,
                 interactionCooldown: 500
+            },
+            enemy: {
+                spawnInterval: 5000,
+                health: 3,
+                speed: 1.5,
+                size: 15,
+                damage: 0.1
+            },
+            combo: {
+                current: 0,
+                maxMultiplier: 5,
+                timeout: 2000
+            },
+            player: {
+                health: 1.0,
+                maxHealth: 1.0
+            },
+            blackHole: {
+                diskWidth: 120,
+                diskHeight: 30,
+                horizonRadius: 40,
+                rotationSpeed: 0.02,
+                active: false
             }
         };
 
-        // ===== SETUP =====
+        // ===== INICIALIZAÇÃO =====
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const starCanvas = document.getElementById('starfield');
@@ -256,12 +370,19 @@
         
         let particles = [];
         let stars = [];
+        let enemies = [];
         let mouse = { x: Infinity, y: Infinity };
         let lastTime = 0;
         let fps = 0;
         let lastSpawnTime = 0;
         let abilityActive = false;
         let abilityEndTime = 0;
+        let lastComboTime = 0;
+        let comboTimeout;
+        let lastEnemySpawn = 0;
+        let diskRotation = 0;
+        let diskElement = document.getElementById('accretion-disk');
+        let horizonElement = document.getElementById('event-horizon');
 
         // ===== SISTEMA DE PROGRESSÃO =====
         const progression = {
@@ -305,7 +426,7 @@
                 activateSuperAbility();
                 this.abilityReady = false;
                 abilityActive = true;
-                abilityEndTime = Date.now() + 3000; // 3 segundos de duração
+                abilityEndTime = Date.now() + 3000;
                 updateAbilityButton();
             }
         };
@@ -316,7 +437,7 @@
             btn.classList.toggle('ready', progression.abilityReady && !abilityActive);
         }
 
-        // ===== STARFIELD =====
+        // ===== SISTEMA DE ESTRELAS =====
         function initStarfield() {
             stars = [];
             for (let i = 0; i < config.starCount; i++) {
@@ -346,7 +467,7 @@
             });
         }
 
-        // ===== PARTICLE SYSTEM =====
+        // ===== SISTEMA DE PARTÍCULAS =====
         function resizeCanvases() {
             canvas.width = starCanvas.width = window.innerWidth;
             canvas.height = starCanvas.height = window.innerHeight;
@@ -480,6 +601,191 @@
             });
         }
 
+        // ===== SISTEMA DE INIMIGOS =====
+        class Enemy {
+            constructor() {
+                this.x = Math.random() < 0.5 ? 
+                    -config.enemy.size : 
+                    canvas.width + config.enemy.size;
+                this.y = Math.random() * canvas.height;
+                this.size = config.enemy.size;
+                this.health = config.enemy.health;
+                this.speed = config.enemy.speed;
+                this.element = document.createElement('div');
+                this.element.className = 'enemy';
+                document.body.appendChild(this.element);
+                this.updatePosition();
+            }
+            
+            update() {
+                // Movimento em direção ao centro
+                const dx = canvas.width/2 - this.x;
+                const dy = canvas.height/2 - this.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                this.x += (dx/dist) * this.speed;
+                this.y += (dy/dist) * this.speed;
+                
+                // Verifica colisão com o jogador (cursor)
+                const playerDist = Math.sqrt(
+                    Math.pow(mouse.x - this.x, 2) + 
+                    Math.pow(mouse.y - this.y, 2)
+                );
+                
+                if (playerDist < this.size + 30) {
+                    config.player.health -= config.enemy.damage;
+                    updateHealthBar();
+                }
+                
+                this.updatePosition();
+                
+                // Remove se sair da tela
+                if (this.x < -100 || this.x > canvas.width + 100 ||
+                    this.y < -100 || this.y > canvas.height + 100) {
+                    this.destroy();
+                    return false;
+                }
+                
+                return true;
+            }
+            
+            takeDamage() {
+                this.health--;
+                this.element.style.transform = `scale(${1 + (this.health/config.enemy.health)})`;
+                
+                if (this.health <= 0) {
+                    this.destroy();
+                    return false;
+                }
+                return true;
+            }
+            
+            updatePosition() {
+                this.element.style.width = `${this.size}px`;
+                this.element.style.height = `${this.size}px`;
+                this.element.style.left = `${this.x - this.size/2}px`;
+                this.element.style.top = `${this.y - this.size/2}px`;
+            }
+            
+            destroy() {
+                this.element.remove();
+                // Efeito de explosão
+                for (let i = 0; i < 10; i++) {
+                    particles.push({
+                        x: this.x,
+                        y: this.y,
+                        size: Math.random() * 4 + 2,
+                        speedX: (Math.random() - 0.5) * 5,
+                        speedY: (Math.random() - 0.5) * 5,
+                        color: `hsl(${Math.random() * 60}, 100%, 50%)`,
+                        trail: [],
+                        alive: true
+                    });
+                }
+            }
+        }
+
+        function spawnEnemy() {
+            if (enemies.length < 3 + Math.floor(progression.level / 5)) {
+                enemies.push(new Enemy());
+            }
+        }
+
+        function updateEnemies() {
+            enemies = enemies.filter(enemy => enemy.update());
+        }
+
+        // ===== SISTEMA DE COMBOS =====
+        function addCombo() {
+            const now = Date.now();
+            
+            // Reset combo se passar muito tempo
+            if (now - lastComboTime > config.combo.timeout) {
+                config.combo.current = 0;
+            }
+            
+            config.combo.current++;
+            lastComboTime = now;
+            
+            // Atualiza display
+            updateComboDisplay();
+            
+            // Reinicia timeout
+            clearTimeout(comboTimeout);
+            comboTimeout = setTimeout(() => {
+                config.combo.current = 0;
+                updateComboDisplay();
+            }, config.combo.timeout);
+        }
+
+        function updateComboDisplay() {
+            const display = document.getElementById('combo-display');
+            const counter = document.getElementById('combo-counter');
+            
+            counter.textContent = config.combo.current;
+            
+            if (config.combo.current > 1) {
+                display.style.opacity = '1';
+                counter.style.textShadow = `0 0 ${config.combo.current * 5}px #00F5A0`;
+            } else {
+                display.style.opacity = '0';
+            }
+        }
+
+        function getComboMultiplier() {
+            return Math.min(config.combo.maxMultiplier, 1 + config.combo.current * 0.1);
+        }
+
+        // ===== SISTEMA DE VIDA =====
+        function updateHealthBar() {
+            const healthPercent = Math.max(0, config.player.health / config.player.maxHealth) * 100;
+            document.getElementById('health-progress').style.width = `${healthPercent}%`;
+            
+            if (config.player.health <= 0) {
+                gameOver();
+            }
+        }
+
+        function gameOver() {
+            alert(`Game Over! Seu score: ${config.game.score}`);
+            location.reload();
+        }
+
+        // ===== BURACO NEGRO - DISCO DE ACRECÃO =====
+        function createAccretionDisk() {
+            // Atualiza posição
+            diskElement.style.left = `${mouse.x - config.blackHole.diskWidth}px`;
+            diskElement.style.top = `${mouse.y - config.blackHole.diskHeight}px`;
+            diskElement.style.opacity = config.blackHole.active ? '0.8' : '0';
+            
+            // Atualiza horizonte de eventos
+            horizonElement.style.left = `${mouse.x - config.blackHole.horizonRadius}px`;
+            horizonElement.style.top = `${mouse.y - config.blackHole.horizonRadius}px`;
+            
+            // Efeito de distorção nas partículas próximas
+            if (config.blackHole.active) {
+                particles.forEach(p => {
+                    const dx = p.x - mouse.x;
+                    const dy = p.y - mouse.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    
+                    if (dist < config.blackHole.diskWidth * 1.5) {
+                        // Efeito espiral
+                        const angle = Math.atan2(dy, dx);
+                        const spiralForce = (config.blackHole.diskWidth * 1.5 - dist) / 100;
+                        
+                        p.x += Math.cos(angle + Math.PI/2) * spiralForce;
+                        p.y += Math.sin(angle + Math.PI/2) * spiralForce;
+                        
+                        // Efeito visual
+                        p.color = `hsl(${(angle * 180/Math.PI + 180) % 360}, 100%, 60%)`;
+                    }
+                });
+            }
+            
+            diskRotation += config.blackHole.rotationSpeed;
+        }
+
         // ===== HABILIDADE ESPECIAL - SUPERNOVA =====
         function activateSuperAbility() {
             // Efeito visual
@@ -523,21 +829,21 @@
 
         // ===== GAME SYSTEM =====
         function updateScore() {
-            config.game.score += 1;
+            const comboMultiplier = getComboMultiplier();
+            config.game.score += Math.floor(1 * comboMultiplier);
             document.getElementById('score').textContent = config.game.score;
             
             // Update objectives
             config.game.objectives[config.currentMode].current += 1;
             
-            // Update UI
-            updateObjectivesDisplay();
-            
-            // Add XP (mais XP para modos mais difíceis)
-            let xpGain = 2 + progression.level;
-            if (config.currentMode === 'vortex') xpGain *= 1.5;
+            // Add XP com bônus de combo
+            let xpGain = (2 + progression.level) * comboMultiplier;
             progression.addXP(xpGain);
             
-            // Check if objective is completed
+            // Adiciona ao combo
+            addCombo();
+            
+            // Check objectives
             checkObjectives();
         }
 
@@ -587,10 +893,26 @@
             document.getElementById('fps').textContent = fps;
             document.getElementById('particle-count').textContent = particles.filter(p => p.alive).length;
             
+            // Spawn de inimigos
+            if (currentTime - lastEnemySpawn > config.enemy.spawnInterval) {
+                spawnEnemy();
+                lastEnemySpawn = currentTime;
+            }
+            
             // Game loop
             updateStarfield();
             updateParticles();
+            updateEnemies();
             drawParticles();
+            
+            // Atualiza efeito do buraco negro
+            if (config.currentMode === 'attract') {
+                config.blackHole.active = true;
+                createAccretionDisk();
+            } else {
+                config.blackHole.active = false;
+                diskElement.style.opacity = '0';
+            }
             
             // Se habilidade ativa, desenhar efeito continuo
             if (abilityActive) {
@@ -641,6 +963,22 @@
                     btn.classList.remove('active');
                 });
                 document.getElementById(mode).classList.add('active');
+                
+                // Efeito especial ao ativar o modo Buraco Negro
+                if (mode === 'attract') {
+                    for (let i = 0; i < 50; i++) {
+                        particles.push({
+                            x: mouse.x,
+                            y: mouse.y,
+                            size: Math.random() * 4 + 2,
+                            speedX: (Math.random() - 0.5) * 10,
+                            speedY: (Math.random() - 0.5) * 10,
+                            color: `hsl(${Math.random() * 60 + 200}, 100%, 50%)`,
+                            trail: [],
+                            alive: true
+                        });
+                    }
+                }
             });
         });
         
@@ -652,6 +990,7 @@
         // ===== START GAME =====
         resizeCanvases();
         document.getElementById('level').textContent = progression.level;
+        updateHealthBar();
         requestAnimationFrame(animate);
     </script>
 </body>
