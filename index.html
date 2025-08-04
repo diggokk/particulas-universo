@@ -386,7 +386,8 @@
                     radius: 150,
                     power: 1,
                     health: 100,
-                    face: ":D"
+                    face: "😊", // Carinha feliz
+                    active: true
                 },
                 {
                     id: 2,
@@ -397,8 +398,8 @@
                     radius: 150,
                     power: 1,
                     health: 100,
-                    active: false,
-                    face: ":]"
+                    face: "😎", // Carinha com óculos
+                    active: false
                 }
             ],
             coopMode: false,
@@ -597,6 +598,10 @@
         const mouse = { x: null, y: null };
         canvas.addEventListener('mousemove', (e) => {
             if(!config.coopMode) {
+                config.players[0].x = e.clientX;
+                config.players[0].y = e.clientY;
+            } else {
+                // Em modo cooperativo, o mouse controla o jogador 1
                 config.players[0].x = e.clientX;
                 config.players[0].y = e.clientY;
             }
@@ -1150,10 +1155,18 @@
 
                 let icon = '';
                 switch(player.mode) {
-                    case 'attract': icon = '🌀'; break;
-                    case 'repel': icon = '✨'; break;
-                    case 'vortex': icon = '🌪️'; break;
-                    default: icon = player.face;
+                    case 'attract': 
+                        icon = '🌀';
+                        break;
+                    case 'repel': 
+                        icon = '✨';
+                        break;
+                    case 'vortex': 
+                        icon = '🌪️';
+                        break;
+                    default: 
+                        icon = player.face;
+                        break;
                 }
 
                 ctx.fillText(icon, player.x, player.y);
@@ -1319,10 +1332,21 @@
         document.addEventListener('keydown', (e) => {
             // Jogador 1
             switch(e.key.toLowerCase()) {
-                case '1': config.players[0].mode = 'attract'; break;
-                case '2': config.players[0].mode = 'repel'; break;
-                case '3': config.players[0].mode = 'vortex'; break;
-                case ' ': activateBigBang(); break;
+                case '1': 
+                    config.players[0].mode = 'attract'; 
+                    break;
+                case '2': 
+                    config.players[0].mode = 'repel'; 
+                    break;
+                case '3': 
+                    config.players[0].mode = 'vortex'; 
+                    break;
+                case ' ': 
+                    activateBigBang(); 
+                    break;
+                case '0':
+                    config.players[0].mode = 'normal';
+                    break;
             }
 
             // Jogador 2 (modo cooperativo)
@@ -1331,13 +1355,30 @@
                 const player = config.players[1];
 
                 switch(e.key.toLowerCase()) {
-                    case 'w': player.y = (player.y || canvas.height/2) - speed; break;
-                    case 's': player.y = (player.y || canvas.height/2) + speed; break;
-                    case 'a': player.x = (player.x || canvas.width/2) - speed; break;
-                    case 'd': player.x = (player.x || canvas.width/2) + speed; break;
-                    case 'q': player.mode = 'attract'; break;
-                    case 'e': player.mode = 'repel'; break;
-                    case 'r': player.mode = 'vortex'; break;
+                    case 'w': 
+                        player.y = (player.y || canvas.height/2) - speed; 
+                        break;
+                    case 's': 
+                        player.y = (player.y || canvas.height/2) + speed; 
+                        break;
+                    case 'a': 
+                        player.x = (player.x || canvas.width/2) - speed; 
+                        break;
+                    case 'd': 
+                        player.x = (player.x || canvas.width/2) + speed; 
+                        break;
+                    case 'q': 
+                        player.mode = 'attract'; 
+                        break;
+                    case 'e': 
+                        player.mode = 'repel'; 
+                        break;
+                    case 'r': 
+                        player.mode = 'vortex'; 
+                        break;
+                    case 'z':
+                        player.mode = 'normal';
+                        break;
                 }
 
                 // Limita ao canvas
