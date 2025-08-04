@@ -316,25 +316,41 @@
             classic: {
                 name: "Clássica",
                 description: "Modo padrão com física básica",
-                unlocked: true
+                unlocked: true,
+                init: function() {
+                    config.particleCount = 200;
+                    initParticles();
+                }
             },
             electric: {
                 name: "Elétrica",
                 description: "Partículas com carga positiva e negativa",
                 unlocked: false,
-                requirement: "Alcance nível 2"
+                requirement: "Alcance nível 2",
+                init: function() {
+                    config.particleCount = 250;
+                    initParticles();
+                }
             },
             quantum: {
                 name: "Quântica",
                 description: "Partículas podem se teleportar",
                 unlocked: false,
-                requirement: "Alcance nível 3"
+                requirement: "Alcance nível 3",
+                init: function() {
+                    config.particleCount = 300;
+                    initParticles();
+                }
             },
             chaos: {
                 name: "Caótica",
                 description: "Modo frenético com física imprevisível",
                 unlocked: false,
-                requirement: "Alcance nível 5"
+                requirement: "Alcance nível 5",
+                init: function() {
+                    config.particleCount = 400;
+                    initParticles();
+                }
             }
         };
 
@@ -354,8 +370,8 @@
                 if (galaxy.unlocked) {
                     galaxyElement.addEventListener('click', () => {
                         config.galaxies.current = id;
+                        galaxies[id].init();
                         document.getElementById('galaxy-map').style.display = 'none';
-                        initParticles();
                     });
                 }
                 
