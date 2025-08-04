@@ -119,7 +119,6 @@
             cursor: not-allowed;
         }
         
-        /* NOVOS ESTILOS */
         #fps-counter {
             position: fixed;
             top: 10px;
@@ -157,6 +156,46 @@
             margin-left: 10px;
             font-size: 12px;
             font-family: Arial, sans-serif;
+        }
+        
+        #health-bar-container {
+            position: fixed;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            height: 15px;
+            width: 200px;
+            background: rgba(0,0,0,0.7);
+            z-index: 50;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        #health-bar {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #FF0000, #00FF00);
+            transition: width 0.3s;
+        }
+        
+        #bigbang-cooldown {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            height: 10px;
+            width: 150px;
+            background: rgba(0,0,0,0.7);
+            z-index: 50;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        #bigbang-progress {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #FF00FF, #00FFFF);
+            transition: width 0.1s;
         }
         
         .enemy {
@@ -205,6 +244,7 @@
         <button id="attract">🌀 Buraco Negro</button>
         <button id="repel">✨ Repulsão</button>
         <button id="vortex">🌪️ Vórtice</button>
+        <button id="bigbang">💥 Big Bang</button>
         <button id="show-galaxies">🌌 Galáxias</button>
     </div>
 
@@ -212,6 +252,7 @@
         <button class="mobile-btn" id="mobileAttract">🌀</button>
         <button class="mobile-btn" id="mobileRepel">✨</button>
         <button class="mobile-btn" id="mobileVortex">🌪️</button>
+        <button class="mobile-btn" id="mobileBigbang">💥</button>
     </div>
 
     <div id="galaxy-map">
@@ -222,12 +263,19 @@
         <button id="close-galaxy-map">Fechar</button>
     </div>
 
-    <!-- NOVOS ELEMENTOS -->
     <div id="fps-counter">FPS: 60</div>
+    
+    <div id="health-bar-container">
+        <div id="health-bar"></div>
+    </div>
     
     <div id="xp-bar-container">
         <div id="xp-bar"></div>
         <div id="xp-text">0/100 XP (Nível 1)</div>
+    </div>
+    
+    <div id="bigbang-cooldown">
+        <div id="bigbang-progress"></div>
     </div>
 
     <canvas id="canvas"></canvas>
@@ -244,7 +292,12 @@
             },
             xp: 0,
             level: 1,
-            power: 1
+            power: 1,
+            health: 100,
+            maxHealth: 100,
+            bigBangCooldown: 0,
+            bigBangMaxCooldown: 300, // 5 segundos
+            isBigBangActive: false
         };
 
         // Inicialização do canvas
@@ -290,6 +343,9 @@
             document.querySelectorAll('.controls button').forEach(btn => btn.classList.remove('active'));
             document.getElementById("vortex").classList.add('active');
         });
+        
+        document.getElementById("bigbang").addEventListener('click', activateBigBang);
+        document.getElementById("mobileBigbang").addEventListener('click', activateBigBang);
 
         // Controles mobile
         document.getElementById("mobileAttract").addEventListener('click', () => {
@@ -388,10 +444,10 @@
             document.getElementById('galaxy-map').style.display = 'none';
         });
 
-        // NOVAS FUNÇÕES: INIMIGOS
+        // INIMIGOS
         let enemies = [];
         let enemySpawnTimer = 0;
-        const enemyFaces = [">:]", ">:(", "X_X", ">_<", ":O", "◉_◉", "ಠ_ಠ"];
+        const enemyFaces = [">:['", ">:(", "X_X", ">_<", ":O", "◉_◉", "ಠ_ಠ", "⊙_⊙", "≧◡≦", "◕‿◕"];
         
         function spawnEnemy() {
             const size = Math.random() * 30 + 20;
@@ -401,43 +457,95 @@
                 size: size,
                 speedX: (Math.random() - 0.5) * (3 + config.level * 0.5),
                 speedY: (Math.random() - 0.5) * (3 + config.level * 0.5),
+                health: 3 + config.level,
+                maxHealth: 3 + config.level,
                 face: enemyFaces[Math.floor(Math.random() * enemyFaces.length)],
                 type: Math.random() > 0.8 ? 'elite' : 'normal'
             });
         }
         
         function updateEnemies() {
-            enemies.forEach((enemy) => {
-                // Movimento inteligente (persegue partículas)
+            enemies.forEach((enemy, index) => {
+                // Movimento inteligente (persegue o mouse)
                 if (Math.random() > 0.95) {
-                    let avgX = 0, avgY = 0, count = 0;
-                    particles.forEach(p => {
-                        const dist = Math.sqrt((p.x - enemy.x)**2 + (p.y - enemy.y)**2);
-                        if (dist < 200) {
-                            avgX += p.x;
-                            avgY += p.y;
-                            count++;
-                        }
-                    });
-                    
-                    if (count > 0) {
-                        avgX /= count;
-                        avgY /= count;
-                        const angle = Math.atan2(avgY - enemy.y, avgX - enemy.x);
-                        enemy.speedX = Math.cos(angle) * 2;
-                        enemy.speedY = Math.sin(angle) * 2;
-                    }
+                    const dx = mouse.x - enemy.x;
+                    const dy = mouse.y - enemy.y;
+                    const angle = Math.atan2(dy, dx);
+                    enemy.speedX = Math.cos(angle) * 2;
+                    enemy.speedY = Math.sin(angle) * 2;
                 }
                 
-                // Movimento e colisão com bordas
+                // Movimento
                 enemy.x += enemy.speedX;
                 enemy.y += enemy.speedY;
                 
+                // Colisão com bordas
                 if (enemy.x < enemy.size/2) enemy.x = enemy.size/2;
                 if (enemy.x > canvas.width - enemy.size/2) enemy.x = canvas.width - enemy.size/2;
                 if (enemy.y < enemy.size/2) enemy.y = enemy.size/2;
                 if (enemy.y > canvas.height - enemy.size/2) enemy.y = canvas.height - enemy.size/2;
+                
+                // Dano ao jogador
+                if (mouse.x && mouse.y) {
+                    const dx = mouse.x - enemy.x;
+                    const dy = mouse.y - enemy.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < enemy.size/2 + 15) {
+                        config.health -= 0.5;
+                        updateHealthBar();
+                        
+                        // Efeito visual de dano
+                        document.body.style.boxShadow = 'inset 0 0 30px red';
+                        setTimeout(() => {
+                            document.body.style.boxShadow = 'none';
+                        }, 100);
+                    }
+                }
+                
+                // Colisão com partículas
+                particles.forEach(particle => {
+                    const dx = enemy.x - particle.x;
+                    const dy = enemy.y - particle.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const minDist = enemy.size/2 + particle.size/2;
+                    
+                    if (distance < minDist) {
+                        enemy.health -= 0.05;
+                        
+                        // Repulsão da partícula
+                        const angle = Math.atan2(dy, dx);
+                        const force = (minDist - distance) * 0.1;
+                        particle.speedX = -Math.cos(angle) * force * 3;
+                        particle.speedY = -Math.sin(angle) * force * 3;
+                    }
+                });
+                
+                // Remove inimigos derrotados
+                if (enemy.health <= 0) {
+                    createExplosion(enemy.x, enemy.y, enemy.size);
+                    enemies.splice(index, 1);
+                    addXP(enemy.type === 'elite' ? 25 : 10);
+                }
             });
+        }
+        
+        function createExplosion(x, y, size) {
+            // Partículas de explosão
+            for (let i = 0; i < 15; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    size: Math.random() * 3 + 1,
+                    color: `hsl(${Math.random() * 60}, 100%, 50%)`,
+                    speedX: (Math.random() - 0.5) * 10,
+                    speedY: (Math.random() - 0.5) * 10,
+                    baseSpeedX: 0,
+                    baseSpeedY: 0,
+                    life: 100 + Math.random() * 50,
+                    trail: []
+                });
+            }
         }
         
         function drawEnemies() {
@@ -466,8 +574,90 @@
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillStyle = enemy.type === 'elite' ? 'gold' : 'white';
-                ctx.fillText(enemy.face, enemy.x, enemy.y);
+                ctx.fillText(enemy.face, enemy.x, enemy.y + (enemy.size * 0.05));
+                
+                // Barra de vida
+                const healthBarWidth = enemy.size * 1.5;
+                const healthPercent = enemy.health / enemy.maxHealth;
+                
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(
+                    enemy.x - healthBarWidth/2, 
+                    enemy.y - enemy.size - 15, 
+                    healthBarWidth, 
+                    8
+                );
+                
+                ctx.fillStyle = `hsl(${healthPercent * 120}, 100%, 50%)`;
+                ctx.fillRect(
+                    enemy.x - healthBarWidth/2, 
+                    enemy.y - enemy.size - 15, 
+                    healthBarWidth * healthPercent, 
+                    8
+                );
             });
+        }
+
+        // BIG BANG
+        function activateBigBang() {
+            if (config.bigBangCooldown <= 0 && !config.isBigBangActive) {
+                config.isBigBangActive = true;
+                
+                // Efeito visual
+                const bang = document.createElement('div');
+                bang.style.position = 'fixed';
+                bang.style.left = '0';
+                bang.style.top = '0';
+                bang.style.width = '100%';
+                bang.style.height = '100%';
+                bang.style.background = 'radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,0,255,0) 70%)';
+                bang.style.zIndex = '1000';
+                bang.style.pointerEvents = 'none';
+                bang.style.opacity = '0';
+                bang.style.transition = 'opacity 1s';
+                document.body.appendChild(bang);
+                
+                setTimeout(() => {
+                    bang.style.opacity = '1';
+                }, 10);
+                
+                setTimeout(() => {
+                    bang.style.opacity = '0';
+                    setTimeout(() => bang.remove(), 1000);
+                }, 100);
+                
+                // Efeito no jogo
+                enemies.forEach(enemy => {
+                    enemy.health = 0;
+                });
+                
+                particles.forEach(p => {
+                    p.color = `hsl(${Math.random() * 360}, 100%, 70%)`;
+                    p.speedX = (Math.random() - 0.5) * 20;
+                    p.speedY = (Math.random() - 0.5) * 20;
+                });
+                
+                // Adiciona novas partículas
+                for (let i = 0; i < 100; i++) {
+                    particles.push({
+                        x: mouse.x || canvas.width/2,
+                        y: mouse.y || canvas.height/2,
+                        size: Math.random() * 5 + 2,
+                        color: `hsl(${Math.random() * 360}, 100%, 70%)`,
+                        speedX: (Math.random() - 0.5) * 20,
+                        speedY: (Math.random() - 0.5) * 20,
+                        baseSpeedX: 0,
+                        baseSpeedY: 0,
+                        life: 100 + Math.random() * 50,
+                        trail: []
+                    });
+                }
+                
+                setTimeout(() => {
+                    config.isBigBangActive = false;
+                    config.bigBangCooldown = config.bigBangMaxCooldown;
+                }, 2000);
+            }
         }
 
         // SISTEMA DE XP E NÍVEL
@@ -479,8 +669,11 @@
                 config.xp -= maxXP;
                 config.level++;
                 config.power += 0.2;
+                config.maxHealth += 10;
+                config.health = config.maxHealth;
+                updateHealthBar();
                 
-                // Desbloqueia galáxias conforme o nível
+                // Desbloqueia galáxias
                 if (config.level >= 2 && !galaxies.electric.unlocked) {
                     galaxies.electric.unlocked = true;
                     showUnlockMessage("Galáxia Elétrica desbloqueada!");
@@ -497,6 +690,39 @@
                 showUnlockMessage(`Nível UP! Agora você é nível ${config.level}`);
             }
             updateXPBar();
+        }
+        
+        function updateHealthBar() {
+            const healthPercent = config.health / config.maxHealth;
+            document.getElementById('health-bar').style.width = `${healthPercent * 100}%`;
+            
+            if (config.health <= 0) {
+                // Game Over
+                alert(`Game Over! Seu nível: ${config.level}`);
+                config.health = config.maxHealth;
+                config.xp = 0;
+                config.level = 1;
+                enemies = [];
+                initParticles();
+                updateHealthBar();
+                updateXPBar();
+            }
+        }
+        
+        function updateXPBar() {
+            const maxXP = 100 + (config.level * 30);
+            const xpPercent = (config.xp / maxXP) * 100;
+            document.getElementById('xp-bar').style.width = `${xpPercent}%`;
+            document.getElementById('xp-text').textContent = 
+                `${Math.floor(config.xp)}/${maxXP} XP (Nível ${config.level})`;
+        }
+        
+        function updateBigBangCooldown() {
+            if (config.bigBangCooldown > 0) {
+                config.bigBangCooldown--;
+                const percent = (1 - (config.bigBangCooldown / config.bigBangMaxCooldown)) * 100;
+                document.getElementById('bigbang-progress').style.width = `${percent}%`;
+            }
         }
         
         function showUnlockMessage(text) {
@@ -526,14 +752,6 @@
                 setTimeout(() => message.remove(), 500);
             }, 2000);
         }
-        
-        function updateXPBar() {
-            const maxXP = 100 + (config.level * 30);
-            const xpPercent = (config.xp / maxXP) * 100;
-            document.getElementById('xp-bar').style.width = `${xpPercent}%`;
-            document.getElementById('xp-text').textContent = 
-                `${Math.floor(config.xp)}/${maxXP} XP (Nível ${config.level})`;
-        }
 
         // CONTADOR DE FPS
         let fps = 0;
@@ -554,8 +772,9 @@
         // LOOP DO JOGO
         function animate() {
             updateFPSCounter();
+            updateBigBangCooldown();
             
-            // Limpa o canvas com efeito de rastro
+            // Limpa o canvas
             ctx.fillStyle = `rgba(10, 10, 20, ${config.galaxies.current === 'chaos' ? 0.1 : 0.2})`;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
@@ -571,11 +790,17 @@
             
             // Atualiza partículas
             particles.forEach((p, index) => {
-                // Reseta para a velocidade base
+                // Remove partículas antigas
+                if (p.life !== undefined && p.life-- <= 0) {
+                    particles.splice(index, 1);
+                    return;
+                }
+                
+                // Reseta velocidade base
                 p.speedX = p.baseSpeedX;
                 p.speedY = p.baseSpeedY;
 
-                // Efeitos especiais por galáxia
+                // Efeitos por galáxia
                 switch(config.galaxies.current) {
                     case 'electric':
                         particles.forEach(other => {
@@ -608,31 +833,56 @@
                         break;
                 }
 
-                // Modo Buraco Negro - Versão Modificada
-                if (mouse.x && mouse.y && config.mode === 'attract') {
+                // Interações com o mouse
+                if (mouse.x && mouse.y && config.mode !== 'normal' && !config.isBigBangActive) {
                     const dx = mouse.x - p.x;
                     const dy = mouse.y - p.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
-                    const maxDist = config.mouseRadius * 0.7; // 30% menor
+                    const maxDist = config.mouseRadius * (1 + config.level * 0.1);
                     
                     if (distance < maxDist) {
                         const force = (maxDist - distance) / maxDist;
                         const angle = Math.atan2(dy, dx);
                         
-                        // Atração mais suave (40% da força original)
-                        p.speedX += dx * 0.04 * force * config.power;
-                        p.speedY += dy * 0.04 * force * config.power;
-                        
-                        // "Engole" partículas muito próximas
-                        if (distance < maxDist * 0.15) {
-                            particles.splice(index, 1);
-                            addXP(5); // Ganha XP por engolir partículas
-                            
-                            // Efeito visual
-                            ctx.fillStyle = 'white';
-                            ctx.beginPath();
-                            ctx.arc(p.x, p.y, 10, 0, Math.PI * 2);
-                            ctx.fill();
+                        switch(config.mode) {
+                            case 'attract':
+                                // Buraco Negro
+                                p.speedX += dx * 0.05 * force * config.power;
+                                p.speedY += dy * 0.05 * force * config.power;
+                                
+                                // Engole partículas próximas
+                                if (distance < maxDist * 0.2) {
+                                    particles.splice(index, 1);
+                                    addXP(3);
+                                }
+                                break;
+                                
+                            case 'repel':
+                                // Repulsão turbinada
+                                p.speedX -= dx * 0.1 * force * config.power;
+                                p.speedY -= dy * 0.1 * force * config.power;
+                                
+                                // Efeito de onda de choque
+                                if (distance < maxDist * 0.5) {
+                                    p.speedX += (Math.random() - 0.5) * force * 5;
+                                    p.speedY += (Math.random() - 0.5) * force * 5;
+                                    p.color = `hsl(${(Date.now()/10) % 360}, 100%, 70%)`;
+                                }
+                                break;
+                                
+                            case 'vortex':
+                                // Vórtice turbinado
+                                const vortexPower = 0.1 * config.power;
+                                p.speedX += Math.cos(angle + Math.PI/2) * vortexPower * force;
+                                p.speedY += Math.sin(angle + Math.PI/2) * vortexPower * force;
+                                
+                                // Atração central
+                                p.speedX += dx * 0.03 * force;
+                                p.speedY += dy * 0.03 * force;
+                                
+                                // Efeito espiral
+                                p.color = `hsl(${(angle * 180/Math.PI + Date.now()/10) % 360}, 100%, 70%)`;
+                                break;
                         }
                     }
                 }
@@ -642,12 +892,13 @@
                 p.y += p.speedY;
 
                 // Verifica bordas
-                if (p.x < 0) p.x = 0;
-                if (p.x > canvas.width) p.x = canvas.width;
-                if (p.y < 0) p.y = 0;
-                if (p.y > canvas.height) p.y = canvas.height;
+                if (p.x < 0 || p.x > canvas.width) p.speedX *= -0.9;
+                if (p.y < 0 || p.y > canvas.height) p.speedY *= -0.9;
+                
+                p.x = Math.max(0, Math.min(canvas.width, p.x));
+                p.y = Math.max(0, Math.min(canvas.height, p.y));
 
-                // Rastro das partículas
+                // Rastro
                 if (p.trail) {
                     p.trail.push({x: p.x, y: p.y});
                     if (p.trail.length > 10) p.trail.shift();
@@ -656,6 +907,7 @@
             
             // Desenha partículas
             particles.forEach(p => {
+                // Rastro
                 if (p.trail && p.trail.length > 1) {
                     ctx.beginPath();
                     ctx.moveTo(p.trail[0].x, p.trail[0].y);
@@ -667,6 +919,7 @@
                     ctx.stroke();
                 }
                 
+                // Partícula
                 ctx.fillStyle = p.color;
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
@@ -687,6 +940,7 @@
 
         // Inicia o jogo
         initParticles();
+        updateHealthBar();
         updateXPBar();
         animate();
     </script>
