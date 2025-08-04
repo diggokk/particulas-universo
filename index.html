@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Universo de Partículas TURBO</title>
+    <title>Universo de Partículas PRO</title>
     <style>
         body {
             margin: 0;
@@ -17,6 +17,17 @@
             display: block;
             width: 100vw;
             height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        #gameCanvas {
+            z-index: 1;
+        }
+        
+        #starfield {
+            z-index: 0;
         }
         
         .controls {
@@ -71,13 +82,46 @@
             backdrop-filter: blur(5px);
         }
         
+        #score-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            backdrop-filter: blur(5px);
+            display: flex;
+            gap: 20px;
+        }
+        
+        .objective {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .objective.completed {
+            color: #00F5A0;
+        }
+        
         @media (max-width: 768px) {
             .controls { max-width: 200px; }
-            #debug-panel { font-size: 12px; }
+            #debug-panel, #score-panel { font-size: 12px; }
+            #score-panel {
+                bottom: 10px;
+                padding: 8px 12px;
+            }
         }
     </style>
 </head>
 <body>
+    <canvas id="starfield"></canvas>
+    <canvas id="gameCanvas"></canvas>
+
     <div class="controls">
         <button id="attract" class="active">🌀 Atrair</button>
         <button id="repel">✨ Repelir</button>
@@ -90,7 +134,12 @@
         Partículas: <span id="particle-count">0</span>
     </div>
 
-    <canvas id="canvas"></canvas>
+    <div id="score-panel">
+        <div>Pontos: <span id="score">0</span></div>
+        <div class="objective" id="obj1">🌀 <span id="obj1-count">0</span>/50</div>
+        <div class="objective" id="obj2">✨ <span id="obj2-count">0</span>/30</div>
+        <div class="objective" id="obj3">🌪️ <span id="obj3-count">0</span>/20</div>
+    </div>
 
     <script>
         // ===== CONFIG =====
@@ -98,36 +147,88 @@
             particleCount: 500,
             mouseRadius: 150,
             modes: ['attract', 'repel', 'vortex'],
-            currentMode: 'attract'
+            currentMode: 'attract',
+            starCount: 500,
+            starSpeed: 0.05,
+            game: {
+                score: 0,
+                objectives: {
+                    attract: { target: 50, current: 0 },
+                    repel: { target: 30, current: 0 },
+                    vortex: { target: 20, current: 0 }
+                },
+                lastInteractionTime: 0,
+                interactionCooldown: 500 // ms
+            }
         };
 
         // ===== SETUP =====
-        const canvas = document.getElementById('canvas');
+        const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        const starCanvas = document.getElementById('starfield');
+        const starCtx = starCanvas.getContext('2d');
+        
         let particles = [];
+        let stars = [];
         let mouse = { x: Infinity, y: Infinity };
         let lastTime = 0;
         let fps = 0;
 
-        // ===== CORE FUNCTIONS =====
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+        // ===== STARFIELD =====
+        function initStarfield() {
+            stars = [];
+            for (let i = 0; i < config.starCount; i++) {
+                stars.push({
+                    x: Math.random() * starCanvas.width,
+                    y: Math.random() * starCanvas.height,
+                    size: Math.random() * 1.5 + 0.5,
+                    speed: Math.random() * config.starSpeed + config.starSpeed,
+                    alpha: Math.random()
+                });
+            }
+        }
+
+        function updateStarfield() {
+            starCtx.fillStyle = 'rgba(10, 10, 30, 0.2)';
+            starCtx.fillRect(0, 0, starCanvas.width, starCanvas.height);
+            
+            stars.forEach(star => {
+                star.y += star.speed;
+                if (star.y > starCanvas.height) {
+                    star.y = 0;
+                    star.x = Math.random() * starCanvas.width;
+                }
+                
+                starCtx.fillStyle = `rgba(255, 255, 255, ${star.alpha})`;
+                starCtx.fillRect(star.x, star.y, star.size, star.size);
+            });
+        }
+
+        // ===== PARTICLE SYSTEM =====
+        function resizeCanvases() {
+            canvas.width = starCanvas.width = window.innerWidth;
+            canvas.height = starCanvas.height = window.innerHeight;
             initParticles();
+            initStarfield();
         }
 
         function initParticles() {
             particles = [];
             for (let i = 0; i < config.particleCount; i++) {
-                particles.push({
-                    x: Math.random() * canvas.width,
-                    y: Math.random() * canvas.height,
-                    size: Math.random() * 3 + 1,
-                    speedX: (Math.random() - 0.5) * 2,
-                    speedY: (Math.random() - 0.5) * 2,
-                    color: `hsl(${Math.random() * 360}, 80%, 60%)`
-                });
+                particles.push(createParticle());
             }
+        }
+
+        function createParticle() {
+            return {
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: Math.random() * 3 + 1,
+                speedX: (Math.random() - 0.5) * 2,
+                speedY: (Math.random() - 0.5) * 2,
+                color: `hsl(${Math.random() * 360}, 80%, 60%)`,
+                trail: []
+            };
         }
 
         function updateParticles() {
@@ -149,6 +250,13 @@
                     const force = (config.mouseRadius - dist) / config.mouseRadius;
                     const angle = Math.atan2(dy, dx);
                     
+                    // Update score if enough time has passed
+                    const now = Date.now();
+                    if (now - config.game.lastInteractionTime > config.game.interactionCooldown) {
+                        config.game.lastInteractionTime = now;
+                        updateScore();
+                    }
+                    
                     switch(config.currentMode) {
                         case 'attract':
                             p.x += Math.cos(angle) * force * 5;
@@ -168,10 +276,27 @@
         }
 
         function drawParticles() {
-            ctx.fillStyle = 'rgba(10, 10, 30, 0.2)';
+            ctx.fillStyle = 'rgba(10, 10, 30, 0.05)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
             particles.forEach(p => {
+                // Draw trail
+                if (p.trail.length > 1) {
+                    ctx.strokeStyle = `${p.color.replace(')', ', 0.2)').replace('hsl', 'hsla')}`;
+                    ctx.lineWidth = p.size * 0.5;
+                    ctx.beginPath();
+                    ctx.moveTo(p.trail[0].x, p.trail[0].y);
+                    for (let i = 1; i < p.trail.length; i++) {
+                        ctx.lineTo(p.trail[i].x, p.trail[i].y);
+                    }
+                    ctx.stroke();
+                }
+                
+                // Update trail
+                p.trail.push({x: p.x, y: p.y});
+                if (p.trail.length > 10) p.trail.shift();
+                
+                // Draw particle
                 ctx.fillStyle = p.color;
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
@@ -179,6 +304,59 @@
             });
         }
 
+        // ===== GAME SYSTEM =====
+        function updateScore() {
+            config.game.score += 1;
+            document.getElementById('score').textContent = config.game.score;
+            
+            // Update objectives
+            config.game.objectives[config.currentMode].current += 1;
+            
+            // Update UI
+            updateObjectivesDisplay();
+            
+            // Check if objective is completed
+            checkObjectives();
+        }
+
+        function updateObjectivesDisplay() {
+            for (const mode in config.game.objectives) {
+                const obj = config.game.objectives[mode];
+                document.getElementById(`${mode}-count`).textContent = obj.current;
+                
+                if (obj.current >= obj.target) {
+                    document.getElementById(`obj${config.modes.indexOf(mode)+1}`)
+                        .classList.add('completed');
+                }
+            }
+        }
+
+        function checkObjectives() {
+            let allCompleted = true;
+            for (const mode in config.game.objectives) {
+                if (config.game.objectives[mode].current < config.game.objectives[mode].target) {
+                    allCompleted = false;
+                    break;
+                }
+            }
+            
+            if (allCompleted) {
+                // All objectives completed!
+                alert('Parabéns! Você completou todos os objetivos!');
+                resetObjectives();
+            }
+        }
+
+        function resetObjectives() {
+            for (const mode in config.game.objectives) {
+                config.game.objectives[mode].current = 0;
+                document.getElementById(`obj${config.modes.indexOf(mode)+1}`)
+                    .classList.remove('completed');
+            }
+            updateObjectivesDisplay();
+        }
+
+        // ===== ANIMATION LOOP =====
         function animate(currentTime) {
             // Calculate FPS
             fps = Math.round(1000 / (currentTime - lastTime));
@@ -189,6 +367,7 @@
             document.getElementById('particle-count').textContent = particles.length;
             
             // Game loop
+            updateStarfield();
             updateParticles();
             drawParticles();
             
@@ -196,7 +375,7 @@
         }
 
         // ===== EVENT LISTENERS =====
-        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('resize', resizeCanvases);
         
         canvas.addEventListener('mousemove', (e) => {
             const rect = canvas.getBoundingClientRect();
@@ -226,8 +405,8 @@
             initParticles();
         });
 
-        // ===== START =====
-        resizeCanvas();
+        // ===== START GAME =====
+        resizeCanvases();
         requestAnimationFrame(animate);
     </script>
 </body>
