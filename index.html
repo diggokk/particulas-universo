@@ -256,6 +256,25 @@
             display: none;
         }
 
+        #bigbang-btn {
+            position: fixed;
+            bottom: 50px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 0, 255, 0.7);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
+        }
+
         @media (max-width: 768px) {
             .mobile-controls { display: flex; }
             #menu {
@@ -263,6 +282,13 @@
                 right: 10px;
                 left: 10px;
                 margin: 0 auto;
+            }
+            #bigbang-btn {
+                bottom: 120px;
+                right: 15px;
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
             }
         }
     </style>
@@ -278,7 +304,6 @@
             <div class="menu-item" id="menu-attract">🌀 Atração</div>
             <div class="menu-item" id="menu-repel">✨ Repulsão</div>
             <div class="menu-item" id="menu-vortex">🌪️ Vórtice</div>
-            <div class="menu-item" id="menu-bigbang">💥 Big Bang</div>
         </div>
 
         <div class="menu-section">
@@ -293,12 +318,14 @@
         </div>
     </div>
 
+    <!-- Botão Big Bang -->
+    <div id="bigbang-btn" title="Big Bang (Espaço)">💥</div>
+
     <!-- Controles mobile -->
     <div class="mobile-controls">
         <button class="mobile-btn" id="mobileAttract">🌀</button>
         <button class="mobile-btn" id="mobileRepel">✨</button>
         <button class="mobile-btn" id="mobileVortex">🌪️</button>
-        <button class="mobile-btn" id="mobileBigbang">💥</button>
     </div>
 
     <!-- Controles mobile jogador 2 -->
@@ -358,7 +385,8 @@
                     color: '#4A00E0',
                     radius: 150,
                     power: 1,
-                    health: 100
+                    health: 100,
+                    face: ":D"
                 },
                 {
                     id: 2,
@@ -369,7 +397,8 @@
                     radius: 150,
                     power: 1,
                     health: 100,
-                    active: false
+                    active: false,
+                    face: ":]"
                 }
             ],
             coopMode: false,
@@ -436,8 +465,8 @@
                 const needed = config.particleCount - particles.length;
                 for (let i = 0; i < needed; i++) {
                     particles.push({
-                        x: Math.random() * canvas.width,
-                        y: Math.random() * canvas.height,
+                        x: Math.random() * (canvas.width - 100) + 50, // Evita cantos
+                        y: Math.random() * (canvas.height - 100) + 50,
                         size: Math.random() * 4 + 2,
                         color: `hsl(${Math.random() * 360}, 80%, 60%)`,
                         speedX: (Math.random() - 0.5) * 3,
@@ -465,7 +494,7 @@
 
         // Fechar menu ao clicar fora
         document.addEventListener('click', (e) => {
-            if (!menu.contains(e.target) && e.target !== menuToggle) {
+            if (!menu.contains(e.target) && e.target !== menuToggle && e.target !== document.getElementById('bigbang-btn')) {
                 menu.style.display = 'none';
             }
         });
@@ -493,7 +522,8 @@
             menu.style.display = 'none';
         });
 
-        document.getElementById('menu-bigbang').addEventListener('click', activateBigBang);
+        // Botão Big Bang
+        document.getElementById('bigbang-btn').addEventListener('click', activateBigBang);
 
         function toggleCoopMode() {
             config.coopMode = !config.coopMode;
@@ -550,8 +580,6 @@
             updateMenuButtons();
         });
 
-        document.getElementById("mobileBigbang").addEventListener('click', activateBigBang);
-
         // Controles jogador 2
         document.getElementById("mobileAttractP2").addEventListener('click', () => {
             config.players[1].mode = 'attract';
@@ -576,7 +604,6 @@
 
         canvas.addEventListener('touchmove', (e) => {
             e.preventDefault();
-            const touch = e.touches[0];
             if(e.touches.length === 1) {
                 config.players[0].x = e.touches[0].clientX;
                 config.players[0].y = e.touches[0].clientY;
@@ -819,11 +846,6 @@
 
                     // Atualiza missão e conquista
                     config.enemiesDestroyed++;
-                    if(config.currentMission && config.currentMission.goal.includes("inimigos")) {
-                        config.missionProgress++;
-                        updateMissionProgress();
-                    }
-
                     if(!config.achievements.enemyDestroyer.unlocked && 
                        config.enemiesDestroyed >= config.achievements.enemyDestroyer.required) {
                         config.achievements.enemyDestroyer.unlocked = true;
@@ -1120,20 +1142,30 @@
                 ctx.arc(player.x, player.y, 10, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Ícone do modo atual
+                // Ícone do modo atual e face
                 ctx.font = '20px Arial';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillStyle = 'white';
 
-                let icon = '•';
+                let icon = '';
                 switch(player.mode) {
                     case 'attract': icon = '🌀'; break;
                     case 'repel': icon = '✨'; break;
                     case 'vortex': icon = '🌪️'; break;
+                    default: icon = player.face;
                 }
 
                 ctx.fillText(icon, player.x, player.y);
+
+                // Desenha área de influência
+                if(player.mode !== 'normal') {
+                    ctx.beginPath();
+                    ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+                    ctx.strokeStyle = player.color + '40';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
             });
         }
 
@@ -1181,8 +1213,10 @@
                         // Aplica efeitos baseados no modo
                         switch(player.mode) {
                             case 'attract':
-                                p.speedX += dx * 0.05 * force * player.power;
-                                p.speedY += dy * 0.05 * force * player.power;
+                                // Atração mais forte no centro
+                                const attractForce = 0.1 * player.power * (1 + (maxDist - distance)/maxDist);
+                                p.speedX += dx * attractForce;
+                                p.speedY += dy * attractForce;
 
                                 if (distance < maxDist * 0.2) {
                                     particles.splice(index, 1);
@@ -1218,12 +1252,11 @@
                 p.x += p.speedX;
                 p.y += p.speedY;
 
-                // Verifica bordas
-                if (p.x < 0 || p.x > canvas.width) p.speedX *= -0.9;
-                if (p.y < 0 || p.y > canvas.height) p.speedY *= -0.9;
-
-                p.x = Math.max(0, Math.min(canvas.width, p.x));
-                p.y = Math.max(0, Math.min(canvas.height, p.y));
+                // Verifica bordas com bounce mais suave
+                if (p.x < 0) { p.x = 0; p.speedX *= -0.7; }
+                if (p.x > canvas.width) { p.x = canvas.width; p.speedX *= -0.7; }
+                if (p.y < 0) { p.y = 0; p.speedY *= -0.7; }
+                if (p.y > canvas.height) { p.y = canvas.height; p.speedY *= -0.7; }
 
                 // Rastro
                 if (p.trail) {
@@ -1282,26 +1315,35 @@
             initParticles();
         });
 
-        // Teclado para jogador 2 (modo cooperativo)
+        // Teclado
         document.addEventListener('keydown', (e) => {
-            if(!config.coopMode) return;
-
-            const speed = 5;
-            const player = config.players[1];
-
+            // Jogador 1
             switch(e.key.toLowerCase()) {
-                case 'w': player.y = (player.y || canvas.height/2) - speed; break;
-                case 's': player.y = (player.y || canvas.height/2) + speed; break;
-                case 'a': player.x = (player.x || canvas.width/2) - speed; break;
-                case 'd': player.x = (player.x || canvas.width/2) + speed; break;
-                case '1': player.mode = 'attract'; break;
-                case '2': player.mode = 'repel'; break;
-                case '3': player.mode = 'vortex'; break;
+                case '1': config.players[0].mode = 'attract'; break;
+                case '2': config.players[0].mode = 'repel'; break;
+                case '3': config.players[0].mode = 'vortex'; break;
+                case ' ': activateBigBang(); break;
             }
 
-            // Limita ao canvas
-            if(player.x) player.x = Math.max(10, Math.min(canvas.width - 10, player.x));
-            if(player.y) player.y = Math.max(10, Math.min(canvas.height - 10, player.y));
+            // Jogador 2 (modo cooperativo)
+            if(config.coopMode) {
+                const speed = 5;
+                const player = config.players[1];
+
+                switch(e.key.toLowerCase()) {
+                    case 'w': player.y = (player.y || canvas.height/2) - speed; break;
+                    case 's': player.y = (player.y || canvas.height/2) + speed; break;
+                    case 'a': player.x = (player.x || canvas.width/2) - speed; break;
+                    case 'd': player.x = (player.x || canvas.width/2) + speed; break;
+                    case 'q': player.mode = 'attract'; break;
+                    case 'e': player.mode = 'repel'; break;
+                    case 'r': player.mode = 'vortex'; break;
+                }
+
+                // Limita ao canvas
+                if(player.x) player.x = Math.max(10, Math.min(canvas.width - 10, player.x));
+                if(player.y) player.y = Math.max(10, Math.min(canvas.height - 10, player.y));
+            }
         });
 
         // Inicia o jogo
