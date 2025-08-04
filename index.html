@@ -1,94 +1,888 @@
-<script>
-// ... (código anterior permanece igual até a função updateEnemies)
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Universo de Partículas PRO Turbo</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
+            touch-action: manipulation;
+            font-family: Arial, sans-serif;
+        }
+        
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        .controls {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 100;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            max-width: 300px;
+        }
+        
+        button {
+            background: #4A00E0;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            flex-grow: 1;
+        }
+        
+        button:hover {
+            background: #8E2DE2;
+        }
+        
+        button.active {
+            background: #00F5A0;
+            color: #111;
+            box-shadow: 0 0 10px #00F5A0;
+        }
+        
+        .mobile-controls {
+            display: none;
+            position: fixed;
+            bottom: 15px;
+            left: 0;
+            right: 0;
+            justify-content: center;
+            gap: 10px;
+            padding: 10px;
+            z-index: 100;
+        }
+        
+        .mobile-btn {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            background: rgba(74, 0, 224, 0.9);
+            border: 2px solid rgba(255,255,255,0.2);
+            color: white;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        
+        .mobile-btn:active {
+            transform: scale(0.9);
+            background: rgba(142, 45, 226, 0.9);
+        }
+        
+        #galaxy-map {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.9);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            z-index: 1000;
+            display: none;
+            text-align: center;
+        }
+        
+        .galaxy {
+            margin: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .galaxy.unlocked {
+            background: rgba(74, 0, 224, 0.5);
+        }
+        
+        .galaxy.locked {
+            background: rgba(255,255,255,0.1);
+            cursor: not-allowed;
+        }
+        
+        /* NOVOS ESTILOS */
+        #fps-counter {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            color: white;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        
+        #xp-bar-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 20px;
+            background: rgba(0,0,0,0.7);
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+        }
+        
+        #xp-bar {
+            height: 60%;
+            width: 0%;
+            background: linear-gradient(90deg, #4A00E0, #8E2DE2);
+            transition: width 0.3s;
+            border-radius: 3px;
+        }
+        
+        #xp-text {
+            color: white;
+            margin-left: 10px;
+            font-size: 12px;
+            font-family: Arial, sans-serif;
+        }
+        
+        .enemy {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ff0000, #800000);
+            box-shadow: 0 0 15px #ff0000;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            font-family: monospace;
+            text-shadow: 0 0 5px black;
+        }
+        
+        .enemy-face {
+            transform: scale(1.2);
+        }
+        
+        .particle-trail {
+            position: absolute;
+            border-radius: 50%;
+            background: currentColor;
+            pointer-events: none;
+            z-index: 5;
+        }
+        
+        @media (max-width: 768px) {
+            .controls { display: none; }
+            .mobile-controls { display: flex; }
+        }
+        
+        @media (max-width: 400px) {
+            .mobile-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <button id="attract">🌀 Buraco Negro</button>
+        <button id="repel">✨ Repulsão</button>
+        <button id="vortex">🌪️ Vórtice</button>
+        <button id="show-galaxies">🌌 Galáxias</button>
+    </div>
 
-function updateEnemies() {
-    enemies.forEach((enemy, index) => {
-        // Movimento inteligente (sem mudanças)
-        if (Math.random() > 0.95) {
-            let avgX = 0, avgY = 0, count = 0;
-            particles.forEach(p => {
-                const dist = Math.sqrt((p.x - enemy.x)**2 + (p.y - enemy.y)**2);
-                if (dist < 200) {
-                    avgX += p.x;
-                    avgY += p.y;
-                    count++;
+    <div class="mobile-controls">
+        <button class="mobile-btn" id="mobileAttract">🌀</button>
+        <button class="mobile-btn" id="mobileRepel">✨</button>
+        <button class="mobile-btn" id="mobileVortex">🌪️</button>
+    </div>
+
+    <div id="galaxy-map">
+        <h2>Mapa Galáctico</h2>
+        <div id="galaxies-list">
+            <!-- Galáxias serão adicionadas aqui pelo JavaScript -->
+        </div>
+        <button id="close-galaxy-map">Fechar</button>
+    </div>
+
+    <!-- NOVOS ELEMENTOS -->
+    <div id="fps-counter">FPS: 60</div>
+    
+    <div id="xp-bar-container">
+        <div id="xp-bar"></div>
+        <div id="xp-text">0/100 XP (Nível 1)</div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <script>
+        // Configurações do jogo
+        const config = {
+            particleCount: 200,
+            mouseRadius: 150,
+            mode: 'normal',
+            galaxies: {
+                unlocked: ['classic'],
+                current: 'classic'
+            },
+            xp: 0,
+            level: 1,
+            power: 1
+        };
+
+        // Inicialização do canvas
+        const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Partículas
+        let particles = [];
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < config.particleCount; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 4 + 2,
+                    color: `hsl(${Math.random() * 360}, 80%, 60%)`,
+                    speedX: (Math.random() - 0.5) * 3,
+                    speedY: (Math.random() - 0.5) * 3,
+                    baseSpeedX: (Math.random() - 0.5) * 3,
+                    baseSpeedY: (Math.random() - 0.5) * 3,
+                    trail: []
+                });
+            }
+        }
+
+        // Controles
+        document.getElementById("attract").addEventListener('click', () => {
+            config.mode = 'attract';
+            document.querySelectorAll('.controls button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById("attract").classList.add('active');
+        });
+        
+        document.getElementById("repel").addEventListener('click', () => {
+            config.mode = 'repel';
+            document.querySelectorAll('.controls button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById("repel").classList.add('active');
+        });
+        
+        document.getElementById("vortex").addEventListener('click', () => {
+            config.mode = 'vortex';
+            document.querySelectorAll('.controls button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById("vortex").classList.add('active');
+        });
+
+        // Controles mobile
+        document.getElementById("mobileAttract").addEventListener('click', () => {
+            config.mode = 'attract';
+        });
+        
+        document.getElementById("mobileRepel").addEventListener('click', () => {
+            config.mode = 'repel';
+        });
+        
+        document.getElementById("mobileVortex").addEventListener('click', () => {
+            config.mode = 'vortex';
+        });
+
+        // Mouse
+        const mouse = { x: null, y: null };
+        canvas.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        // Sistema de Galáxias
+        const galaxies = {
+            classic: {
+                name: "Clássica",
+                description: "Modo padrão com física básica",
+                unlocked: true,
+                init: function() {
+                    config.particleCount = 200;
+                    initParticles();
+                }
+            },
+            electric: {
+                name: "Elétrica",
+                description: "Partículas com carga positiva e negativa",
+                unlocked: false,
+                requirement: "Alcance nível 2",
+                init: function() {
+                    config.particleCount = 250;
+                    initParticles();
+                }
+            },
+            quantum: {
+                name: "Quântica",
+                description: "Partículas podem se teleportar",
+                unlocked: false,
+                requirement: "Alcance nível 3",
+                init: function() {
+                    config.particleCount = 300;
+                    initParticles();
+                }
+            },
+            chaos: {
+                name: "Caótica",
+                description: "Modo frenético com física imprevisível",
+                unlocked: false,
+                requirement: "Alcance nível 5",
+                init: function() {
+                    config.particleCount = 400;
+                    initParticles();
+                }
+            }
+        };
+
+        function renderGalaxyMap() {
+            const container = document.getElementById('galaxies-list');
+            container.innerHTML = '';
+            
+            for (const [id, galaxy] of Object.entries(galaxies)) {
+                const galaxyElement = document.createElement('div');
+                galaxyElement.className = `galaxy ${galaxy.unlocked ? 'unlocked' : 'locked'}`;
+                galaxyElement.innerHTML = `
+                    <h3>${galaxy.name}</h3>
+                    <p>${galaxy.description}</p>
+                    ${!galaxy.unlocked ? `<small>${galaxy.requirement}</small>` : ''}
+                `;
+                
+                if (galaxy.unlocked) {
+                    galaxyElement.addEventListener('click', () => {
+                        config.galaxies.current = id;
+                        galaxies[id].init();
+                        document.getElementById('galaxy-map').style.display = 'none';
+                    });
+                }
+                
+                container.appendChild(galaxyElement);
+            }
+        }
+
+        document.getElementById("show-galaxies").addEventListener('click', () => {
+            document.getElementById('galaxy-map').style.display = 'block';
+            renderGalaxyMap();
+        });
+
+        document.getElementById("close-galaxy-map").addEventListener('click', () => {
+            document.getElementById('galaxy-map').style.display = 'none';
+        });
+
+        // NOVAS FUNÇÕES: INIMIGOS
+        let enemies = [];
+        let enemySpawnTimer = 0;
+        const enemyFaces = [">:]", ">:(", "X_X", ">_<", ":O", "◉_◉", "ಠ_ಠ"];
+        
+        function spawnEnemy() {
+            const size = Math.random() * 30 + 20;
+            enemies.push({
+                x: Math.random() * (canvas.width - size) + size/2,
+                y: Math.random() * (canvas.height - size) + size/2,
+                size: size,
+                speedX: (Math.random() - 0.5) * (3 + config.level * 0.5),
+                speedY: (Math.random() - 0.5) * (3 + config.level * 0.5),
+                health: 3 + config.level,
+                maxHealth: 3 + config.level,
+                face: enemyFaces[Math.floor(Math.random() * enemyFaces.length)],
+                type: Math.random() > 0.8 ? 'elite' : 'normal'
+            });
+        }
+        
+        function updateEnemies() {
+            enemies.forEach((enemy, index) => {
+                // Movimento mais inteligente (persegue agrupamentos de partículas)
+                if (Math.random() > 0.95) {
+                    let avgX = 0, avgY = 0, count = 0;
+                    particles.forEach(p => {
+                        const dist = Math.sqrt((p.x - enemy.x)**2 + (p.y - enemy.y)**2);
+                        if (dist < 200) {
+                            avgX += p.x;
+                            avgY += p.y;
+                            count++;
+                        }
+                    });
+                    
+                    if (count > 0) {
+                        avgX /= count;
+                        avgY /= count;
+                        const angle = Math.atan2(avgY - enemy.y, avgX - enemy.x);
+                        enemy.speedX = Math.cos(angle) * 2;
+                        enemy.speedY = Math.sin(angle) * 2;
+                    }
+                }
+                
+                // Movimento
+                enemy.x += enemy.speedX;
+                enemy.y += enemy.speedY;
+                
+                // Colisão com bordas (melhorada)
+                if (enemy.x < enemy.size/2) {
+                    enemy.x = enemy.size/2;
+                    enemy.speedX *= -1;
+                }
+                if (enemy.x > canvas.width - enemy.size/2) {
+                    enemy.x = canvas.width - enemy.size/2;
+                    enemy.speedX *= -1;
+                }
+                if (enemy.y < enemy.size/2) {
+                    enemy.y = enemy.size/2;
+                    enemy.speedY *= -1;
+                }
+                if (enemy.y > canvas.height - enemy.size/2) {
+                    enemy.y = canvas.height - enemy.size/2;
+                    enemy.speedY *= -1;
+                }
+                
+                // Verifica colisão com partículas (sistema melhorado)
+                particles.forEach(particle => {
+                    const dx = enemy.x - particle.x;
+                    const dy = enemy.y - particle.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const minDist = enemy.size/2 + particle.size/2;
+                    
+                    if (distance < minDist) {
+                        // Dano no inimigo (proporcional ao tamanho da partícula)
+                        enemy.health -= particle.size * 0.02 * config.power;
+                        
+                        // Efeito de colisão mais realista
+                        const overlap = minDist - distance;
+                        const angle = Math.atan2(dy, dx);
+                        
+                        // Reposiciona partícula
+                        particle.x = enemy.x - Math.cos(angle) * minDist;
+                        particle.y = enemy.y - Math.sin(angle) * minDist;
+                        
+                        // Aplica força de repulsão
+                        const force = overlap * 0.1;
+                        particle.speedX = -Math.cos(angle) * force * 3;
+                        particle.speedY = -Math.sin(angle) * force * 3;
+                        
+                        // Ganha XP por atingir inimigo
+                        addXP(particle.size * 0.05);
+                    }
+                });
+                
+                // Remove inimigos derrotados com efeito
+                if (enemy.health <= 0) {
+                    createExplosion(enemy.x, enemy.y, enemy.size);
+                    enemies.splice(index, 1);
+                    addXP(enemy.type === 'elite' ? 25 : 10);
+                }
+            });
+        }
+        
+        function createExplosion(x, y, size) {
+            // Cria partículas de explosão
+            for (let i = 0; i < 15; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    size: Math.random() * 3 + 1,
+                    color: `hsl(${Math.random() * 60}, 100%, 50%)`,
+                    speedX: (Math.random() - 0.5) * 10,
+                    speedY: (Math.random() - 0.5) * 10,
+                    baseSpeedX: 0,
+                    baseSpeedY: 0,
+                    life: 100 + Math.random() * 50,
+                    trail: []
+                });
+            }
+            
+            // Efeito visual
+            const explosion = document.createElement('div');
+            explosion.style.position = 'fixed';
+            explosion.style.left = `${x - size}px`;
+            explosion.style.top = `${y - size}px`;
+            explosion.style.width = `${size * 2}px`;
+            explosion.style.height = `${size * 2}px`;
+            explosion.style.borderRadius = '50%';
+            explosion.style.background = 'radial-gradient(circle, rgba(255,100,0,0.8) 0%, rgba(255,0,0,0) 70%)';
+            explosion.style.pointerEvents = 'none';
+            explosion.style.zIndex = '9';
+            explosion.style.transform = 'scale(0)';
+            explosion.style.transition = 'transform 0.3s ease-out, opacity 0.5s';
+            
+            document.body.appendChild(explosion);
+            
+            setTimeout(() => {
+                explosion.style.transform = 'scale(1.5)';
+                explosion.style.opacity = '0';
+                setTimeout(() => explosion.remove(), 500);
+            }, 10);
+        }
+        
+        function drawEnemies() {
+            enemies.forEach(enemy => {
+                // Corpo do inimigo (estilo melhorado)
+                const gradient = ctx.createRadialGradient(
+                    enemy.x, enemy.y, enemy.size * 0.3,
+                    enemy.x, enemy.y, enemy.size
+                );
+                
+                if (enemy.type === 'elite') {
+                    gradient.addColorStop(0, 'rgba(255, 215, 0, 0.9)');
+                    gradient.addColorStop(1, 'rgba(255, 50, 0, 0.8)');
+                } else {
+                    gradient.addColorStop(0, 'rgba(255, 50, 50, 0.8)');
+                    gradient.addColorStop(1, 'rgba(150, 0, 0, 0.8)');
+                }
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(enemy.x, enemy.y, enemy.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Efeito de borda
+                ctx.strokeStyle = enemy.type === 'elite' ? 'gold' : 'rgba(255,255,255,0.5)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Carinha do inimigo (estilo melhorado)
+                ctx.font = `${enemy.size/2}px monospace`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = enemy.type === 'elite' ? 'gold' : 'white';
+                ctx.fillText(enemy.face, enemy.x, enemy.y + (enemy.size * 0.05));
+                
+                // Barra de vida (melhor visualmente)
+                const healthBarWidth = enemy.size * 1.5;
+                const healthPercent = enemy.health / enemy.maxHealth;
+                
+                // Fundo da barra
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(
+                    enemy.x - healthBarWidth/2, 
+                    enemy.y - enemy.size - 15, 
+                    healthBarWidth, 
+                    8
+                );
+                
+                // Barra de vida colorida
+                const gradientHealth = ctx.createLinearGradient(
+                    enemy.x - healthBarWidth/2, 0,
+                    enemy.x + healthBarWidth/2, 0
+                );
+                
+                if (enemy.type === 'elite') {
+                    gradientHealth.addColorStop(0, '#ff0000');
+                    gradientHealth.addColorStop(0.5, '#ffcc00');
+                    gradientHealth.addColorStop(1, '#00ff00');
+                } else {
+                    gradientHealth.addColorStop(0, '#ff0000');
+                    gradientHealth.addColorStop(1, '#00ff00');
+                }
+                
+                ctx.fillStyle = gradientHealth;
+                ctx.fillRect(
+                    enemy.x - healthBarWidth/2, 
+                    enemy.y - enemy.size - 15, 
+                    healthBarWidth * healthPercent, 
+                    8
+                );
+                
+                // Borda da barra
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(
+                    enemy.x - healthBarWidth/2, 
+                    enemy.y - enemy.size - 15, 
+                    healthBarWidth, 
+                    8
+                );
+            });
+        }
+
+        // SISTEMA DE XP E NÍVEL
+        function addXP(amount) {
+            config.xp += amount * (1 + config.level * 0.2);
+            const maxXP = 100 + (config.level * 30);
+            
+            if (config.xp >= maxXP) {
+                config.xp -= maxXP;
+                config.level++;
+                config.power += 0.2;
+                
+                // Desbloqueia galáxias conforme o nível
+                if (config.level >= 2 && !galaxies.electric.unlocked) {
+                    galaxies.electric.unlocked = true;
+                    showUnlockMessage("Galáxia Elétrica desbloqueada!");
+                }
+                if (config.level >= 3 && !galaxies.quantum.unlocked) {
+                    galaxies.quantum.unlocked = true;
+                    showUnlockMessage("Galáxia Quântica desbloqueada!");
+                }
+                if (config.level >= 5 && !galaxies.chaos.unlocked) {
+                    galaxies.chaos.unlocked = true;
+                    showUnlockMessage("Galáxia Caótica desbloqueada!");
+                }
+                
+                showUnlockMessage(`Nível UP! Agora você é nível ${config.level}`);
+            }
+            updateXPBar();
+        }
+        
+        function showUnlockMessage(text) {
+            const message = document.createElement('div');
+            message.style.position = 'fixed';
+            message.style.top = '50%';
+            message.style.left = '50%';
+            message.style.transform = 'translate(-50%, -50%)';
+            message.style.backgroundColor = 'rgba(0,0,0,0.9)';
+            message.style.color = '#00F5A0';
+            message.style.padding = '20px 30px';
+            message.style.borderRadius = '10px';
+            message.style.zIndex = '10000';
+            message.style.textAlign = 'center';
+            message.style.fontSize = '24px';
+            message.style.boxShadow = '0 0 20px #00F5A0';
+            message.style.border = '2px solid #00F5A0';
+            message.style.fontWeight = 'bold';
+            message.textContent = text;
+            
+            document.body.appendChild(message);
+            
+            setTimeout(() => {
+                message.style.transition = 'all 0.5s';
+                message.style.opacity = '0';
+                message.style.transform = 'translate(-50%, -50%) scale(1.2)';
+                setTimeout(() => message.remove(), 500);
+            }, 2000);
+        }
+        
+        function updateXPBar() {
+            const maxXP = 100 + (config.level * 30);
+            const xpPercent = (config.xp / maxXP) * 100;
+            document.getElementById('xp-bar').style.width = `${xpPercent}%`;
+            document.getElementById('xp-text').textContent = 
+                `${Math.floor(config.xp)}/${maxXP} XP (Nível ${config.level})`;
+        }
+
+        // CONTADOR DE FPS
+        let fps = 0;
+        let lastUpdate = performance.now();
+        let frameCount = 0;
+        
+        function updateFPSCounter() {
+            frameCount++;
+            const now = performance.now();
+            if (now - lastUpdate >= 1000) {
+                fps = frameCount;
+                frameCount = 0;
+                lastUpdate = now;
+                document.getElementById('fps-counter').textContent = `FPS: ${fps}`;
+            }
+        }
+
+        // LOOP DO JOGO (COM MODOS MELHORADOS)
+        function animate() {
+            updateFPSCounter();
+            
+            // Limpa o canvas com efeito de rastro controlado
+            ctx.fillStyle = `rgba(10, 10, 20, ${config.galaxies.current === 'chaos' ? 0.1 : 0.2})`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Spawn de inimigos (dificuldade progressiva)
+            enemySpawnTimer++;
+            const maxEnemies = 3 + Math.floor(config.level/2);
+            if (enemySpawnTimer > 120 - (config.level * 5) && enemies.length < maxEnemies) {
+                spawnEnemy();
+                enemySpawnTimer = 0;
+            }
+            
+            updateEnemies();
+            
+            // Atualiza partículas (com física melhorada)
+            particles.forEach((p, index) => {
+                // Remove partículas muito antigas
+                if (p.life !== undefined && p.life-- <= 0) {
+                    particles.splice(index, 1);
+                    return;
+                }
+                
+                // Reseta para a velocidade base
+                p.speedX = p.baseSpeedX;
+                p.speedY = p.baseSpeedY;
+
+                // Efeitos especiais por galáxia
+                switch(config.galaxies.current) {
+                    case 'electric':
+                        // Partículas com carga elétrica (atraem/repelem outras)
+                        particles.forEach(other => {
+                            if (other !== p) {
+                                const dx = other.x - p.x;
+                                const dy = other.y - p.y;
+                                const distance = Math.sqrt(dx * dx + dy * dy);
+                                
+                                if (distance < 100) {
+                                    const force = (100 - distance) / 5000;
+                                    const angle = Math.atan2(dy, dx);
+                                    
+                                    // Alterna entre atrair e repelir
+                                    const polarity = Math.sin(index * 100) > 0 ? 1 : -1;
+                                    
+                                    p.speedX += Math.cos(angle) * force * polarity;
+                                    p.speedY += Math.sin(angle) * force * polarity;
+                                }
+                            }
+                        });
+                        break;
+                        
+                    case 'quantum':
+                        // Teletransporte aleatório
+                        if (Math.random() < 0.001) {
+                            p.x = Math.random() * canvas.width;
+                            p.y = Math.random() * canvas.height;
+                        }
+                        break;
+                        
+                    case 'chaos':
+                        // Física caótica
+                        p.speedX += (Math.random() - 0.5) * 0.5;
+                        p.speedY += (Math.random() - 0.5) * 0.5;
+                        break;
+                }
+
+                // Interações com o mouse (MODOS MELHORADOS)
+                if (mouse.x && mouse.y && config.mode !== 'normal') {
+                    const dx = mouse.x - p.x;
+                    const dy = mouse.y - p.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    const maxDist = config.mouseRadius * (1 + config.level * 0.1);
+                    
+                    if (distance < maxDist) {
+                        const force = (maxDist - distance) / maxDist;
+                        const angle = Math.atan2(dy, dx);
+                        
+                        switch(config.mode) {
+                            case 'attract':
+                                // Buraco Negro turbinado
+                                p.speedX += dx * 0.08 * force * config.power;
+                                p.speedY += dy * 0.08 * force * config.power;
+                                
+                                // Efeito visual
+                                if (distance < maxDist * 0.3 && Math.random() < 0.1) {
+                                    p.color = `hsl(${(Date.now()/20) % 360}, 100%, 50%)`;
+                                }
+                                break;
+                                
+                            case 'repel':
+                                // Repulsão turbinada
+                                p.speedX -= dx * 0.05 * force * config.power;
+                                p.speedY -= dy * 0.05 * force * config.power;
+                                
+                                // Efeito de onda de choque
+                                if (distance < maxDist * 0.5) {
+                                    p.speedX += (Math.random() - 0.5) * force * 2;
+                                    p.speedY += (Math.random() - 0.5) * force * 2;
+                                }
+                                break;
+                                
+                            case 'vortex':
+                                // Vórtice turbinado
+                                const vortexPower = 0.06 * config.power;
+                                p.speedX += Math.cos(angle + Math.PI/2) * vortexPower * force;
+                                p.speedY += Math.sin(angle + Math.PI/2) * vortexPower * force;
+                                
+                                // Atração central adicional
+                                p.speedX += dx * 0.02 * force;
+                                p.speedY += dy * 0.02 * force;
+                                
+                                // Efeito espiral
+                                p.color = `hsl(${(angle * 180/Math.PI + Date.now()/20) % 360}, 80%, 60%)`;
+                                break;
+                        }
+                    }
+                }
+
+                // Atualiza posição com limite de velocidade
+                const maxSpeed = 10 + config.level;
+                p.speedX = Math.max(-maxSpeed, Math.min(maxSpeed, p.speedX));
+                p.speedY = Math.max(-maxSpeed, Math.min(maxSpeed, p.speedY));
+                
+                p.x += p.speedX;
+                p.y += p.speedY;
+
+                // Verifica bordas (com comportamento melhorado)
+                if (p.x < 0) {
+                    p.x = 0;
+                    p.speedX *= -0.9;
+                } else if (p.x > canvas.width) {
+                    p.x = canvas.width;
+                    p.speedX *= -0.9;
+                }
+                
+                if (p.y < 0) {
+                    p.y = 0;
+                    p.speedY *= -0.9;
+                } else if (p.y > canvas.height) {
+                    p.y = canvas.height;
+                    p.speedY *= -0.9;
+                }
+
+                // Rastro das partículas
+                if (p.trail) {
+                    p.trail.push({x: p.x, y: p.y});
+                    if (p.trail.length > 10) p.trail.shift();
                 }
             });
             
-            if (count > 0) {
-                avgX /= count;
-                avgY /= count;
-                const angle = Math.atan2(avgY - enemy.y, avgX - enemy.x);
-                enemy.speedX = Math.cos(angle) * 2;
-                enemy.speedY = Math.sin(angle) * 2;
-            }
-        }
-        
-        // Movimento e colisão com bordas (sem mudanças)
-        enemy.x += enemy.speedX;
-        enemy.y += enemy.speedY;
-        
-        if (enemy.x < enemy.size/2) enemy.x = enemy.size/2;
-        if (enemy.x > canvas.width - enemy.size/2) enemy.x = canvas.width - enemy.size/2;
-        if (enemy.y < enemy.size/2) enemy.y = enemy.size/2;
-        if (enemy.y > canvas.height - enemy.size/2) enemy.y = canvas.height - enemy.size/2;
-        
-        // REMOVIDO: Sistema de dano aos inimigos
-    });
-}
-
-// Modo Buraco Negro Modificado
-function animate() {
-    // ... (código anterior permanece)
-    
-    particles.forEach((p, index) => {
-        // ... (outras físicas permanecem)
-        
-        // Modo Buraco Negro - Versão Modificada
-        if (mouse.x && mouse.y && config.mode === 'attract') {
-            const dx = mouse.x - p.x;
-            const dy = mouse.y - p.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            const maxDist = config.mouseRadius * 0.8; // 20% menor
-            
-            if (distance < maxDist) {
-                const force = (maxDist - distance) / maxDist;
-                const angle = Math.atan2(dy, dx);
-                
-                // Atração mais suave (50% da força original)
-                p.speedX += dx * 0.04 * force * config.power;
-                p.speedY += dy * 0.04 * force * config.power;
-                
-                // "Engole" partículas muito próximas
-                if (distance < maxDist * 0.2) {
-                    particles.splice(index, 1);
-                    addXP(3); // Ganha XP por engolir partículas
-                    
-                    // Efeito visual
-                    const spark = document.createElement('div');
-                    spark.style.position = 'fixed';
-                    spark.style.left = `${p.x}px`;
-                    spark.style.top = `${p.y}px`;
-                    spark.style.width = '5px';
-                    spark.style.height = '5px';
-                    spark.style.borderRadius = '50%';
-                    spark.style.background = p.color;
-                    spark.style.boxShadow = `0 0 10px ${p.color}`;
-                    spark.style.transition = 'all 0.3s';
-                    document.body.appendChild(spark);
-                    
-                    setTimeout(() => {
-                        spark.style.transform = `translate(${mouse.x-p.x}px, ${mouse.y-p.y}px) scale(0)`;
-                        spark.style.opacity = '0';
-                        setTimeout(() => spark.remove(), 300);
-                    }, 10);
+            // Desenha partículas (com rastros)
+            particles.forEach(p => {
+                // Desenha rastro
+                if (p.trail && p.trail.length > 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(p.trail[0].x, p.trail[0].y);
+                    for (let i = 1; i < p.trail.length; i++) {
+                        ctx.lineTo(p.trail[i].x, p.trail[i].y);
+                    }
+                    ctx.strokeStyle = p.color.replace(')', ', 0.3)').replace('hsl', 'hsla');
+                    ctx.lineWidth = p.size / 2;
+                    ctx.stroke();
                 }
-            }
+                
+                // Desenha partícula
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            drawEnemies();
+            
+            requestAnimationFrame(animate);
         }
-    });
-    
-    // ... (restante do código permanece)
-}
 
-// ... (restante do código permanece igual)
-</script>
+        // Redimensionamento
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initParticles();
+        });
+
+        // Inicia o jogo
+        initParticles();
+        updateXPBar();
+        animate();
+    </script>
+</body>
+</html>
