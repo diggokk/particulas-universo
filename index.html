@@ -3,24 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Universo de Partículas PRO</title>
+    <title>Universo de Partículas TURBO</title>
     <style>
-        /* ===== BASE ===== */
         body {
             margin: 0;
             overflow: hidden;
             background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
             touch-action: manipulation;
-            font-family: 'Segoe UI', sans-serif;
+            font-family: Arial, sans-serif;
         }
-
+        
         canvas {
             display: block;
             width: 100vw;
             height: 100vh;
         }
-
-        /* ===== CONTROLES ===== */
+        
         .controls {
             position: fixed;
             top: 10px;
@@ -36,7 +34,7 @@
             max-width: 300px;
             backdrop-filter: blur(5px);
         }
-
+        
         button {
             background: linear-gradient(135deg, #4A00E0, #8E2DE2);
             color: white;
@@ -44,65 +42,22 @@
             padding: 8px 12px;
             border-radius: 5px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all 0.2s;
             font-size: 14px;
             flex-grow: 1;
         }
-
+        
         button:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(142, 45, 226, 0.4);
         }
-
+        
         button.active {
             background: linear-gradient(135deg, #00F5A0, #00D2FF);
             color: #111;
             box-shadow: 0 0 15px #00F5A0;
         }
-
-        /* ===== MOBILE ===== */
-        .mobile-controls {
-            display: none;
-            position: fixed;
-            bottom: 20px;
-            left: 0;
-            right: 0;
-            justify-content: center;
-            gap: 15px;
-            padding: 10px;
-            z-index: 100;
-        }
-
-        .mobile-btn {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: rgba(74, 0, 224, 0.9);
-            border: 2px solid rgba(255,255,255,0.3);
-            color: white;
-            font-size: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-
-        .mobile-btn:active {
-            transform: scale(0.9);
-        }
-
-        .wormhole {
-            animation: pulse 2s infinite alternate;
-        }
-
-        @keyframes pulse {
-            0% { box-shadow: 0 0 5px currentColor; }
-            100% { box-shadow: 0 0 20px currentColor; }
-        }
-
-        /* ===== DEBUG PANEL ===== */
+        
         #debug-panel {
             position: fixed;
             top: 10px;
@@ -115,188 +70,165 @@
             font-size: 14px;
             backdrop-filter: blur(5px);
         }
-
-        /* ===== RESPONSIVO ===== */
+        
         @media (max-width: 768px) {
-            .controls { display: none; }
-            .mobile-controls { display: flex; }
-            
-            #debug-panel {
-                top: auto;
-                bottom: 80px;
-                right: 50%;
-                transform: translateX(50%);
-            }
+            .controls { max-width: 200px; }
+            #debug-panel { font-size: 12px; }
         }
     </style>
 </head>
 <body>
-    <!-- Painel de Controle -->
     <div class="controls">
-        <button id="attract">🌀 Buraco Negro</button>
-        <button id="repel">✨ Repulsão</button>
+        <button id="attract" class="active">🌀 Atrair</button>
+        <button id="repel">✨ Repelir</button>
         <button id="vortex">🌪️ Vórtice</button>
-        <input type="range" id="particleRange" min="50" max="1000" value="150">
+        <input type="range" id="particleRange" min="50" max="2000" value="500">
     </div>
 
-    <!-- Controles Mobile -->
-    <div class="mobile-controls">
-        <button class="mobile-btn wormhole" id="mobileAttract">🌀</button>
-        <button class="mobile-btn wormhole" id="mobileRepel">✨</button>
-        <button class="mobile-btn wormhole" id="mobileVortex">🌪️</button>
-    </div>
-
-    <!-- Painel Debug -->
     <div id="debug-panel">
-        FPS: <span id="fps-counter">0</span> | 
-        Partículas: <span id="particle-counter">0</span>
+        FPS: <span id="fps">0</span> | 
+        Partículas: <span id="particle-count">0</span>
     </div>
 
-    <canvas id="particleCanvas"></canvas>
+    <canvas id="canvas"></canvas>
 
     <script>
-        // ===== CONFIGURAÇÕES =====
+        // ===== CONFIG =====
         const config = {
-            particleCount: 150,
-            mouseRadius: 120,
-            mode: 'attract',
-            lineThreshold: 100,
-            starCount: 200
+            particleCount: 500,
+            mouseRadius: 150,
+            modes: ['attract', 'repel', 'vortex'],
+            currentMode: 'attract'
         };
 
-        // ===== ELEMENTOS DOM =====
-        const canvas = document.getElementById("particleCanvas");
-        const ctx = canvas.getContext("2d");
-        const fpsCounter = document.getElementById("fps-counter");
-        const particleCounter = document.getElementById("particle-counter");
-
-        // ===== SISTEMA DE PARTÍCULAS =====
-        class Particle {
-            constructor() {
-                this.reset();
-                this.trail = [];
-                this.maxTrailLength = 5;
-            }
-            
-            reset() {
-                this.x = Math.random() * canvas.width;
-                this.y = Math.random() * canvas.height;
-                this.size = Math.random() * 3 + 1;
-                this.speedX = (Math.random() - 0.5) * 2;
-                this.speedY = (Math.random() - 0.5) * 2;
-                this.color = `hsl(${Math.random() * 360}, 80%, 60%)`;
-                this.alive = true;
-            }
-            
-            update() {
-                // Atualiza posição
-                this.x += this.speedX;
-                this.y += this.speedY;
-                
-                // Rebate nas bordas
-                if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
-                if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
-                
-                // Mantém dentro do canvas
-                this.x = Math.max(0, Math.min(canvas.width, this.x));
-                this.y = Math.max(0, Math.min(canvas.height, this.y));
-            }
-            
-            draw() {
-                // Desenha a partícula
-                ctx.fillStyle = this.color;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-
-        // Inicializa partículas
+        // ===== SETUP =====
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
         let particles = [];
-        function initParticles() {
-            particles = [];
-            for (let i = 0; i < config.particleCount; i++) {
-                particles.push(new Particle());
-            }
-        }
+        let mouse = { x: Infinity, y: Infinity };
+        let lastTime = 0;
+        let fps = 0;
 
-        // ===== SISTEMA DE ANIMAÇÃO =====
-        function animate() {
-            // Limpa o canvas com efeito de rastro
-            ctx.fillStyle = 'rgba(10, 10, 30, 0.2)';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Atualiza e desenha partículas
-            particles.forEach(p => {
-                p.update();
-                p.draw();
-            });
-            
-            // Atualiza contadores
-            if (fpsCounter) fpsCounter.textContent = Math.floor(frameRate());
-            if (particleCounter) particleCounter.textContent = particles.length;
-            
-            requestAnimationFrame(animate);
-        }
-
-        // ===== CONTROLES =====
-        const mouse = { x: null, y: null };
-        canvas.addEventListener('mousemove', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            mouse.x = e.clientX - rect.left;
-            mouse.y = e.clientY - rect.top;
-        });
-
-        // Controles de modo
-        document.getElementById("attract").addEventListener('click', () => {
-            config.mode = 'attract';
-        });
-        document.getElementById("repel").addEventListener('click', () => {
-            config.mode = 'repel';
-        });
-        document.getElementById("vortex").addEventListener('click', () => {
-            config.mode = 'vortex';
-        });
-
-        // Controles mobile
-        document.getElementById("mobileAttract").addEventListener('click', () => {
-            config.mode = 'attract';
-        });
-        document.getElementById("mobileRepel").addEventListener('click', () => {
-            config.mode = 'repel';
-        });
-        document.getElementById("mobileVortex").addEventListener('click', () => {
-            config.mode = 'vortex';
-        });
-
-        // Controle de quantidade de partículas
-        document.getElementById("particleRange").addEventListener('input', (e) => {
-            config.particleCount = parseInt(e.target.value);
-            initParticles();
-        });
-
-        // ===== INICIALIZAÇÃO =====
+        // ===== CORE FUNCTIONS =====
         function resizeCanvas() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
             initParticles();
         }
 
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < config.particleCount; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 3 + 1,
+                    speedX: (Math.random() - 0.5) * 2,
+                    speedY: (Math.random() - 0.5) * 2,
+                    color: `hsl(${Math.random() * 360}, 80%, 60%)`
+                });
+            }
+        }
+
+        function updateParticles() {
+            particles.forEach(p => {
+                // Physics
+                p.x += p.speedX;
+                p.y += p.speedY;
+                
+                // Bounce off edges
+                if (p.x < 0 || p.x > canvas.width) p.speedX *= -0.8;
+                if (p.y < 0 || p.y > canvas.height) p.speedY *= -0.8;
+                
+                // Mouse interaction
+                const dx = mouse.x - p.x;
+                const dy = mouse.y - p.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                if (dist < config.mouseRadius) {
+                    const force = (config.mouseRadius - dist) / config.mouseRadius;
+                    const angle = Math.atan2(dy, dx);
+                    
+                    switch(config.currentMode) {
+                        case 'attract':
+                            p.x += Math.cos(angle) * force * 5;
+                            p.y += Math.sin(angle) * force * 5;
+                            break;
+                        case 'repel':
+                            p.x -= Math.cos(angle) * force * 5;
+                            p.y -= Math.sin(angle) * force * 5;
+                            break;
+                        case 'vortex':
+                            p.x += Math.cos(angle + Math.PI/2) * force * 3;
+                            p.y += Math.sin(angle + Math.PI/2) * force * 3;
+                            break;
+                    }
+                }
+            });
+        }
+
+        function drawParticles() {
+            ctx.fillStyle = 'rgba(10, 10, 30, 0.2)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+                ctx.fill();
+            });
+        }
+
+        function animate(currentTime) {
+            // Calculate FPS
+            fps = Math.round(1000 / (currentTime - lastTime));
+            lastTime = currentTime;
+            
+            // Update debug panel
+            document.getElementById('fps').textContent = fps;
+            document.getElementById('particle-count').textContent = particles.length;
+            
+            // Game loop
+            updateParticles();
+            drawParticles();
+            
+            requestAnimationFrame(animate);
+        }
+
+        // ===== EVENT LISTENERS =====
         window.addEventListener('resize', resizeCanvas);
+        
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+        });
+        
+        canvas.addEventListener('mouseleave', () => {
+            mouse.x = Infinity;
+            mouse.y = Infinity;
+        });
+        
+        // Mode buttons
+        config.modes.forEach(mode => {
+            document.getElementById(mode).addEventListener('click', () => {
+                config.currentMode = mode;
+                document.querySelectorAll('.controls button').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                document.getElementById(mode).classList.add('active');
+            });
+        });
+        
+        // Particle count slider
+        document.getElementById('particleRange').addEventListener('input', (e) => {
+            config.particleCount = parseInt(e.target.value);
+            initParticles();
+        });
+
+        // ===== START =====
         resizeCanvas();
-
-        // Calcula FPS
-        let lastTime = 0;
-        let frameRate = () => {
-            const now = performance.now();
-            const fps = 1000 / (now - lastTime);
-            lastTime = now;
-            return fps;
-        };
-
-        // Inicia a animação
-        initParticles();
-        animate();
+        requestAnimationFrame(animate);
     </script>
 </body>
 </html>
