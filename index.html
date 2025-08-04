@@ -4,131 +4,130 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Universo de Partículas PRO</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* ===== BASE ===== */
-body {
-    margin: 0;
-    overflow: hidden;
-    background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
-    touch-action: manipulation;
-    font-family: 'Segoe UI', sans-serif;
-}
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
+            touch-action: manipulation;
+            font-family: 'Segoe UI', sans-serif;
+        }
 
-canvas {
-    display: block;
-    width: 100vw;
-    height: 100vh;
-}
+        canvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
+        }
 
-/* ===== CONTROLES ===== */
-.controls {
-    position: fixed;
-    top: 10px;
-    left: 10px;
-    z-index: 100;
-    background: rgba(0,0,0,0.7);
-    padding: 10px;
-    border-radius: 5px;
-    color: white;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    max-width: 300px;
-    backdrop-filter: blur(5px);
-}
+        /* ===== CONTROLES ===== */
+        .controls {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 100;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+            color: white;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            max-width: 300px;
+            backdrop-filter: blur(5px);
+        }
 
-button {
-    background: linear-gradient(135deg, #4A00E0, #8E2DE2);
-    color: white;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: all 0.3s;
-    font-size: 14px;
-    flex-grow: 1;
-}
+        button {
+            background: linear-gradient(135deg, #4A00E0, #8E2DE2);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            flex-grow: 1;
+        }
 
-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(142, 45, 226, 0.4);
-}
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(142, 45, 226, 0.4);
+        }
 
-button.active {
-    background: linear-gradient(135deg, #00F5A0, #00D2FF);
-    color: #111;
-    box-shadow: 0 0 15px #00F5A0;
-}
+        button.active {
+            background: linear-gradient(135deg, #00F5A0, #00D2FF);
+            color: #111;
+            box-shadow: 0 0 15px #00F5A0;
+        }
 
-/* ===== MOBILE ===== */
-.mobile-controls {
-    display: none;
-    position: fixed;
-    bottom: 20px;
-    left: 0;
-    right: 0;
-    justify-content: center;
-    gap: 15px;
-    padding: 10px;
-    z-index: 100;
-}
+        /* ===== MOBILE ===== */
+        .mobile-controls {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            justify-content: center;
+            gap: 15px;
+            padding: 10px;
+            z-index: 100;
+        }
 
-.mobile-btn {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    background: rgba(74, 0, 224, 0.9);
-    border: 2px solid rgba(255,255,255,0.3);
-    color: white;
-    font-size: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-}
+        .mobile-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(74, 0, 224, 0.9);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
 
-.mobile-btn:active {
-    transform: scale(0.9);
-}
+        .mobile-btn:active {
+            transform: scale(0.9);
+        }
 
-.wormhole {
-    animation: pulse 2s infinite alternate;
-}
+        .wormhole {
+            animation: pulse 2s infinite alternate;
+        }
 
-@keyframes pulse {
-    0% { box-shadow: 0 0 5px currentColor; }
-    100% { box-shadow: 0 0 20px currentColor; }
-}
+        @keyframes pulse {
+            0% { box-shadow: 0 0 5px currentColor; }
+            100% { box-shadow: 0 0 20px currentColor; }
+        }
 
-/* ===== DEBUG PANEL ===== */
-#debug-panel {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    background: rgba(0,0,0,0.7);
-    color: white;
-    padding: 8px 12px;
-    border-radius: 5px;
-    font-family: 'Courier New', monospace;
-    font-size: 14px;
-    backdrop-filter: blur(5px);
-}
+        /* ===== DEBUG PANEL ===== */
+        #debug-panel {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            backdrop-filter: blur(5px);
+        }
 
-/* ===== RESPONSIVO ===== */
-@media (max-width: 768px) {
-    .controls { display: none; }
-    .mobile-controls { display: flex; }
-    
-    #debug-panel {
-        top: auto;
-        bottom: 80px;
-        right: 50%;
-        transform: translateX(50%);
-    }
-}
+        /* ===== RESPONSIVO ===== */
+        @media (max-width: 768px) {
+            .controls { display: none; }
+            .mobile-controls { display: flex; }
+            
+            #debug-panel {
+                top: auto;
+                bottom: 80px;
+                right: 50%;
+                transform: translateX(50%);
+            }
+        }
     </style>
 </head>
 <body>
@@ -162,11 +161,7 @@ button.active {
             mouseRadius: 120,
             mode: 'attract',
             lineThreshold: 100,
-            starCount: 200,
-            power: 0,
-            health: 100,
-            blackHoleActive: false,
-            doubleBlackHole: false
+            starCount: 200
         };
 
         // ===== ELEMENTOS DOM =====
@@ -175,7 +170,7 @@ button.active {
         const fpsCounter = document.getElementById("fps-counter");
         const particleCounter = document.getElementById("particle-counter");
 
-        // ===== SISTEMA DE POOL DE PARTÍCULAS =====
+        // ===== SISTEMA DE PARTÍCULAS =====
         class Particle {
             constructor() {
                 this.reset();
@@ -192,28 +187,115 @@ button.active {
                 this.color = `hsl(${Math.random() * 360}, 80%, 60%)`;
                 this.alive = true;
             }
+            
+            update() {
+                // Atualiza posição
+                this.x += this.speedX;
+                this.y += this.speedY;
+                
+                // Rebate nas bordas
+                if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+                
+                // Mantém dentro do canvas
+                this.x = Math.max(0, Math.min(canvas.width, this.x));
+                this.y = Math.max(0, Math.min(canvas.height, this.y));
+            }
+            
+            draw() {
+                // Desenha a partícula
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
         }
 
-        // ... (TODO o restante do novo JavaScript que te enviei) ...
+        // Inicializa partículas
+        let particles = [];
+        function initParticles() {
+            particles = [];
+            for (let i = 0; i < config.particleCount; i++) {
+                particles.push(new Particle());
+            }
+        }
 
-        // ===== ANIMAÇÃO PRINCIPAL =====
+        // ===== SISTEMA DE ANIMAÇÃO =====
         function animate() {
-            ctx.fillStyle = 'rgba(0, 0, 20, 0.1)';
+            // Limpa o canvas com efeito de rastro
+            ctx.fillStyle = 'rgba(10, 10, 30, 0.2)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            drawStars();
-            updateWormholes();
-
+            
+            // Atualiza e desenha partículas
             particles.forEach(p => {
                 p.update();
                 p.draw();
             });
-
+            
+            // Atualiza contadores
+            if (fpsCounter) fpsCounter.textContent = Math.floor(frameRate());
+            if (particleCounter) particleCounter.textContent = particles.length;
+            
             requestAnimationFrame(animate);
         }
 
-        // Inicialização
-        initStars();
+        // ===== CONTROLES =====
+        const mouse = { x: null, y: null };
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = e.clientX - rect.left;
+            mouse.y = e.clientY - rect.top;
+        });
+
+        // Controles de modo
+        document.getElementById("attract").addEventListener('click', () => {
+            config.mode = 'attract';
+        });
+        document.getElementById("repel").addEventListener('click', () => {
+            config.mode = 'repel';
+        });
+        document.getElementById("vortex").addEventListener('click', () => {
+            config.mode = 'vortex';
+        });
+
+        // Controles mobile
+        document.getElementById("mobileAttract").addEventListener('click', () => {
+            config.mode = 'attract';
+        });
+        document.getElementById("mobileRepel").addEventListener('click', () => {
+            config.mode = 'repel';
+        });
+        document.getElementById("mobileVortex").addEventListener('click', () => {
+            config.mode = 'vortex';
+        });
+
+        // Controle de quantidade de partículas
+        document.getElementById("particleRange").addEventListener('input', (e) => {
+            config.particleCount = parseInt(e.target.value);
+            initParticles();
+        });
+
+        // ===== INICIALIZAÇÃO =====
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initParticles();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // Calcula FPS
+        let lastTime = 0;
+        let frameRate = () => {
+            const now = performance.now();
+            const fps = 1000 / (now - lastTime);
+            lastTime = now;
+            return fps;
+        };
+
+        // Inicia a animação
+        initParticles();
         animate();
     </script>
 </body>
