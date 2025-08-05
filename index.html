@@ -11,6 +11,7 @@
             background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
             touch-action: manipulation;
             font-family: Arial, sans-serif;
+            transition: transform 0.1s;
         }
 
         canvas {
@@ -51,7 +52,6 @@
             background: rgba(142, 45, 226, 0.9);
         }
 
-        /* Menu Hamburguer */
         #menu-toggle {
             position: fixed;
             top: 15px;
@@ -201,6 +201,7 @@
             height: 100%;
             width: 100%;
             transition: width 0.3s;
+            background: linear-gradient(90deg, #FF0000, #00FF00);
         }
 
         #bigbang-cooldown {
@@ -236,10 +237,6 @@
             font-size: 20px;
             font-family: monospace;
             text-shadow: 0 0 5px black;
-        }
-
-        .enemy-face {
-            transform: scale(1.2);
         }
 
         .particle-trail {
@@ -296,6 +293,64 @@
             max-width: 400px;
         }
 
+        /* Novos estilos adicionados */
+        .coop-controls-info {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 100;
+            display: none;
+        }
+
+        .coop-controls-info h4 {
+            margin-top: 0;
+            color: #00F5A0;
+        }
+
+        .coop-controls-info.active {
+            display: block;
+        }
+
+        #bigbang-center-btn {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #FF00FF, #FF4500);
+            border: 3px solid rgba(255,255,255,0.5);
+            color: white;
+            font-size: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 0 30px rgba(255, 0, 255, 0.7);
+            transition: all 0.2s;
+        }
+
+        #bigbang-center-btn:active {
+            transform: translateX(-50%) scale(0.9);
+            box-shadow: 0 0 50px rgba(255, 0, 255, 1);
+        }
+
+        .bigbang-effect {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+
         @media (max-width: 768px) {
             .mobile-controls { display: flex; }
             #menu {
@@ -310,6 +365,15 @@
                 width: 50px;
                 height: 50px;
                 font-size: 20px;
+            }
+            .coop-controls-info {
+                display: none !important;
+            }
+            #bigbang-center-btn {
+                width: 70px;
+                height: 70px;
+                font-size: 25px;
+                bottom: 20px;
             }
         }
     </style>
@@ -341,6 +405,9 @@
 
     <!-- Botão Big Bang -->
     <div id="bigbang-btn" title="Big Bang (Espaço)">💥</div>
+    
+    <!-- Novo botão Big Bang central -->
+    <div id="bigbang-center-btn" title="Big Bang">💥</div>
 
     <!-- Controles mobile -->
     <div class="mobile-controls">
@@ -354,6 +421,16 @@
         <button class="mobile-btn" id="mobileAttractP2">🧲</button>
         <button class="mobile-btn" id="mobileRepelP2">💥</button>
         <button class="mobile-btn" id="mobileVortexP2">🌪️</button>
+    </div>
+
+    <!-- Painel de controles cooperativo -->
+    <div id="coop-controls-info" class="coop-controls-info">
+        <h4>Controles Jogador 2</h4>
+        <p>WASD: Mover</p>
+        <p>1: Atração (🧲)</p>
+        <p>2: Repulsão (💥)</p>
+        <p>3: Vórtice (🌪️)</p>
+        <p>0: Normal</p>
     </div>
 
     <div id="galaxy-map">
@@ -420,7 +497,11 @@
                     power: 1,
                     health: 100,
                     face: "🐱",
-                    active: false
+                    active: false,
+                    movingUp: false,
+                    movingDown: false,
+                    movingLeft: false,
+                    movingRight: false
                 }
             ],
             coopMode: false,
@@ -518,7 +599,9 @@
 
         // Fechar menu ao clicar fora
         document.addEventListener('click', (e) => {
-            if (!menu.contains(e.target) && e.target !== menuToggle && e.target !== document.getElementById('bigbang-btn')) {
+            if (!menu.contains(e.target) && e.target !== menuToggle && 
+                e.target !== document.getElementById('bigbang-btn') &&
+                e.target !== document.getElementById('bigbang-center-btn')) {
                 menu.style.display = 'none';
             }
         });
@@ -548,10 +631,23 @@
 
         // Botão Big Bang
         document.getElementById('bigbang-btn').addEventListener('click', activateBigBang);
+        document.getElementById('bigbang-center-btn').addEventListener('click', activateBigBang);
 
         function toggleCoopMode() {
             config.coopMode = !config.coopMode;
             config.players[1].active = config.coopMode;
+
+            // Inicializa propriedades de movimento
+            if (config.coopMode) {
+                config.players[1].movingUp = false;
+                config.players[1].movingDown = false;
+                config.players[1].movingLeft = false;
+                config.players[1].movingRight = false;
+                
+                // Posição inicial do jogador 2
+                config.players[1].x = canvas.width / 2;
+                config.players[1].y = canvas.height / 2;
+            }
 
             const coopButton = document.getElementById('menu-coop');
             coopButton.textContent = `🔵 Cooperativo: ${config.coopMode ? 'ON' : 'OFF'}`;
@@ -560,6 +656,9 @@
                 document.getElementById('mobile-controls-p2').style.display = 
                     config.coopMode ? 'flex' : 'none';
             }
+
+            // Mostra/oculta a informação de controles
+            document.getElementById('coop-controls-info').classList.toggle('active', config.coopMode);
 
             config.players[0].radius = config.coopMode ? 120 : 150;
             config.players[1].radius = 120;
@@ -580,6 +679,12 @@
         function resetGameState() {
             config.players.forEach(player => {
                 player.health = player.maxHealth;
+                if (player.id === 2) {
+                    player.movingUp = false;
+                    player.movingDown = false;
+                    player.movingLeft = false;
+                    player.movingRight = false;
+                }
             });
             config.xp = 0;
             config.level = 1;
@@ -964,57 +1069,95 @@
         function activateBigBang() {
             if (config.bigBangCooldown <= 0 && !config.isBigBangActive) {
                 config.isBigBangActive = true;
-
-                const bang = document.createElement('div');
-                bang.style.position = 'fixed';
-                bang.style.left = '0';
-                bang.style.top = '0';
-                bang.style.width = '100%';
-                bang.style.height = '100%';
-                bang.style.background = 'radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,0,255,0) 70%)';
-                bang.style.zIndex = '1000';
-                bang.style.pointerEvents = 'none';
-                bang.style.opacity = '0';
-                bang.style.transition = 'opacity 1s';
-                document.body.appendChild(bang);
-
+                
+                // Efeito de luz intensa
+                const light = document.createElement('div');
+                light.className = 'bigbang-effect';
+                light.style.background = 'radial-gradient(circle, rgba(255,255,255,0.9) 0%, rgba(255,0,255,0) 70%)';
+                light.style.opacity = '0';
+                light.style.transition = 'opacity 0.5s';
+                document.body.appendChild(light);
+                
                 setTimeout(() => {
-                    bang.style.opacity = '1';
+                    light.style.opacity = '1';
                 }, 10);
-
-                setTimeout(() => {
-                    bang.style.opacity = '0';
-                    setTimeout(() => bang.remove(), 1000);
-                }, 100);
-
-                const bangPower = 1 + config.skills.find(s => s.id === 'bigbang_power').level * 0.5;
-
+                
+                // Efeito de onda de choque
+                for (let i = 0; i < 5; i++) {
+                    setTimeout(() => {
+                        const wave = document.createElement('div');
+                        wave.className = 'bigbang-effect';
+                        wave.style.background = 'transparent';
+                        wave.style.border = `2px solid hsl(${Math.random() * 360}, 100%, 50%)`;
+                        wave.style.borderRadius = '50%';
+                        wave.style.width = '0';
+                        wave.style.height = '0';
+                        wave.style.left = '50%';
+                        wave.style.top = '50%';
+                        wave.style.transform = 'translate(-50%, -50%)';
+                        document.body.appendChild(wave);
+                        
+                        let size = 10;
+                        const grow = () => {
+                            size += 20;
+                            wave.style.width = `${size}px`;
+                            wave.style.height = `${size}px`;
+                            wave.style.opacity = `${1 - size/1000}`;
+                            
+                            if (size < 1000) {
+                                requestAnimationFrame(grow);
+                            } else {
+                                wave.remove();
+                            }
+                        };
+                        grow();
+                    }, i * 200);
+                }
+                
+                // Poder absoluto do Big-Bang
+                const bangPower = 5 + config.skills.find(s => s.id === 'bigbang_power').level * 2;
+                
+                // Destrói todos os inimigos instantaneamente
                 enemies.forEach(enemy => {
-                    enemy.health -= 10 * bangPower;
+                    createExplosion(enemy.x, enemy.y, enemy.size * 2);
+                    addXP(enemy.type === 'elite' ? 50 : 
+                         enemy.type === 'blackhole' ? 100 : 30);
                 });
-
-                particles.forEach(p => {
-                    p.color = `hsl(${Math.random() * 360}, 100%, 70%)`;
-                    p.speedX = (Math.random() - 0.5) * 20 * bangPower;
-                    p.speedY = (Math.random() - 0.5) * 20 * bangPower;
-                });
-
-                for (let i = 0; i < 100 * bangPower; i++) {
+                enemies = [];
+                
+                // Cria uma explosão de partículas
+                for (let i = 0; i < 300; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const power = 10 + Math.random() * 20 * bangPower;
+                    
                     particles.push({
-                        x: mouse.x || canvas.width/2,
-                        y: mouse.y || canvas.height/2,
-                        size: Math.random() * 5 + 2,
+                        x: canvas.width/2,
+                        y: canvas.height/2,
+                        size: Math.random() * 6 + 3,
                         color: `hsl(${Math.random() * 360}, 100%, 70%)`,
-                        speedX: (Math.random() - 0.5) * 20 * bangPower,
-                        speedY: (Math.random() - 0.5) * 20 * bangPower,
+                        speedX: Math.cos(angle) * power,
+                        speedY: Math.sin(angle) * power,
                         baseSpeedX: 0,
                         baseSpeedY: 0,
-                        life: 100 + Math.random() * 50,
+                        life: 200 + Math.random() * 100,
                         trail: []
                     });
                 }
-
+                
+                // Efeito de tremor na tela
+                document.body.style.transform = 'translate(0, 0)';
+                let shake = 0;
+                const shakeInterval = setInterval(() => {
+                    shake++;
+                    document.body.style.transform = `translate(${Math.sin(shake) * 10}px, ${Math.cos(shake * 0.7) * 10}px)`;
+                }, 50);
+                
+                // Remove os efeitos após a animação
                 setTimeout(() => {
+                    light.style.opacity = '0';
+                    setTimeout(() => light.remove(), 500);
+                    clearInterval(shakeInterval);
+                    document.body.style.transform = 'translate(0, 0)';
                     config.isBigBangActive = false;
                     config.bigBangCooldown = config.bigBangMaxCooldown;
                 }, 2000);
@@ -1193,6 +1336,9 @@
             updateFPSCounter();
             updateBigBangCooldown();
             config.gameTime++;
+            
+            // Atualiza posição do jogador 2
+            updatePlayer2Position();
 
             forceSpawn();
 
@@ -1321,57 +1467,38 @@
 
         // Teclado
         document.addEventListener('keydown', (e) => {
-            switch(e.key.toLowerCase()) {
-                case '1': 
-                    config.players[0].mode = 'attract'; 
-                    break;
-                case '2': 
-                    config.players[0].mode = 'repel'; 
-                    break;
-                case '3': 
-                    config.players[0].mode = 'vortex'; 
-                    break;
-                case ' ': 
-                    activateBigBang(); 
-                    break;
-                case '0':
-                    config.players[0].mode = 'normal';
-                    break;
-            }
-
-            if(config.coopMode) {
-                const speed = 5;
-                const player = config.players[1];
-
+            if (config.coopMode) {
+                handleCoopControls(e, true);
+                
+                // Big Bang ainda funciona com espaço em qualquer modo
+                if (e.key === ' ') {
+                    activateBigBang();
+                }
+            } else {
+                // Controles do jogador 1 (modo single player)
                 switch(e.key.toLowerCase()) {
-                    case 'w': 
-                        player.y = (player.y || canvas.height/2) - speed; 
+                    case '1': 
+                        config.players[0].mode = 'attract'; 
                         break;
-                    case 's': 
-                        player.y = (player.y || canvas.height/2) + speed; 
+                    case '2': 
+                        config.players[0].mode = 'repel'; 
                         break;
-                    case 'a': 
-                        player.x = (player.x || canvas.width/2) - speed; 
+                    case '3': 
+                        config.players[0].mode = 'vortex'; 
                         break;
-                    case 'd': 
-                        player.x = (player.x || canvas.width/2) + speed; 
+                    case ' ': 
+                        activateBigBang(); 
                         break;
-                    case 'q': 
-                        player.mode = 'attract'; 
-                        break;
-                    case 'e': 
-                        player.mode = 'repel'; 
-                        break;
-                    case 'r': 
-                        player.mode = 'vortex'; 
-                        break;
-                    case 'z':
-                        player.mode = 'normal';
+                    case '0':
+                        config.players[0].mode = 'normal';
                         break;
                 }
+            }
+        });
 
-                if(player.x) player.x = Math.max(10, Math.min(canvas.width - 10, player.x));
-                if(player.y) player.y = Math.max(10, Math.min(canvas.height - 10, player.y));
+        document.addEventListener('keyup', (e) => {
+            if (config.coopMode) {
+                handleCoopControls(e, false);
             }
         });
 
