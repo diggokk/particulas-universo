@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Universo de Partículas PRO Turbo - Edição Definitiva</title>
+    <title>Universo de Partículas PRO Turbo</title>
     <style>
         body {
             margin: 0;
@@ -252,25 +252,6 @@
             display: none;
         }
 
-        #bigbang-btn {
-            position: fixed;
-            bottom: 50px;
-            right: 20px;
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: rgba(255, 0, 255, 0.7);
-            border: 2px solid rgba(255,255,255,0.3);
-            color: white;
-            font-size: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 100;
-            box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
-        }
-
         .unlock-message {
             position: fixed;
             top: 50%;
@@ -359,13 +340,6 @@
                 left: 10px;
                 margin: 0 auto;
             }
-            #bigbang-btn {
-                bottom: 120px;
-                right: 15px;
-                width: 50px;
-                height: 50px;
-                font-size: 20px;
-            }
             .coop-controls-info {
                 display: none !important;
             }
@@ -403,9 +377,6 @@
         </div>
     </div>
 
-    <!-- Botão Big Bang -->
-    <div id="bigbang-btn" title="Big Bang (Espaço)">💥</div>
-    
     <!-- Novo botão Big Bang central -->
     <div id="bigbang-center-btn" title="Big Bang">💥</div>
 
@@ -459,7 +430,7 @@
     <script>
         // Configurações do jogo
         const config = {
-            particleCount: 200,
+            particleCount: 250,  // Aumentado para mais partículas visíveis
             mouseRadius: 150,
             mode: 'normal',
             galaxies: {
@@ -472,7 +443,7 @@
             health: 100,
             maxHealth: 100,
             bigBangCooldown: 0,
-            bigBangMaxCooldown: 300,
+            bigBangMaxCooldown: 200,  // Reduzido o tempo de recarga
             isBigBangActive: false,
             players: [
                 {
@@ -528,17 +499,17 @@
             particlesAbsorbed: 0,
             enemiesDestroyed: 0,
             gameTime: 0,
-            isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+            isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+            lastFrameTime: performance.now()
         };
 
         // Sistema de fila de mensagens
         const messageQueue = [];
         let isShowingMessage = false;
 
-        // Ajuste para dispositivos móveis
-        if(config.isMobile) {
-            config.particleCount = Math.floor(config.particleCount * 0.6);
-        }
+        // Pool de partículas para otimização
+        const particlePool = [];
+        const enemyPool = [];
 
         // Inicialização do canvas
         const canvas = document.getElementById("canvas");
@@ -551,36 +522,47 @@
         function initParticles() {
             particles = [];
             for (let i = 0; i < config.particleCount; i++) {
-                particles.push({
-                    x: Math.random() * canvas.width,
-                    y: Math.random() * canvas.height,
-                    size: Math.random() * 4 + 2,
-                    color: `hsl(${Math.random() * 360}, 80%, 60%)`,
-                    speedX: (Math.random() - 0.5) * 3,
-                    speedY: (Math.random() - 0.5) * 3,
-                    baseSpeedX: (Math.random() - 0.5) * 3,
-                    baseSpeedY: (Math.random() - 0.5) * 3,
-                    trail: []
-                });
+                spawnParticle();
             }
+        }
+
+        function spawnParticle() {
+            let particle;
+            if (particlePool.length > 0) {
+                particle = particlePool.pop();
+            } else {
+                particle = {
+                    x: 0, y: 0, size: 0, color: '', speedX: 0, speedY: 0,
+                    baseSpeedX: 0, baseSpeedY: 0, trail: []
+                };
+            }
+
+            Object.assign(particle, {
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: Math.random() * 4 + 2,
+                color: `hsl(${Math.random() * 360}, 80%, 60%)`,
+                speedX: (Math.random() - 0.5) * 3,
+                speedY: (Math.random() - 0.5) * 3,
+                baseSpeedX: (Math.random() - 0.5) * 3,
+                baseSpeedY: (Math.random() - 0.5) * 3,
+                trail: []
+            });
+
+            particles.push(particle);
+            return particle;
+        }
+
+        function recycleParticle(particle) {
+            particlePool.push(particle);
         }
 
         // Função para forçar aparecimento de partículas e inimigos
         function forceSpawn() {
-            if (particles.length < config.particleCount * 0.5) {
+            if (particles.length < config.particleCount * 0.7) {
                 const needed = config.particleCount - particles.length;
                 for (let i = 0; i < needed; i++) {
-                    particles.push({
-                        x: Math.random() * (canvas.width - 100) + 50,
-                        y: Math.random() * (canvas.height - 100) + 50,
-                        size: Math.random() * 4 + 2,
-                        color: `hsl(${Math.random() * 360}, 80%, 60%)`,
-                        speedX: (Math.random() - 0.5) * 3,
-                        speedY: (Math.random() - 0.5) * 3,
-                        baseSpeedX: (Math.random() - 0.5) * 3,
-                        baseSpeedY: (Math.random() - 0.5) * 3,
-                        trail: []
-                    });
+                    spawnParticle();
                 }
             }
 
@@ -600,7 +582,6 @@
         // Fechar menu ao clicar fora
         document.addEventListener('click', (e) => {
             if (!menu.contains(e.target) && e.target !== menuToggle && 
-                e.target !== document.getElementById('bigbang-btn') &&
                 e.target !== document.getElementById('bigbang-center-btn')) {
                 menu.style.display = 'none';
             }
@@ -630,21 +611,17 @@
         });
 
         // Botão Big Bang
-        document.getElementById('bigbang-btn').addEventListener('click', activateBigBang);
         document.getElementById('bigbang-center-btn').addEventListener('click', activateBigBang);
 
         function toggleCoopMode() {
             config.coopMode = !config.coopMode;
             config.players[1].active = config.coopMode;
 
-            // Inicializa propriedades de movimento
             if (config.coopMode) {
                 config.players[1].movingUp = false;
                 config.players[1].movingDown = false;
                 config.players[1].movingLeft = false;
                 config.players[1].movingRight = false;
-                
-                // Posição inicial do jogador 2
                 config.players[1].x = canvas.width / 2;
                 config.players[1].y = canvas.height / 2;
             }
@@ -657,9 +634,7 @@
                     config.coopMode ? 'flex' : 'none';
             }
 
-            // Mostra/oculta a informação de controles
             document.getElementById('coop-controls-info').classList.toggle('active', config.coopMode);
-
             config.players[0].radius = config.coopMode ? 120 : 150;
             config.players[1].radius = 120;
         }
@@ -764,7 +739,7 @@
                 description: "Modo padrão com física básica",
                 unlocked: true,
                 init: function() {
-                    config.particleCount = 200;
+                    config.particleCount = 250;
                     if(config.isMobile) config.particleCount = Math.floor(config.particleCount * 0.6);
                     initParticles();
                 }
@@ -775,7 +750,7 @@
                 unlocked: false,
                 requirement: "Alcance nível 2",
                 init: function() {
-                    config.particleCount = 250;
+                    config.particleCount = 300;
                     if(config.isMobile) config.particleCount = Math.floor(config.particleCount * 0.6);
                     initParticles();
                 }
@@ -786,7 +761,7 @@
                 unlocked: false,
                 requirement: "Alcance nível 3",
                 init: function() {
-                    config.particleCount = 300;
+                    config.particleCount = 350;
                     if(config.isMobile) config.particleCount = Math.floor(config.particleCount * 0.6);
                     initParticles();
                 }
@@ -797,7 +772,7 @@
                 unlocked: false,
                 requirement: "Alcance nível 5",
                 init: function() {
-                    config.particleCount = 400;
+                    config.particleCount = 500;
                     if(config.isMobile) config.particleCount = Math.floor(config.particleCount * 0.6);
                     initParticles();
                 }
@@ -848,11 +823,21 @@
         const enemyFaces = [">:['", ">:(", "X_X", ">_<", ":O", "◉_◉", "ಠ_ಠ", "⊙_⊙", "≧◡≦", "◕‿◕"];
 
         function spawnEnemy() {
+            let enemy;
+            if (enemyPool.length > 0) {
+                enemy = enemyPool.pop();
+            } else {
+                enemy = {
+                    x: 0, y: 0, size: 0, speedX: 0, speedY: 0,
+                    health: 0, maxHealth: 0, face: '', type: '', damage: 0
+                };
+            }
+
             const isElite = Math.random() < 0.1;
             const isBlackHole = config.level > 3 && Math.random() < 0.05;
             const sizeBase = isBlackHole ? 40 : (isElite ? 30 : 20);
 
-            const enemy = {
+            Object.assign(enemy, {
                 x: Math.random() * (canvas.width - sizeBase) + sizeBase/2,
                 y: Math.random() * (canvas.height - sizeBase) + sizeBase/2,
                 size: sizeBase * (1 + config.level * 0.05),
@@ -863,7 +848,7 @@
                 face: enemyFaces[Math.floor(Math.random() * enemyFaces.length)],
                 type: isBlackHole ? 'blackhole' : (isElite ? 'elite' : 'normal'),
                 damage: isBlackHole ? 1 : (isElite ? 0.7 : 0.5)
-            };
+            });
 
             if(enemy.type === 'blackhole') {
                 enemy.face = "(@_@)";
@@ -873,6 +858,11 @@
 
             enemies.push(enemy);
             config.wave.spawned++;
+            return enemy;
+        }
+
+        function recycleEnemy(enemy) {
+            enemyPool.push(enemy);
         }
 
         function updateEnemies() {
@@ -892,6 +882,7 @@
 
                                 if(distance < enemy.size * 0.5) {
                                     particles.splice(particles.indexOf(p), 1);
+                                    recycleParticle(p);
                                 }
                             }
                         });
@@ -969,6 +960,7 @@
                 if (enemy.health <= 0) {
                     createExplosion(enemy.x, enemy.y, enemy.size);
                     enemies.splice(index, 1);
+                    recycleEnemy(enemy);
 
                     const xpValue = enemy.type === 'elite' ? 25 : 
                                    enemy.type === 'blackhole' ? 50 : 10;
@@ -987,7 +979,8 @@
 
         function createExplosion(x, y, size) {
             for (let i = 0; i < 15; i++) {
-                particles.push({
+                const p = spawnParticle();
+                Object.assign(p, {
                     x: x,
                     y: y,
                     size: Math.random() * 3 + 1,
@@ -996,8 +989,7 @@
                     speedY: (Math.random() - 0.5) * 10,
                     baseSpeedX: 0,
                     baseSpeedY: 0,
-                    life: 100 + Math.random() * 50,
-                    trail: []
+                    life: 100 + Math.random() * 50
                 });
             }
         }
@@ -1069,7 +1061,7 @@
         function activateBigBang() {
             if (config.bigBangCooldown <= 0 && !config.isBigBangActive) {
                 config.isBigBangActive = true;
-                
+
                 // Efeito de luz intensa
                 const light = document.createElement('div');
                 light.className = 'bigbang-effect';
@@ -1077,11 +1069,11 @@
                 light.style.opacity = '0';
                 light.style.transition = 'opacity 0.5s';
                 document.body.appendChild(light);
-                
+
                 setTimeout(() => {
                     light.style.opacity = '1';
                 }, 10);
-                
+
                 // Efeito de onda de choque
                 for (let i = 0; i < 5; i++) {
                     setTimeout(() => {
@@ -1096,14 +1088,14 @@
                         wave.style.top = '50%';
                         wave.style.transform = 'translate(-50%, -50%)';
                         document.body.appendChild(wave);
-                        
+
                         let size = 10;
                         const grow = () => {
                             size += 20;
                             wave.style.width = `${size}px`;
                             wave.style.height = `${size}px`;
                             wave.style.opacity = `${1 - size/1000}`;
-                            
+
                             if (size < 1000) {
                                 requestAnimationFrame(grow);
                             } else {
@@ -1113,24 +1105,26 @@
                         grow();
                     }, i * 200);
                 }
-                
+
                 // Poder absoluto do Big-Bang
                 const bangPower = 5 + config.skills.find(s => s.id === 'bigbang_power').level * 2;
-                
+
                 // Destrói todos os inimigos instantaneamente
                 enemies.forEach(enemy => {
                     createExplosion(enemy.x, enemy.y, enemy.size * 2);
                     addXP(enemy.type === 'elite' ? 50 : 
                          enemy.type === 'blackhole' ? 100 : 30);
+                    recycleEnemy(enemy);
                 });
                 enemies = [];
-                
+
                 // Cria uma explosão de partículas
                 for (let i = 0; i < 300; i++) {
                     const angle = Math.random() * Math.PI * 2;
                     const power = 10 + Math.random() * 20 * bangPower;
-                    
-                    particles.push({
+
+                    const p = spawnParticle();
+                    Object.assign(p, {
                         x: canvas.width/2,
                         y: canvas.height/2,
                         size: Math.random() * 6 + 3,
@@ -1139,11 +1133,10 @@
                         speedY: Math.sin(angle) * power,
                         baseSpeedX: 0,
                         baseSpeedY: 0,
-                        life: 200 + Math.random() * 100,
-                        trail: []
+                        life: 200 + Math.random() * 100
                     });
                 }
-                
+
                 // Efeito de tremor na tela
                 document.body.style.transform = 'translate(0, 0)';
                 let shake = 0;
@@ -1151,7 +1144,7 @@
                     shake++;
                     document.body.style.transform = `translate(${Math.sin(shake) * 10}px, ${Math.cos(shake * 0.7) * 10}px)`;
                 }, 50);
-                
+
                 // Remove os efeitos após a animação
                 setTimeout(() => {
                     light.style.opacity = '0';
@@ -1246,14 +1239,14 @@
 
         function showNextMessage() {
             if (isShowingMessage || messageQueue.length === 0) return;
-            
+
             isShowingMessage = true;
             const text = messageQueue.shift();
-            
+
             const message = document.createElement('div');
             message.className = 'unlock-message';
             message.textContent = text;
-            
+
             document.body.appendChild(message);
 
             setTimeout(() => {
@@ -1264,7 +1257,7 @@
             setTimeout(() => {
                 message.style.opacity = '0';
                 message.style.transform = 'translate(-50%, -50%) scale(0.9)';
-                
+
                 setTimeout(() => {
                     message.remove();
                     isShowingMessage = false;
@@ -1331,16 +1324,84 @@
             });
         }
 
+        // Atualiza posição do jogador 2
+        function updatePlayer2Position() {
+            if (!config.coopMode || !config.players[1].active) return;
+
+            const speed = 5;
+            if (config.players[1].movingUp) config.players[1].y -= speed;
+            if (config.players[1].movingDown) config.players[1].y += speed;
+            if (config.players[1].movingLeft) config.players[1].x -= speed;
+            if (config.players[1].movingRight) config.players[1].x += speed;
+
+            // Limita ao canvas
+            config.players[1].x = Math.max(0, Math.min(canvas.width, config.players[1].x));
+            config.players[1].y = Math.max(0, Math.min(canvas.height, config.players[1].y));
+        }
+
+        // Controles cooperativos
+        function handleCoopControls(e, isKeyDown) {
+            if (!config.coopMode) return;
+
+            switch(e.key.toLowerCase()) {
+                case 'w':
+                    config.players[1].movingUp = isKeyDown;
+                    break;
+                case 's':
+                    config.players[1].movingDown = isKeyDown;
+                    break;
+                case 'a':
+                    config.players[1].movingLeft = isKeyDown;
+                    break;
+                case 'd':
+                    config.players[1].movingRight = isKeyDown;
+                    break;
+                case '1':
+                    if (isKeyDown) config.players[1].mode = 'attract';
+                    break;
+                case '2':
+                    if (isKeyDown) config.players[1].mode = 'repel';
+                    break;
+                case '3':
+                    if (isKeyDown) config.players[1].mode = 'vortex';
+                    break;
+                case '0':
+                    if (isKeyDown) config.players[1].mode = 'normal';
+                    break;
+            }
+        }
+
+        // Sistema de ondas
+        config.wave.update = function() {
+            if(this.spawned < this.enemiesToSpawn && this.timer++ > 60) {
+                spawnEnemy();
+                this.spawned++;
+                this.timer = 0;
+            }
+
+            if(enemies.length === 0 && this.spawned >= this.enemiesToSpawn) {
+                this.number++;
+                this.enemiesToSpawn = 5 + this.number * 2;
+                this.spawned = 0;
+                showUnlockMessage(`Onda ${this.number} começando!`);
+            }
+        };
+
         // LOOP DO JOGO
-        function animate() {
+        function animate(currentTime) {
+            // Calcula delta time para FPS consistente
+            const deltaTime = currentTime - config.lastFrameTime;
+            config.lastFrameTime = currentTime;
+            
             updateFPSCounter();
             updateBigBangCooldown();
             config.gameTime++;
-            
+
             // Atualiza posição do jogador 2
             updatePlayer2Position();
 
             forceSpawn();
+            config.wave.update();
 
             ctx.fillStyle = `rgba(10, 10, 20, ${config.galaxies.current === 'chaos' ? 0.1 : 0.2})`;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1350,6 +1411,7 @@
             particles.forEach((p, index) => {
                 if (p.life !== undefined && p.life-- <= 0) {
                     particles.splice(index, 1);
+                    recycleParticle(p);
                     return;
                 }
 
@@ -1376,6 +1438,7 @@
 
                                 if (distance < maxDist * 0.2) {
                                     particles.splice(index, 1);
+                                    recycleParticle(p);
                                     addXP(3);
                                     config.particlesAbsorbed++;
                                 }
@@ -1442,22 +1505,6 @@
             requestAnimationFrame(animate);
         }
 
-        // Sistema de ondas
-        config.wave.update = function() {
-            if(this.spawned < this.enemiesToSpawn && this.timer++ > 60) {
-                spawnEnemy();
-                this.spawned++;
-                this.timer = 0;
-            }
-
-            if(enemies.length === 0 && this.spawned >= this.enemiesToSpawn) {
-                this.number++;
-                this.enemiesToSpawn = 5 + this.number * 2;
-                this.spawned = 0;
-                showUnlockMessage(`Onda ${this.number} começando!`);
-            }
-        };
-
         // Redimensionamento
         window.addEventListener('resize', () => {
             canvas.width = window.innerWidth;
@@ -1469,7 +1516,7 @@
         document.addEventListener('keydown', (e) => {
             if (config.coopMode) {
                 handleCoopControls(e, true);
-                
+
                 // Big Bang ainda funciona com espaço em qualquer modo
                 if (e.key === ' ') {
                     activateBigBang();
@@ -1506,7 +1553,13 @@
         initParticles();
         updateHealthBar();
         updateXPBar();
-        animate();
+        
+        // Spawn inicial de inimigos
+        for (let i = 0; i < 3; i++) {
+            spawnEnemy();
+        }
+        
+        requestAnimationFrame(animate);
     </script>
 </body>
 </html>
