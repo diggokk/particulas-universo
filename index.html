@@ -19,194 +19,31 @@
             height: 100vh;
         }
 
-        .mobile-controls {
-            display: none;
-            position: fixed;
-            bottom: 15px;
-            left: 0;
-            right: 0;
-            justify-content: center;
-            gap: 10px;
-            padding: 10px;
-            z-index: 100;
-        }
+        /* [Seus estilos existentes...] */
 
-        .mobile-btn {
-            width: 55px;
-            height: 55px;
+        /* Novos estilos para a Supernova */
+        #supernova-btn {
+            position: fixed;
+            bottom: 120px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
-            background: rgba(74, 0, 224, 0.9);
-            border: 2px solid rgba(255,255,255,0.2);
-            color: white;
-            font-size: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: transform 0.1s;
-        }
-
-        .mobile-btn:active {
-            transform: scale(0.9);
-            background: rgba(142, 45, 226, 0.9);
-        }
-
-        /* Menu Hamburguer */
-        #menu-toggle {
-            position: fixed;
-            top: 15px;
-            right: 15px;
-            z-index: 1000;
-            background: rgba(0,0,0,0.7);
-            border: none;
+            background: rgba(255, 165, 0, 0.7);
+            border: 2px solid rgba(255,255,255,0.3);
             color: white;
             font-size: 24px;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
+            z-index: 100;
+            box-shadow: 0 0 15px rgba(255, 165, 0, 0.5);
         }
 
-        #menu {
+        #supernova-cooldown {
             position: fixed;
-            top: 65px;
-            right: 15px;
-            z-index: 1000;
-            background: rgba(0,0,0,0.9);
-            border-radius: 10px;
-            padding: 15px;
-            color: white;
-            display: none;
-            width: 250px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-        }
-
-        #menu h3 {
-            margin-top: 0;
-            color: #00F5A0;
-            border-bottom: 1px solid #4A00E0;
-            padding-bottom: 10px;
-        }
-
-        .menu-item {
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .menu-item:hover {
-            color: #00F5A0;
-        }
-
-        .menu-section {
-            margin-bottom: 15px;
-        }
-
-        #galaxy-map {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.9);
-            padding: 20px;
-            border-radius: 10px;
-            color: white;
-            z-index: 1000;
-            display: none;
-            text-align: center;
-            max-width: 90%;
-            max-height: 90%;
-            overflow-y: auto;
-        }
-
-        .galaxy {
-            margin: 10px;
-            padding: 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .galaxy.unlocked {
-            background: rgba(74, 0, 224, 0.5);
-        }
-
-        .galaxy.unlocked:hover {
-            background: rgba(74, 0, 224, 0.8);
-            transform: scale(1.05);
-        }
-
-        .galaxy.locked {
-            background: rgba(255,255,255,0.1);
-            cursor: not-allowed;
-        }
-
-        #fps-counter {
-            position: fixed;
-            top: 10px;
-            right: 60px;
-            color: white;
-            background: rgba(0,0,0,0.5);
-            padding: 5px 10px;
-            border-radius: 3px;
-            font-family: monospace;
-        }
-
-        #xp-bar-container {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 20px;
-            background: rgba(0,0,0,0.7);
-            z-index: 50;
-            display: flex;
-            align-items: center;
-            padding: 0 10px;
-        }
-
-        #xp-bar {
-            height: 60%;
-            width: 0%;
-            background: linear-gradient(90deg, #4A00E0, #8E2DE2);
-            transition: width 0.3s;
-            border-radius: 3px;
-        }
-
-        #xp-text {
-            color: white;
-            margin-left: 10px;
-            font-size: 12px;
-            font-family: Arial, sans-serif;
-        }
-
-        #health-bar-container {
-            position: fixed;
-            top: 10px;
-            left: 50%;
-            transform: translateX(-50%);
-            height: 15px;
-            width: 200px;
-            background: rgba(0,0,0,0.7);
-            z-index: 50;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        #health-bar {
-            height: 100%;
-            width: 100%;
-            background: linear-gradient(90deg, #FF0000, #00FF00);
-            transition: width 0.3s;
-        }
-
-        #bigbang-cooldown {
-            position: fixed;
-            bottom: 30px;
+            bottom: 110px;
             left: 50%;
             transform: translateX(-50%);
             height: 10px;
@@ -215,893 +52,190 @@
             z-index: 50;
             border-radius: 5px;
             overflow: hidden;
-        }
-
-        #bigbang-progress {
-            height: 100%;
-            width: 0%;
-            background: linear-gradient(90deg, #FF00FF, #00FFFF);
-            transition: width 0.1s;
-        }
-
-        .enemy {
-            position: absolute;
-            border-radius: 50%;
-            background: radial-gradient(circle, #ff0000, #800000);
-            box-shadow: 0 0 15px #ff0000;
-            z-index: 10;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 20px;
-            font-family: monospace;
-            text-shadow: 0 0 5px black;
-        }
-
-        .particle-trail {
-            position: absolute;
-            border-radius: 50%;
-            background: currentColor;
-            pointer-events: none;
-            z-index: 5;
-        }
-
-        .mobile-controls#mobile-controls-p2 {
-            bottom: 80px;
             display: none;
         }
 
-        /* Novo estilo para o botão Big Bang */
-        #bigbang-btn {
-            position: fixed;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: radial-gradient(circle, #8A2BE2, #4B0082);
-            border: 3px solid #00FFFF;
-            color: white;
-            font-size: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            z-index: 100;
-            box-shadow: 
-                0 0 20px #8A2BE2,
-                0 0 40px #4B0082,
-                inset 0 0 15px #00FFFF;
-            transition: all 0.3s;
-            opacity: 0.3;
-            pointer-events: none;
-        }
-
-        #bigbang-btn.ready {
-            opacity: 1;
-            pointer-events: auto;
-            animation: pulse 2s infinite;
-        }
-
-        #bigbang-btn:active {
-            transform: translateX(-50%) scale(0.95);
-        }
-
-        @keyframes pulse {
-            0% { box-shadow: 0 0 20px #8A2BE2, 0 0 40px #4B0082, inset 0 0 15px #00FFFF; }
-            50% { box-shadow: 0 0 30px #8A2BE2, 0 0 60px #4B0082, inset 0 0 20px #00FFFF; }
-            100% { box-shadow: 0 0 20px #8A2BE2, 0 0 40px #4B0082, inset 0 0 15px #00FFFF; }
-        }
-
-        /* Efeitos do Big Bang */
-        .bigbang-effect {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 999;
-        }
-
-        .shockwave {
-            background: radial-gradient(circle, rgba(255,255,255,0.8), rgba(255,0,255,0));
-            animation: shockwave 1.5s ease-out forwards;
-        }
-
-        .particle-ring {
-            background: transparent;
-            border: 2px solid rgba(0,255,255,0.7);
-            animation: particleRing 2s ease-out forwards;
-        }
-
-        @keyframes shockwave {
-            0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
-            100% { transform: translate(-50%, -50%) scale(30); opacity: 0; }
-        }
-
-        @keyframes particleRing {
-            0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
-            100% { transform: translate(-50%, -50%) scale(10); opacity: 0; }
+        #supernova-progress {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #FFA500, #FF4500);
+            transition: width 0.1s;
         }
 
         @media (max-width: 768px) {
-            .mobile-controls { display: flex; }
-            #menu {
-                width: 80%;
-                right: 10px;
-                left: 10px;
-                margin: 0 auto;
-            }
-            #bigbang-btn {
-                bottom: 120px;
-                width: 70px;
-                height: 70px;
-                font-size: 25px;
+            #supernova-btn {
+                bottom: 180px;
+                right: 15px;
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Menu Hamburguer -->
-    <button id="menu-toggle">☰</button>
-    <div id="menu">
-        <h3>Menu do Jogo</h3>
+    <!-- [Seu HTML existente...] -->
 
-        <div class="menu-section">
-            <h4>Controles</h4>
-            <div class="menu-item" id="menu-attract">🌀 Atração</div>
-            <div class="menu-item" id="menu-repel">✨ Repulsão</div>
-            <div class="menu-item" id="menu-vortex">🌪️ Vórtice</div>
-        </div>
-
-        <div class="menu-section">
-            <h4>Modos</h4>
-            <div class="menu-item" id="menu-coop">🔵 Cooperativo: OFF</div>
-            <div class="menu-item" id="menu-show-galaxies">🌌 Galáxias</div>
-        </div>
-
-        <div class="menu-section">
-            <h4>Sistema</h4>
-            <div class="menu-item" id="menu-reset">🔄 Reiniciar</div>
-        </div>
+    <!-- Adicionando o botão da Supernova -->
+    <div id="supernova-btn" title="Supernova (Shift)">☄️</div>
+    <div id="supernova-cooldown">
+        <div id="supernova-progress"></div>
     </div>
-
-    <!-- Botão Big Bang modificado -->
-    <div id="bigbang-btn" title="Big Bang (Disponível a cada 15 níveis)">💥</div>
-
-    <!-- Controles mobile -->
-    <div class="mobile-controls">
-        <button class="mobile-btn" id="mobileAttract">🌀</button>
-        <button class="mobile-btn" id="mobileRepel">✨</button>
-        <button class="mobile-btn" id="mobileVortex">🌪️</button>
-    </div>
-
-    <!-- Controles mobile jogador 2 -->
-    <div class="mobile-controls" id="mobile-controls-p2">
-        <button class="mobile-btn" id="mobileAttractP2">🌀</button>
-        <button class="mobile-btn" id="mobileRepelP2">✨</button>
-        <button class="mobile-btn" id="mobileVortexP2">🌪️</button>
-    </div>
-
-    <div id="galaxy-map">
-        <h2>Mapa Galáctico</h2>
-        <div id="galaxies-list"></div>
-        <button id="close-galaxy-map">Fechar</button>
-    </div>
-
-    <div id="fps-counter">FPS: 60</div>
-
-    <div id="health-bar-container">
-        <div id="health-bar"></div>
-    </div>
-
-    <div id="xp-bar-container">
-        <div id="xp-bar"></div>
-        <div id="xp-text">0/100 XP (Nível 1)</div>
-    </div>
-
-    <div id="bigbang-cooldown">
-        <div id="bigbang-progress"></div>
-    </div>
-
-    <canvas id="canvas"></canvas>
 
     <script>
-        // Configurações do jogo OTIMIZADAS
+        // [Seu código existente...]
+
+        // Atualizando a configuração para incluir a Supernova
         const config = {
-            particleCount: 200,
-            mouseRadius: 100, // Área reduzida
-            mode: 'normal',
-            galaxies: {
-                unlocked: ['classic'],
-                current: 'classic'
-            },
-            xp: 0,
-            level: 1,
-            power: 1,
-            health: 100,
-            maxHealth: 100,
-            bigBangCooldown: 0,
-            bigBangMaxCooldown: 300,
-            isBigBangActive: false,
-            bigBangLevelRequirement: 15,
-            nextBigBangLevel: 15,
-            bigBangAvailable: false,
-            players: [
-                {
-                    id: 1,
-                    x: null,
-                    y: null,
-                    mode: 'normal',
-                    color: '#4A00E0',
-                    radius: 100, // Raio reduzido
-                    power: 1,
-                    health: 100,
-                    face: "😊",
-                    active: true
-                },
-                {
-                    id: 2,
-                    x: null,
-                    y: null,
-                    mode: 'normal',
-                    color: '#00F5A0',
-                    radius: 100, // Raio reduzido
-                    power: 1,
-                    health: 100,
-                    face: "😊", // Mesmo emoji do jogador 1
-                    active: false
-                }
-            ],
-            coopMode: false,
-            achievements: {
-                particleEater: { unlocked: false, count: 0, required: 50 },
-                galaxyExplorer: { unlocked: false, count: 0, required: 3 },
-                enemyDestroyer: { unlocked: false, count: 0, required: 100 }
-            },
+            // [Configurações existentes...]
+            supernovaCooldown: 0,
+            supernovaMaxCooldown: 180, // 3 segundos
+            isSupernovaActive: false,
+            supernovaUnlocked: true,
+            bigbangUnlocked: false,
             skills: [
-                { id: 'attract_radius', name: "Raio Ampliado", level: 0, max: 5, effect: "Aumenta o raio de atração em 20%", cost: 2, unlocked: true },
-                { id: 'vortex_power', name: "Vórtice Poderoso", level: 0, max: 3, effect: "Aumenta força do vórtice em 30%", cost: 3 },
-                { id: 'double_vortex', name: "Vórtice Duplo", level: 0, max: 1, effect: "Cria um segundo vórtice", cost: 5 },
-                { id: 'health_boost', name: "Vitalidade", level: 0, max: 3, effect: "Aumenta vida máxima em 15%", cost: 2 },
-                { id: 'bigbang_power', name: "Big Bang+", level: 0, max: 2, effect: "Aumenta poder do Big Bang", cost: 4 }
-            ],
-            currentMission: null,
-            missionProgress: 0,
-            wave: {
-                number: 1,
-                enemiesToSpawn: 5,
-                spawned: 0,
-                timer: 0
-            },
-            particlesAbsorbed: 0,
-            enemiesDestroyed: 0,
-            gameTime: 0,
-            isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
-            gameSpeed: 1
+                // [Habilidades existentes...]
+                { id: 'supernova_power', name: "Supernova+", level: 0, max: 3, effect: "Aumenta poder da Supernova", cost: 3 },
+                { id: 'supernova_radius', name: "Raio da Supernova", level: 0, max: 3, effect: "Aumenta raio da Supernova", cost: 2 }
+            ]
         };
 
-        // Sistema de Double Buffering para melhor performance
-        const canvas = document.getElementById("canvas");
-        const ctx = canvas.getContext("2d");
-        const bufferCanvas = document.createElement('canvas');
-        const bufferCtx = bufferCanvas.getContext('2d');
-        
-        // Pool de partículas para evitar garbage collection
-        const particlePool = [];
-        const activeParticles = [];
-        const maxParticles = 500;
-        
-        // Inimigos
-        let enemies = [];
-        const enemyFaces = ["😊", "😊", "😊"]; // Todos com o mesmo emoji do jogador 1
+        // Adicionando carinhas extras para inimigos
+        const enemyFaces = [">:['", ">:(", "X_X", ">_<", ":O", "◉_◉", "ಠ_ಠ", "⊙_⊙", "≧◡≦", "◕‿◕", ">:[", ">:]", ">:D", ">:P", ">:S", ">:B"];
 
-        // Inicialização otimizada
-        function initGame() {
-            initCanvas();
-            initParticles();
-            setupControls();
-            updateHealthBar();
-            updateXPBar();
-            
-            // Posiciona jogadores no centro
-            config.players[0].x = canvas.width / 2;
-            config.players[0].y = canvas.height / 2;
-            config.players[1].x = canvas.width / 2;
-            config.players[1].y = canvas.height / 2;
-            
-            // Força spawn inicial
-            forceSpawn();
-            
-            requestAnimationFrame(animate);
-        }
+        // Função para ativar a Supernova
+        function activateSupernova() {
+            if (config.supernovaCooldown <= 0 && !config.isSupernovaActive && config.supernovaUnlocked) {
+                config.isSupernovaActive = true;
 
-        function initCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            bufferCanvas.width = canvas.width;
-            bufferCanvas.height = canvas.height;
-            
-            if(config.isMobile) {
-                config.particleCount = Math.floor(config.particleCount * 0.6);
-                config.players[0].radius = 80; // Raio ainda menor em mobile
-                config.players[1].radius = 80;
-            }
-        }
+                // Efeito visual
+                const supernova = document.createElement('div');
+                supernova.style.position = 'fixed';
+                supernova.style.left = '0';
+                supernova.style.top = '0';
+                supernova.style.width = '100%';
+                supernova.style.height = '100%';
+                supernova.style.background = 'radial-gradient(circle, rgba(255,165,0,0.7) 0%, rgba(255,69,0,0) 70%)';
+                supernova.style.zIndex = '1000';
+                supernova.style.pointerEvents = 'none';
+                supernova.style.opacity = '0';
+                supernova.style.transition = 'opacity 0.5s';
+                document.body.appendChild(supernova);
 
-        function initParticles() {
-            for (let i = 0; i < maxParticles; i++) {
-                particlePool.push(createParticle());
-            }
-            
-            // Ativa partículas iniciais
-            for (let i = 0; i < config.particleCount; i++) {
-                activateParticle();
-            }
-        }
-
-        function createParticle(x = null, y = null) {
-            return {
-                x: x !== null ? x : Math.random() * canvas.width,
-                y: y !== null ? y : Math.random() * canvas.height,
-                size: Math.random() * 4 + 2,
-                color: `hsl(${Math.random() * 360}, 80%, 60%)`,
-                speedX: (Math.random() - 0.5) * 3,
-                speedY: (Math.random() - 0.5) * 3,
-                baseSpeedX: (Math.random() - 0.5) * 3,
-                baseSpeedY: (Math.random() - 0.5) * 3,
-                trail: [],
-                life: 100 + Math.random() * 50,
-                active: false
-            };
-        }
-
-        function activateParticle(x = null, y = null, overrides = {}) {
-            const particle = particlePool.find(p => !p.active);
-            if (particle) {
-                Object.assign(particle, createParticle(x, y), overrides);
-                particle.active = true;
-                particle.life = 100 + Math.random() * 50;
-                activeParticles.push(particle);
-                return particle;
-            }
-            return null;
-        }
-
-        // Sistema de Big Bang Épico
-        function createBigBangEffects(x, y) {
-            // Efeito de onda de choque
-            const shockwave = document.createElement('div');
-            shockwave.className = 'bigbang-effect shockwave';
-            shockwave.style.left = `${x}px`;
-            shockwave.style.top = `${y}px`;
-            document.body.appendChild(shockwave);
-            setTimeout(() => shockwave.remove(), 1500);
-
-            // Anéis de partículas
-            for (let i = 0; i < 3; i++) {
                 setTimeout(() => {
-                    const ring = document.createElement('div');
-                    ring.className = 'bigbang-effect particle-ring';
-                    ring.style.left = `${x}px`;
-                    ring.style.top = `${y}px`;
-                    ring.style.width = `${50 * (i+1)}px`;
-                    ring.style.height = `${50 * (i+1)}px`;
-                    document.body.appendChild(ring);
-                    setTimeout(() => ring.remove(), 2000);
-                }, i * 300);
-            }
+                    supernova.style.opacity = '1';
+                }, 10);
 
-            // Partículas brilhantes
-            for (let i = 0; i < 50; i++) {
                 setTimeout(() => {
-                    const particle = document.createElement('div');
-                    particle.className = 'bigbang-effect';
-                    particle.style.left = `${x}px`;
-                    particle.style.top = `${y}px`;
-                    particle.style.width = `${Math.random() * 10 + 5}px`;
-                    particle.style.height = particle.style.width;
-                    particle.style.background = `radial-gradient(circle, 
-                        hsl(${Math.random() * 60 + 300}, 100%, 70%), 
-                        transparent)`;
-                    
+                    supernova.style.opacity = '0';
+                    setTimeout(() => supernova.remove(), 500);
+                }, 300);
+
+                // Cálculo do poder com bônus de habilidades
+                const supernovaPower = 0.7 + config.skills.find(s => s.id === 'supernova_power').level * 0.2;
+                const supernovaRadius = 150 + config.skills.find(s => s.id === 'supernova_radius').level * 30;
+
+                // Efeito nos inimigos
+                enemies.forEach(enemy => {
+                    const dx = enemy.x - (mouse.x || canvas.width/2);
+                    const dy = enemy.y - (mouse.y || canvas.height/2);
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < supernovaRadius) {
+                        enemy.health -= 5 * supernovaPower;
+                        
+                        // Empurrar inimigos
+                        const force = (supernovaRadius - distance) / supernovaRadius * 15;
+                        const angle = Math.atan2(dy, dx);
+                        enemy.x += Math.cos(angle) * force;
+                        enemy.y += Math.sin(angle) * force;
+                    }
+                });
+
+                // Efeito nas partículas
+                particles.forEach(p => {
+                    const dx = p.x - (mouse.x || canvas.width/2);
+                    const dy = p.y - (mouse.y || canvas.height/2);
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < supernovaRadius * 1.5) {
+                        const force = (supernovaRadius * 1.5 - distance) / (supernovaRadius * 1.5);
+                        const angle = Math.atan2(dy, dx);
+                        
+                        // Mudar cor para tons alaranjados
+                        p.color = `hsl(${30 + Math.random() * 30}, 100%, 60%)`;
+                        
+                        // Aplicar força
+                        p.speedX += Math.cos(angle) * force * 10 * supernovaPower;
+                        p.speedY += Math.sin(angle) * force * 10 * supernovaPower;
+                    }
+                });
+
+                // Adicionar partículas novas
+                for (let i = 0; i < 50 * supernovaPower; i++) {
                     const angle = Math.random() * Math.PI * 2;
-                    const distance = 100 + Math.random() * 200;
-                    const animName = `particleMove${i}`;
-                    
-                    const styleSheet = document.styleSheets[0];
-                    styleSheet.insertRule(`
-                        @keyframes ${animName} {
-                            to { 
-                                transform: translate(
-                                    ${Math.cos(angle) * distance}px, 
-                                    ${Math.sin(angle) * distance}px
-                                ); 
-                                opacity: 0;
-                            }
-                        }
-                    `, styleSheet.cssRules.length);
-                    
-                    particle.style.animation = `${animName} ${Math.random() * 1 + 1}s ease-out forwards`;
-                    document.body.appendChild(particle);
-                    setTimeout(() => particle.remove(), 2000);
-                }, Math.random() * 500);
+                    const distance = Math.random() * supernovaRadius;
+                    particles.push({
+                        x: (mouse.x || canvas.width/2) + Math.cos(angle) * distance,
+                        y: (mouse.y || canvas.height/2) + Math.sin(angle) * distance,
+                        size: Math.random() * 4 + 2,
+                        color: `hsl(${20 + Math.random() * 40}, 100%, 60%)`,
+                        speedX: Math.cos(angle) * (5 + Math.random() * 10) * supernovaPower,
+                        speedY: Math.sin(angle) * (5 + Math.random() * 10) * supernovaPower,
+                        baseSpeedX: 0,
+                        baseSpeedY: 0,
+                        life: 100 + Math.random() * 50,
+                        trail: []
+                    });
+                }
+
+                // Fortalecer o Big-Bang
+                const bigbangSkill = config.skills.find(s => s.id === 'bigbang_power');
+                if (bigbangSkill.level < bigbangSkill.max) {
+                    bigbangSkill.level = Math.min(bigbangSkill.level + 0.3, bigbangSkill.max);
+                    showUnlockMessage("Big-Bang fortalecido pela Supernova!");
+                }
+
+                setTimeout(() => {
+                    config.isSupernovaActive = false;
+                    config.supernovaCooldown = config.supernovaMaxCooldown;
+                    document.getElementById('supernova-cooldown').style.display = 'block';
+                }, 1000);
             }
         }
 
+        // Atualizando o sistema de Big-Bang para desbloquear a cada 15 níveis
         function activateBigBang() {
-            if (!config.bigBangAvailable || config.isBigBangActive) return;
-            
-            config.isBigBangActive = true;
-            config.bigBangAvailable = false;
-            document.getElementById('bigbang-btn').classList.remove('ready');
-            
-            const centerX = canvas.width / 2;
-            const centerY = canvas.height / 2;
-            
-            // Efeitos visuais
-            createBigBangEffects(centerX, centerY);
-            
-            // Efeitos no jogo
-            const power = 1 + config.level * 0.1;
-            const bangPower = 1 + config.skills.find(s => s.id === 'bigbang_power').level * 0.5;
-            
-            // 1. Empurra todos os inimigos
-            enemies.forEach(enemy => {
-                const dx = enemy.x - centerX;
-                const dy = enemy.y - centerY;
-                const distanceSquared = dx * dx + dy * dy;
-                const distance = Math.sqrt(distanceSquared);
-                const force = (1000 / distance) * power * bangPower;
-                const angle = Math.atan2(dy, dx);
+            if (config.bigBangCooldown <= 0 && !config.isBigBangActive && config.bigbangUnlocked) {
+                // [Código existente do Big-Bang...]
                 
-                enemy.speedX = Math.cos(angle) * force;
-                enemy.speedY = Math.sin(angle) * force;
-                enemy.health -= 15 * power * bangPower;
-            });
-            
-            // 2. Cria novas partículas cósmicas
-            for (let i = 0; i < 100 * bangPower; i++) {
-                const angle = (i / 100) * Math.PI * 2;
-                const speed = 2 + Math.random() * 8;
+                // Aplicar bônus da Supernova
+                const bigbangPower = 1 + config.skills.find(s => s.id === 'bigbang_power').level * 0.5;
                 
-                activateParticle(centerX, centerY, {
-                    size: Math.random() * 5 + 2,
-                    color: `hsl(${Math.random() * 360}, 100%, 70%)`,
-                    speedX: (Math.random() - 0.5) * 20 * bangPower,
-                    speedY: (Math.random() - 0.5) * 20 * bangPower,
-                    life: 180 + Math.random() * 120
-                });
-            }
-            
-            // 3. Efeito de tela
-            document.body.style.overflow = 'hidden';
-            document.body.style.boxShadow = 'inset 0 0 100px rgba(255, 105, 180, 0.7)';
-            setTimeout(() => {
-                document.body.style.boxShadow = 'none';
-                config.isBigBangActive = false;
-                config.bigBangCooldown = config.bigBangMaxCooldown;
-            }, 1000);
-        }
-
-        // Função para forçar aparecimento de partículas e inimigos
-        function forceSpawn() {
-            // Garante partículas
-            const activeParticleCount = activeParticles.filter(p => p.active).length;
-            if (activeParticleCount < config.particleCount * 0.5) {
-                const needed = config.particleCount - activeParticleCount;
-                for (let i = 0; i < needed; i++) {
-                    activateParticle(
-                        Math.random() * (canvas.width - 100) + 50,
-                        Math.random() * (canvas.height - 100) + 50
-                    );
+                // Efeitos visuais aprimorados
+                const colors = ['#FF00FF', '#00FFFF', '#FF00FF', '#00FFFF', '#FF00FF'];
+                for (let i = 0; i < 300 * bigbangPower; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = Math.random() * 15 * bigbangPower;
+                    particles.push({
+                        x: mouse.x || canvas.width/2,
+                        y: mouse.y || canvas.height/2,
+                        size: Math.random() * 6 + 3,
+                        color: colors[i % colors.length],
+                        speedX: Math.cos(angle) * speed,
+                        speedY: Math.sin(angle) * speed,
+                        baseSpeedX: 0,
+                        baseSpeedY: 0,
+                        life: 150 + Math.random() * 100,
+                        trail: []
+                    });
                 }
-            }
-
-            // Garante inimigos
-            if (enemies.length < 3 && config.wave.spawned < config.wave.enemiesToSpawn) {
-                spawnEnemy();
-            }
-        }
-
-        function spawnEnemy() {
-            const isElite = Math.random() < 0.1;
-            const isBlackHole = config.level > 3 && Math.random() < 0.05;
-            const sizeBase = isBlackHole ? 40 : (isElite ? 30 : 20);
-
-            const enemy = {
-                x: Math.random() * (canvas.width - sizeBase) + sizeBase/2,
-                y: Math.random() * (canvas.height - sizeBase) + sizeBase/2,
-                size: sizeBase * (1 + config.level * 0.05),
-                speedX: (Math.random() - 0.5) * (3 + config.level * 0.5),
-                speedY: (Math.random() - 0.5) * (3 + config.level * 0.5),
-                health: (isBlackHole ? 15 : (isElite ? 5 : 3)) + config.level * (isBlackHole ? 2 : 1),
-                maxHealth: (isBlackHole ? 15 : (isElite ? 5 : 3)) + config.level * (isBlackHole ? 2 : 1),
-                face: enemyFaces[Math.floor(Math.random() * enemyFaces.length)],
-                type: isBlackHole ? 'blackhole' : (isElite ? 'elite' : 'normal'),
-                damage: isBlackHole ? 1 : (isElite ? 0.7 : 0.5)
-            };
-
-            if(enemy.type === 'blackhole') {
-                enemy.speedX *= 0.5;
-                enemy.speedY *= 0.5;
-            }
-
-            enemies.push(enemy);
-            config.wave.spawned++;
-        }
-
-        function updateEnemies(deltaTime) {
-            enemies.forEach((enemy, index) => {
-                // Comportamento específico por tipo
-                switch(enemy.type) {
-                    case 'blackhole':
-                        // Atrai partículas
-                        activeParticles.forEach(p => {
-                            if (!p.active) return;
-                            
-                            const dx = enemy.x - p.x;
-                            const dy = enemy.y - p.y;
-                            const distanceSquared = dx * dx + dy * dy;
-                            const distance = Math.sqrt(distanceSquared);
-
-                            if(distance < enemy.size * 2) {
-                                const force = (enemy.size * 2 - distance) / (enemy.size * 2);
-                                const angle = Math.atan2(dy, dx);
-                                p.speedX += Math.cos(angle) * force * 0.5;
-                                p.speedY += Math.sin(angle) * force * 0.5;
-
-                                if(distance < enemy.size * 0.5) {
-                                    p.active = false;
-                                    config.particlesAbsorbed++;
-                                }
-                            }
-                        });
-                        break;
-
-                    default:
-                        // Movimento inteligente (persegue o jogador mais próximo)
-                        let closestPlayer = null;
-                        let minDistance = Infinity;
-
-                        config.players.forEach(player => {
-                            if(player.active && player.x && player.y) {
-                                const dx = player.x - enemy.x;
-                                const dy = player.y - enemy.y;
-                                const distanceSquared = dx * dx + dy * dy;
-
-                                if (distanceSquared < minDistance) {
-                                    minDistance = distanceSquared;
-                                    closestPlayer = player;
-                                }
-                            }
-                        });
-
-                        if(closestPlayer && Math.random() > 0.95) {
-                            const dx = closestPlayer.x - enemy.x;
-                            const dy = closestPlayer.y - enemy.y;
-                            const angle = Math.atan2(dy, dx);
-                            enemy.speedX = Math.cos(angle) * 2;
-                            enemy.speedY = Math.sin(angle) * 2;
-                        }
-                }
-
-                // Movimento
-                enemy.x += enemy.speedX * deltaTime;
-                enemy.y += enemy.speedY * deltaTime;
-
-                // Colisão com bordas
-                if (enemy.x < enemy.size/2) enemy.x = enemy.size/2;
-                if (enemy.x > canvas.width - enemy.size/2) enemy.x = canvas.width - enemy.size/2;
-                if (enemy.y < enemy.size/2) enemy.y = enemy.size/2;
-                if (enemy.y > canvas.height - enemy.size/2) enemy.y = canvas.height - enemy.size/2;
-
-                // Dano ao jogador
-                config.players.forEach(player => {
-                    if(player.active && player.x && player.y) {
-                        const dx = player.x - enemy.x;
-                        const dy = player.y - enemy.y;
-                        const distanceSquared = dx * dx + dy * dy;
-                        const minDist = enemy.size/2 + 15;
-
-                        if (distanceSquared < minDist * minDist) {
-                            player.health -= enemy.damage * (config.coopMode ? 0.7 : 1) * deltaTime;
-                            updateHealthBar();
-
-                            // Efeito visual de dano
-                            if(player.id === 1) {
-                                document.body.style.boxShadow = 'inset 0 0 30px red';
-                                setTimeout(() => {
-                                    document.body.style.boxShadow = 'none';
-                                }, 100);
-                            }
-                        }
-                    }
-                });
-
-                // Colisão com partículas
-                activeParticles.forEach(particle => {
-                    if (!particle.active) return;
-                    
-                    const dx = enemy.x - particle.x;
-                    const dy = enemy.y - particle.y;
-                    const distanceSquared = dx * dx + dy * dy;
-                    const minDist = enemy.size/2 + particle.size/2;
-
-                    if (distanceSquared < minDist * minDist) {
-                        enemy.health -= 0.05 * deltaTime;
-
-                        // Repulsão da partícula
-                        const angle = Math.atan2(dy, dx);
-                        const distance = Math.sqrt(distanceSquared);
-                        const force = (minDist - distance) * 0.1;
-                        particle.speedX = -Math.cos(angle) * force * 3;
-                        particle.speedY = -Math.sin(angle) * force * 3;
-                    }
-                });
-
-                // Remove inimigos derrotados
-                if (enemy.health <= 0) {
-                    createExplosion(enemy.x, enemy.y, enemy.size);
-                    enemies.splice(index, 1);
-
-                    const xpValue = enemy.type === 'elite' ? 25 : 
-                                   enemy.type === 'blackhole' ? 50 : 10;
-                    addXP(xpValue * (config.coopMode ? 0.8 : 1));
-
-                    // Atualiza missão e conquista
-                    config.enemiesDestroyed++;
-                    if(!config.achievements.enemyDestroyer.unlocked && 
-                       config.enemiesDestroyed >= config.achievements.enemyDestroyer.required) {
-                        config.achievements.enemyDestroyer.unlocked = true;
-                        showUnlockMessage("Conquista: Destruidor de Inimigos!");
-                        addXP(100);
-                    }
-                }
-            });
-        }
-
-        function createExplosion(x, y, size) {
-            // Partículas de explosão
-            for (let i = 0; i < 15; i++) {
-                activateParticle(x, y, {
-                    size: Math.random() * 3 + 1,
-                    color: `hsl(${Math.random() * 60}, 100%, 50%)`,
-                    speedX: (Math.random() - 0.5) * 10,
-                    speedY: (Math.random() - 0.5) * 10,
-                    baseSpeedX: 0,
-                    baseSpeedY: 0,
-                    life: 100 + Math.random() * 50
-                });
-            }
-        }
-
-        function drawEnemies() {
-            enemies.forEach(enemy => {
-                // Corpo do inimigo
-                const gradient = ctx.createRadialGradient(
-                    enemy.x, enemy.y, enemy.size * 0.3,
-                    enemy.x, enemy.y, enemy.size
-                );
-
-                switch(enemy.type) {
-                    case 'elite':
-                        gradient.addColorStop(0, 'rgba(255, 215, 0, 0.9)');
-                        gradient.addColorStop(1, 'rgba(255, 50, 0, 0.8)');
-                        break;
-                    case 'blackhole':
-                        gradient.addColorStop(0, 'rgba(0, 0, 0, 0.9)');
-                        gradient.addColorStop(0.5, 'rgba(50, 0, 100, 0.8)');
-                        gradient.addColorStop(1, 'rgba(150, 0, 0, 0.8)');
-                        break;
-                    default:
-                        gradient.addColorStop(0, 'rgba(255, 50, 50, 0.8)');
-                        gradient.addColorStop(1, 'rgba(150, 0, 0, 0.8)');
-                }
-
-                ctx.fillStyle = gradient;
-                ctx.beginPath();
-                ctx.arc(enemy.x, enemy.y, enemy.size, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Efeito especial para buraco negro
-                if(enemy.type === 'blackhole') {
-                    ctx.strokeStyle = 'rgba(100, 0, 255, 0.7)';
-                    ctx.lineWidth = 3;
-                    ctx.beginPath();
-                    ctx.arc(enemy.x, enemy.y, enemy.size * 1.5, 0, Math.PI * 2);
-                    ctx.stroke();
-                }
-
-                // Carinha do inimigo (todos com o mesmo emoji do jogador 1)
-                ctx.font = `${enemy.size/2}px Arial`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillStyle = enemy.type === 'elite' ? 'gold' : 
-                               enemy.type === 'blackhole' ? '#8A2BE2' : 'white';
-                ctx.fillText(enemy.face, enemy.x, enemy.y + (enemy.size * 0.05));
-
-                // Barra de vida
-                const healthBarWidth = enemy.size * 1.5;
-                const healthPercent = enemy.health / enemy.maxHealth;
-
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                ctx.fillRect(
-                    enemy.x - healthBarWidth/2, 
-                    enemy.y - enemy.size - 15, 
-                    healthBarWidth, 
-                    8
-                );
-
-                ctx.fillStyle = `hsl(${healthPercent * 120}, 100%, 50%)`;
-                ctx.fillRect(
-                    enemy.x - healthBarWidth/2, 
-                    enemy.y - enemy.size - 15, 
-                    healthBarWidth * healthPercent, 
-                    8
-                );
-            });
-        }
-
-        function updateParticles(deltaTime) {
-            activeParticles.forEach((p, index) => {
-                if (!p.active) return;
                 
-                // Remove partículas antigas
-                if (p.life-- <= 0) {
-                    p.active = false;
-                    return;
-                }
-
-                // Reseta velocidade base
-                p.speedX = p.baseSpeedX;
-                p.speedY = p.baseSpeedY;
-
-                // Interações com os jogadores
-                config.players.forEach(player => {
-                    if(!player.active || !player.x || !player.y || player.mode === 'normal' || config.isBigBangActive) return;
-
-                    const dx = player.x - p.x;
-                    const dy = player.y - p.y;
-                    const distanceSquared = dx * dx + dy * dy;
-                    const maxDist = player.radius;
-
-                    if(distanceSquared < maxDist * maxDist) {
-                        const distance = Math.sqrt(distanceSquared);
-                        const force = (maxDist - distance) / maxDist;
-                        const angle = Math.atan2(dy, dx);
-
-                        // Aplica efeitos baseados no modo
-                        switch(player.mode) {
-                            case 'attract':
-                                // Atração mais forte no centro
-                                const attractForce = 0.1 * player.power * (1 + (maxDist - distance)/maxDist);
-                                p.speedX += dx * attractForce * deltaTime;
-                                p.speedY += dy * attractForce * deltaTime;
-
-                                if (distance < maxDist * 0.2) {
-                                    p.active = false;
-                                    addXP(3);
-                                    config.particlesAbsorbed++;
-                                }
-                                break;
-
-                            case 'repel':
-                                p.speedX -= dx * 0.1 * force * player.power * deltaTime;
-                                p.speedY -= dy * 0.1 * force * player.power * deltaTime;
-
-                                if (distance < maxDist * 0.5) {
-                                    p.speedX += (Math.random() - 0.5) * force * 5 * deltaTime;
-                                    p.speedY += (Math.random() - 0.5) * force * 5 * deltaTime;
-                                    p.color = `hsl(${(Date.now()/10) % 360}, 100%, 70%)`;
-                                }
-                                break;
-
-                            case 'vortex':
-                                const vortexPower = 0.1 * player.power;
-                                p.speedX += Math.cos(angle + Math.PI/2) * vortexPower * force * deltaTime;
-                                p.speedY += Math.sin(angle + Math.PI/2) * vortexPower * force * deltaTime;
-                                p.speedX += dx * 0.03 * force * deltaTime;
-                                p.speedY += dy * 0.03 * force * deltaTime;
-                                p.color = `hsl(${(angle * 180/Math.PI + Date.now()/10) % 360}, 100%, 70%)`;
-                                break;
-                        }
-                    }
-                });
-
-                // Atualiza posição
-                p.x += p.speedX * deltaTime;
-                p.y += p.speedY * deltaTime;
-
-                // Verifica bordas com bounce mais suave
-                if (p.x < 0) { p.x = 0; p.speedX *= -0.7; }
-                if (p.x > canvas.width) { p.x = canvas.width; p.speedX *= -0.7; }
-                if (p.y < 0) { p.y = 0; p.speedY *= -0.7; }
-                if (p.y > canvas.height) { p.y = canvas.height; p.speedY *= -0.7; }
-
-                // Rastro
-                if (p.trail) {
-                    p.trail.push({x: p.x, y: p.y});
-                    if (p.trail.length > 10) p.trail.shift();
-                }
-            });
+                // [Restante do código do Big-Bang...]
+            }
         }
 
-        function drawParticles() {
-            activeParticles.forEach(p => {
-                if (!p.active) return;
-                
-                // Rastro
-                if (p.trail && p.trail.length > 1) {
-                    ctx.beginPath();
-                    ctx.moveTo(p.trail[0].x, p.trail[0].y);
-                    for (let i = 1; i < p.trail.length; i++) {
-                        ctx.lineTo(p.trail[i].x, p.trail[i].y);
-                    }
-                    ctx.strokeStyle = p.color.replace(')', ', 0.3)').replace('hsl', 'hsla');
-                    ctx.lineWidth = p.size / 2;
-                    ctx.stroke();
-                }
-
-                // Partícula
-                ctx.fillStyle = p.color;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                ctx.fill();
-            });
-        }
-
-        function drawPlayers() {
-            config.players.forEach(player => {
-                if(!player.active || !player.x || !player.y) return;
-
-                // Cursor do jogador
-                ctx.fillStyle = player.color;
-                ctx.beginPath();
-                ctx.arc(player.x, player.y, 10, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Ícone do modo atual e face
-                ctx.font = '20px Arial';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillStyle = 'white';
-
-                let icon = '';
-                switch(player.mode) {
-                    case 'attract': 
-                        icon = '🌀';
-                        break;
-                    case 'repel': 
-                        icon = '✨';
-                        break;
-                    case 'vortex': 
-                        icon = '🌪️';
-                        break;
-                    default: 
-                        icon = player.face;
-                        break;
-                }
-
-                ctx.fillText(icon, player.x, player.y);
-
-                // Desenha área de influência (menor)
-                if(player.mode !== 'normal') {
-                    ctx.beginPath();
-                    ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
-                    ctx.strokeStyle = player.color + '40';
-                    ctx.lineWidth = 2;
-                    ctx.stroke();
-                }
-            });
-        }
-
-        // SISTEMA DE XP E NÍVEL
+        // Atualizando o sistema de níveis para desbloquear o Big-Bang
         function addXP(amount) {
             config.xp += amount * (1 + Math.sqrt(config.level) * 0.15);
             const maxXP = 100 + (config.level * 30);
@@ -1109,472 +243,59 @@
             if (config.xp >= maxXP) {
                 config.xp -= maxXP;
                 config.level++;
-                config.power += 0.2;
-                config.maxHealth += 10;
-                config.health = config.maxHealth;
-                updateHealthBar();
-
-                // Verifica se o Big Bang deve ser liberado
-                if (config.level >= config.nextBigBangLevel) {
-                    config.bigBangAvailable = true;
-                    config.nextBigBangLevel += 15;
-                    document.getElementById('bigbang-btn').classList.add('ready');
-                    showUnlockMessage("BIG BANG DISPONÍVEL!");
+                
+                // Desbloquear Big-Bang a cada 15 níveis
+                if (config.level % 15 === 0 && !config.bigbangUnlocked) {
+                    config.bigbangUnlocked = true;
+                    showUnlockMessage("Habilidade Big-Bang desbloqueada!");
+                    document.getElementById('bigbang-btn').style.display = 'flex';
                 }
-
-                // Desbloqueia galáxias
-                if (config.level >= 2 && !galaxies.electric.unlocked) {
-                    galaxies.electric.unlocked = true;
-                    showUnlockMessage("Galáxia Elétrica desbloqueada!");
-                }
-                if (config.level >= 3 && !galaxies.quantum.unlocked) {
-                    galaxies.quantum.unlocked = true;
-                    showUnlockMessage("Galáxia Quântica desbloqueada!");
-                }
-                if (config.level >= 5 && !galaxies.chaos.unlocked) {
-                    galaxies.chaos.unlocked = true;
-                    showUnlockMessage("Galáxia Caótica desbloqueada!");
-                }
-
-                showUnlockMessage(`Nível UP! Agora você é nível ${config.level}`);
+                
+                // [Restante do código de level up...]
             }
             updateXPBar();
         }
 
-        function updateHealthBar() {
-            // Calcula a média de saúde dos jogadores ativos
-            let totalHealth = 0;
-            let totalMaxHealth = 0;
-            let activePlayers = 0;
-
-            config.players.forEach(player => {
-                if(player.active) {
-                    totalHealth += player.health;
-                    totalMaxHealth += player.maxHealth;
-                    activePlayers++;
-                }
-            });
-
-            if(activePlayers === 0) return;
-
-            const healthPercent = totalHealth / totalMaxHealth;
-            document.getElementById('health-bar').style.width = `${healthPercent * 100}%`;
-
-            if (healthPercent <= 0) {
-                // Game Over
-                alert(`Game Over! Seu nível: ${config.level}`);
-                config.players.forEach(player => {
-                    player.health = player.maxHealth;
-                });
-                config.xp = 0;
-                config.level = 1;
-                enemies = [];
-                initParticles();
-                updateHealthBar();
-                updateXPBar();
-            }
-        }
-
-        function updateXPBar() {
-            const maxXP = 100 + (config.level * 30);
-            const xpPercent = (config.xp / maxXP) * 100;
-            document.getElementById('xp-bar').style.width = `${xpPercent}%`;
-            document.getElementById('xp-text').textContent = 
-                `${Math.floor(config.xp)}/${maxXP} XP (Nível ${config.level})`;
-        }
-
-        function updateBigBangCooldown() {
-            if (config.bigBangCooldown > 0) {
-                config.bigBangCooldown--;
-                const percent = (1 - (config.bigBangCooldown / config.bigBangMaxCooldown)) * 100;
-                document.getElementById('bigbang-progress').style.width = `${percent}%`;
-            }
-        }
-
-        function showUnlockMessage(text) {
-            const message = document.createElement('div');
-            message.style.position = 'fixed';
-            message.style.top = '50%';
-            message.style.left = '50%';
-            message.style.transform = 'translate(-50%, -50%)';
-            message.style.backgroundColor = 'rgba(0,0,0,0.9)';
-            message.style.color = '#00F5A0';
-            message.style.padding = '20px 30px';
-            message.style.borderRadius = '10px';
-            message.style.zIndex = '10000';
-            message.style.textAlign = 'center';
-            message.style.fontSize = '24px';
-            message.style.boxShadow = '0 0 20px #00F5A0';
-            message.style.border = '2px solid #00F5A0';
-            message.style.fontWeight = 'bold';
-            message.textContent = text;
-
-            document.body.appendChild(message);
-
-            setTimeout(() => {
-                message.style.transition = 'all 0.5s';
-                message.style.opacity = '0';
-                message.style.transform = 'translate(-50%, -50%) scale(1.2)';
-                setTimeout(() => message.remove(), 500);
-            }, 2000);
-        }
-
-        // CONTADOR DE FPS
-        let fps = 0;
-        let lastUpdate = performance.now();
-        let frameCount = 0;
-
-        function updateFPSCounter() {
-            frameCount++;
-            const now = performance.now();
-            if (now - lastUpdate >= 1000) {
-                fps = frameCount;
-                frameCount = 0;
-                lastUpdate = now;
-                document.getElementById('fps-counter').textContent = `FPS: ${fps}`;
-            }
-        }
-
-        // Sistema de ondas
-        config.wave.update = function() {
-            if(this.spawned < this.enemiesToSpawn && this.timer++ > 60) {
-                spawnEnemy();
-                this.spawned++;
-                this.timer = 0;
-            }
-
-            if(enemies.length === 0 && this.spawned >= this.enemiesToSpawn) {
-                this.number++;
-                this.enemiesToSpawn = 5 + this.number * 2;
-                this.spawned = 0;
-                showUnlockMessage(`Onda ${this.number} começando!`);
-            }
-        };
-
-        // Menu Hamburguer
-        const menuToggle = document.getElementById('menu-toggle');
-        const menu = document.getElementById('menu');
-
-        menuToggle.addEventListener('click', () => {
-            menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-        });
-
-        // Fechar menu ao clicar fora
-        document.addEventListener('click', (e) => {
-            if (!menu.contains(e.target) && e.target !== menuToggle && e.target !== document.getElementById('bigbang-btn')) {
-                menu.style.display = 'none';
-            }
-        });
-
-        // Controles do menu
-        document.getElementById('menu-coop').addEventListener('click', toggleCoopMode);
-        document.getElementById('menu-show-galaxies').addEventListener('click', showGalaxyMap);
-        document.getElementById('menu-reset').addEventListener('click', resetGame);
-
-        document.getElementById('menu-attract').addEventListener('click', () => {
-            config.players[0].mode = 'attract';
-            updateMenuButtons();
-            menu.style.display = 'none';
-        });
-
-        document.getElementById('menu-repel').addEventListener('click', () => {
-            config.players[0].mode = 'repel';
-            updateMenuButtons();
-            menu.style.display = 'none';
-        });
-
-        document.getElementById('menu-vortex').addEventListener('click', () => {
-            config.players[0].mode = 'vortex';
-            updateMenuButtons();
-            menu.style.display = 'none';
-        });
-
-        function toggleCoopMode() {
-            config.coopMode = !config.coopMode;
-            config.players[1].active = config.coopMode;
-
-            const coopButton = document.getElementById('menu-coop');
-            coopButton.textContent = `🔵 Cooperativo: ${config.coopMode ? 'ON' : 'OFF'}`;
-
-            if(config.isMobile) {
-                document.getElementById('mobile-controls-p2').style.display = 
-                    config.coopMode ? 'flex' : 'none';
-            }
-
-            // Atualiza o raio dos jogadores
-            config.players[0].radius = config.coopMode ? 80 : 100;
-            config.players[1].radius = 80;
-        }
-
-        function showGalaxyMap() {
-            document.getElementById('galaxy-map').style.display = 'block';
-            renderGalaxyMap();
-            menu.style.display = 'none';
-        }
-
-        function resetGame() {
-            if(confirm("Tem certeza que quer reiniciar o jogo? Todo progresso será perdido.")) {
-                location.reload();
-            }
-        }
-
-        function updateMenuButtons() {
-            // Atualiza os botões do menu para refletir o modo atual
-            const modes = ['attract', 'repel', 'vortex'];
-            modes.forEach(mode => {
-                const btn = document.getElementById(`menu-${mode}`);
-                btn.style.background = config.players[0].mode === mode ? 
-                    'rgba(74, 0, 224, 0.5)' : 'transparent';
-            });
-        }
-
-        // Controles mobile
-        document.getElementById("mobileAttract").addEventListener('click', () => {
-            config.players[0].mode = 'attract';
-            updateMenuButtons();
-        });
-
-        document.getElementById("mobileRepel").addEventListener('click', () => {
-            config.players[0].mode = 'repel';
-            updateMenuButtons();
-        });
-
-        document.getElementById("mobileVortex").addEventListener('click', () => {
-            config.players[0].mode = 'vortex';
-            updateMenuButtons();
-        });
-
-        // Controles jogador 2
-        document.getElementById("mobileAttractP2").addEventListener('click', () => {
-            config.players[1].mode = 'attract';
-        });
-
-        document.getElementById("mobileRepelP2").addEventListener('click', () => {
-            config.players[1].mode = 'repel';
-        });
-
-        document.getElementById("mobileVortexP2").addEventListener('click', () => {
-            config.players[1].mode = 'vortex';
-        });
-
-        // Mouse e toques
-        const mouse = { x: null, y: null };
-        canvas.addEventListener('mousemove', (e) => {
-            if(!config.coopMode) {
-                config.players[0].x = e.clientX;
-                config.players[0].y = e.clientY;
-            } else {
-                // Em modo cooperativo, o mouse controla o jogador 1
-                config.players[0].x = e.clientX;
-                config.players[0].y = e.clientY;
-            }
-        });
-
-        canvas.addEventListener('touchmove', (e) => {
-            e.preventDefault();
-            if(e.touches.length === 1) {
-                config.players[0].x = e.touches[0].clientX;
-                config.players[0].y = e.touches[0].clientY;
-            } else if(e.touches.length === 2 && config.coopMode) {
-                config.players[0].x = e.touches[0].clientX;
-                config.players[0].y = e.touches[0].clientY;
-                config.players[1].x = e.touches[1].clientX;
-                config.players[1].y = e.touches[1].clientY;
-            }
-        });
-
-        // Sistema de Galáxias
-        const galaxies = {
-            classic: {
-                name: "Clássica",
-                description: "Modo padrão com física básica",
-                unlocked: true,
-                init: function() {
-                    config.particleCount = 200;
-                    if(config.isMobile) config.particleCount = Math.floor(config.particleCount * 0.6);
-                    initParticles();
-                }
-            },
-            electric: {
-                name: "Elétrica",
-                description: "Partículas com carga positiva e negativa",
-                unlocked: false,
-                requirement: "Alcance nível 2",
-                init: function() {
-                    config.particleCount = 250;
-                    if(config.isMobile) config.particleCount = Math.floor(config.particleCount * 0.6);
-                    initParticles();
-                }
-            },
-            quantum: {
-                name: "Quântica",
-                description: "Partículas podem se teleportar",
-                unlocked: false,
-                requirement: "Alcance nível 3",
-                init: function() {
-                    config.particleCount = 300;
-                    if(config.isMobile) config.particleCount = Math.floor(config.particleCount * 0.6);
-                    initParticles();
-                }
-            },
-            chaos: {
-                name: "Caótica",
-                description: "Modo frenético com física imprevisível",
-                unlocked: false,
-                requirement: "Alcance nível 5",
-                init: function() {
-                    config.particleCount = 400;
-                    if(config.isMobile) config.particleCount = Math.floor(config.particleCount * 0.6);
-                    initParticles();
+        // Atualizando o cooldown da Supernova
+        function updateSupernovaCooldown() {
+            if (config.supernovaCooldown > 0) {
+                config.supernovaCooldown--;
+                const percent = (1 - (config.supernovaCooldown / config.supernovaMaxCooldown)) * 100;
+                document.getElementById('supernova-progress').style.width = `${percent}%`;
+                
+                if (config.supernovaCooldown <= 0) {
+                    document.getElementById('supernova-cooldown').style.display = 'none';
                 }
             }
-        };
-
-        function renderGalaxyMap() {
-            const container = document.getElementById('galaxies-list');
-            container.innerHTML = '';
-
-            for (const [id, galaxy] of Object.entries(galaxies)) {
-                const galaxyElement = document.createElement('div');
-                galaxyElement.className = `galaxy ${galaxy.unlocked ? 'unlocked' : 'locked'}`;
-                galaxyElement.innerHTML = `
-                    <h3>${galaxy.name}</h3>
-                    <p>${galaxy.description}</p>
-                    ${!galaxy.unlocked ? `<small>${galaxy.requirement}</small>` : ''}
-                `;
-
-                if (galaxy.unlocked) {
-                    galaxyElement.addEventListener('click', () => {
-                        config.galaxies.current = id;
-                        galaxies[id].init();
-                        document.getElementById('galaxy-map').style.display = 'none';
-
-                        // Atualiza conquista
-                        if(!config.achievements.galaxyExplorer.unlocked) {
-                            config.achievements.galaxyExplorer.count++;
-                            if(config.achievements.galaxyExplorer.count >= config.achievements.galaxyExplorer.required) {
-                                config.achievements.galaxyExplorer.unlocked = true;
-                                showUnlockMessage("Conquista: Explorador Galáctico!");
-                                addXP(50);
-                            }
-                        }
-                    });
-                }
-
-                container.appendChild(galaxyElement);
-            }
         }
 
-        document.getElementById("close-galaxy-map").addEventListener('click', () => {
-            document.getElementById('galaxy-map').style.display = 'none';
-        });
-
-        // Botão Big Bang
-        document.getElementById('bigbang-btn').addEventListener('click', activateBigBang);
-
-        // Teclado
+        // Adicionando listener para a Supernova
+        document.getElementById('supernova-btn').addEventListener('click', activateSupernova);
         document.addEventListener('keydown', (e) => {
-            // Jogador 1
-            switch(e.key.toLowerCase()) {
-                case '1': 
-                    config.players[0].mode = 'attract'; 
-                    break;
-                case '2': 
-                    config.players[0].mode = 'repel'; 
-                    break;
-                case '3': 
-                    config.players[0].mode = 'vortex'; 
-                    break;
-                case ' ': 
-                    activateBigBang(); 
-                    break;
-                case '0':
-                    config.players[0].mode = 'normal';
-                    break;
-            }
-
-            // Jogador 2 (modo cooperativo)
-            if(config.coopMode) {
-                const speed = 5 * config.gameSpeed;
-                const player = config.players[1];
-
-                switch(e.key.toLowerCase()) {
-                    case 'w': 
-                        player.y = (player.y || canvas.height/2) - speed; 
-                        break;
-                    case 's': 
-                        player.y = (player.y || canvas.height/2) + speed; 
-                        break;
-                    case 'a': 
-                        player.x = (player.x || canvas.width/2) - speed; 
-                        break;
-                    case 'd': 
-                        player.x = (player.x || canvas.width/2) + speed; 
-                        break;
-                    case 'q': 
-                        player.mode = 'attract'; 
-                        break;
-                    case 'e': 
-                        player.mode = 'repel'; 
-                        break;
-                    case 'r': 
-                        player.mode = 'vortex'; 
-                        break;
-                    case 'z':
-                        player.mode = 'normal';
-                        break;
-                }
-
-                // Limita ao canvas
-                if(player.x) player.x = Math.max(10, Math.min(canvas.width - 10, player.x));
-                if(player.y) player.y = Math.max(10, Math.min(canvas.height - 10, player.y));
+            if (e.key === 'Shift' && config.supernovaUnlocked) {
+                activateSupernova();
             }
         });
 
-        // Loop principal otimizado
-        let lastTime = 0;
-        function animate(currentTime) {
-            const deltaTime = Math.min(currentTime - lastTime, 100) / 16.67;
-            lastTime = currentTime;
-            
+        // Atualizando o game loop para incluir a Supernova
+        function animate() {
             updateFPSCounter();
             updateBigBangCooldown();
-            config.gameTime++;
-
-            // Atualizações do jogo
-            config.wave.update();
-            updateEnemies(deltaTime);
-            updateParticles(deltaTime);
-            forceSpawn();
+            updateSupernovaCooldown();
             
-            // Renderização
-            renderToBuffer();
-            
-            // Copia o buffer para o canvas principal
-            ctx.drawImage(bufferCanvas, 0, 0);
-            
-            requestAnimationFrame(animate);
+            // [Restante do game loop...]
         }
 
-        function renderToBuffer() {
-            // Limpa o buffer
-            bufferCtx.fillStyle = `rgba(10, 10, 20, ${config.galaxies.current === 'chaos' ? 0.1 : 0.2})`;
-            bufferCtx.fillRect(0, 0, bufferCanvas.width, bufferCanvas.height);
+        // Inicialização
+        function init() {
+            // Mostrar apenas o botão da Supernova inicialmente
+            document.getElementById('bigbang-btn').style.display = 'none';
+            document.getElementById('supernova-cooldown').style.display = 'none';
             
-            // Desenha todos os elementos
-            drawParticles();
-            drawEnemies();
-            drawPlayers();
+            // [Restante da inicialização...]
         }
 
-        // Redimensionamento
-        window.addEventListener('resize', () => {
-            initCanvas();
-            initParticles();
-        });
-
-        // Inicia o jogo
-        initGame();
+        init();
     </script>
 </body>
 </html>
