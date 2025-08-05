@@ -200,7 +200,6 @@
         #health-bar {
             height: 100%;
             width: 100%;
-            background: linear-gradient(90deg, #FF0000, #00FF00);
             transition: width 0.3s;
         }
 
@@ -275,6 +274,28 @@
             box-shadow: 0 0 15px rgba(255, 0, 255, 0.5);
         }
 
+        .unlock-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.5);
+            background-color: rgba(0,0,0,0.9);
+            color: #00F5A0;
+            padding: 20px 30px;
+            border-radius: 10px;
+            z-index: 10000;
+            text-align: center;
+            font-size: 24px;
+            box-shadow: 0 0 20px #00F5A0;
+            border: 2px solid #00F5A0;
+            font-weight: bold;
+            opacity: 0;
+            transition: all 0.3s ease-out;
+            pointer-events: none;
+            width: 80%;
+            max-width: 400px;
+        }
+
         @media (max-width: 768px) {
             .mobile-controls { display: flex; }
             #menu {
@@ -301,8 +322,8 @@
 
         <div class="menu-section">
             <h4>Controles</h4>
-            <div class="menu-item" id="menu-attract">🌀 Atração</div>
-            <div class="menu-item" id="menu-repel">✨ Repulsão</div>
+            <div class="menu-item" id="menu-attract">🧲 Atração</div>
+            <div class="menu-item" id="menu-repel">💥 Repulsão</div>
             <div class="menu-item" id="menu-vortex">🌪️ Vórtice</div>
         </div>
 
@@ -323,15 +344,15 @@
 
     <!-- Controles mobile -->
     <div class="mobile-controls">
-        <button class="mobile-btn" id="mobileAttract">🌀</button>
-        <button class="mobile-btn" id="mobileRepel">✨</button>
+        <button class="mobile-btn" id="mobileAttract">🧲</button>
+        <button class="mobile-btn" id="mobileRepel">💥</button>
         <button class="mobile-btn" id="mobileVortex">🌪️</button>
     </div>
 
     <!-- Controles mobile jogador 2 -->
     <div class="mobile-controls" id="mobile-controls-p2">
-        <button class="mobile-btn" id="mobileAttractP2">🌀</button>
-        <button class="mobile-btn" id="mobileRepelP2">✨</button>
+        <button class="mobile-btn" id="mobileAttractP2">🧲</button>
+        <button class="mobile-btn" id="mobileRepelP2">💥</button>
         <button class="mobile-btn" id="mobileVortexP2">🌪️</button>
     </div>
 
@@ -386,7 +407,7 @@
                     radius: 150,
                     power: 1,
                     health: 100,
-                    face: "🐶", // Carinha feliz
+                    face: "🐶",
                     active: true
                 },
                 {
@@ -398,7 +419,7 @@
                     radius: 150,
                     power: 1,
                     health: 100,
-                    face: "🐱", // Carinha com óculos
+                    face: "🐱",
                     active: false
                 }
             ],
@@ -428,6 +449,10 @@
             gameTime: 0,
             isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
         };
+
+        // Sistema de fila de mensagens
+        const messageQueue = [];
+        let isShowingMessage = false;
 
         // Ajuste para dispositivos móveis
         if(config.isMobile) {
@@ -461,12 +486,11 @@
 
         // Função para forçar aparecimento de partículas e inimigos
         function forceSpawn() {
-            // Garante partículas
             if (particles.length < config.particleCount * 0.5) {
                 const needed = config.particleCount - particles.length;
                 for (let i = 0; i < needed; i++) {
                     particles.push({
-                        x: Math.random() * (canvas.width - 100) + 50, // Evita cantos
+                        x: Math.random() * (canvas.width - 100) + 50,
                         y: Math.random() * (canvas.height - 100) + 50,
                         size: Math.random() * 4 + 2,
                         color: `hsl(${Math.random() * 360}, 80%, 60%)`,
@@ -479,7 +503,6 @@
                 }
             }
 
-            // Garante inimigos
             if (enemies.length < 3 && config.wave.spawned < config.wave.enemiesToSpawn) {
                 spawnEnemy();
             }
@@ -538,7 +561,6 @@
                     config.coopMode ? 'flex' : 'none';
             }
 
-            // Atualiza o raio dos jogadores
             config.players[0].radius = config.coopMode ? 120 : 150;
             config.players[1].radius = 120;
         }
@@ -555,8 +577,19 @@
             }
         }
 
+        function resetGameState() {
+            config.players.forEach(player => {
+                player.health = player.maxHealth;
+            });
+            config.xp = 0;
+            config.level = 1;
+            enemies = [];
+            initParticles();
+            updateHealthBar();
+            updateXPBar();
+        }
+
         function updateMenuButtons() {
-            // Atualiza os botões do menu para refletir o modo atual
             const modes = ['attract', 'repel', 'vortex'];
             modes.forEach(mode => {
                 const btn = document.getElementById(`menu-${mode}`);
@@ -601,7 +634,6 @@
                 config.players[0].x = e.clientX;
                 config.players[0].y = e.clientY;
             } else {
-                // Em modo cooperativo, o mouse controla o jogador 1
                 config.players[0].x = e.clientX;
                 config.players[0].y = e.clientY;
             }
@@ -686,7 +718,6 @@
                         galaxies[id].init();
                         document.getElementById('galaxy-map').style.display = 'none';
 
-                        // Atualiza conquista
                         if(!config.achievements.galaxyExplorer.unlocked) {
                             config.achievements.galaxyExplorer.count++;
                             if(config.achievements.galaxyExplorer.count >= config.achievements.galaxyExplorer.required) {
@@ -741,10 +772,8 @@
 
         function updateEnemies() {
             enemies.forEach((enemy, index) => {
-                // Comportamento específico por tipo
                 switch(enemy.type) {
                     case 'blackhole':
-                        // Atrai partículas
                         particles.forEach(p => {
                             const dx = enemy.x - p.x;
                             const dy = enemy.y - p.y;
@@ -764,7 +793,6 @@
                         break;
 
                     default:
-                        // Movimento inteligente (persegue o jogador mais próximo)
                         let closestPlayer = null;
                         let minDistance = Infinity;
 
@@ -790,17 +818,14 @@
                         }
                 }
 
-                // Movimento
                 enemy.x += enemy.speedX;
                 enemy.y += enemy.speedY;
 
-                // Colisão com bordas
                 if (enemy.x < enemy.size/2) enemy.x = enemy.size/2;
                 if (enemy.x > canvas.width - enemy.size/2) enemy.x = canvas.width - enemy.size/2;
                 if (enemy.y < enemy.size/2) enemy.y = enemy.size/2;
                 if (enemy.y > canvas.height - enemy.size/2) enemy.y = canvas.height - enemy.size/2;
 
-                // Dano ao jogador
                 config.players.forEach(player => {
                     if(player.active && player.x && player.y) {
                         const dx = player.x - enemy.x;
@@ -811,7 +836,6 @@
                             player.health -= enemy.damage * (config.coopMode ? 0.7 : 1);
                             updateHealthBar();
 
-                            // Efeito visual de dano
                             if(player.id === 1) {
                                 document.body.style.boxShadow = 'inset 0 0 30px red';
                                 setTimeout(() => {
@@ -822,7 +846,6 @@
                     }
                 });
 
-                // Colisão com partículas
                 particles.forEach(particle => {
                     const dx = enemy.x - particle.x;
                     const dy = enemy.y - particle.y;
@@ -831,8 +854,6 @@
 
                     if (distance < minDist) {
                         enemy.health -= 0.05;
-
-                        // Repulsão da partícula
                         const angle = Math.atan2(dy, dx);
                         const force = (minDist - distance) * 0.1;
                         particle.speedX = -Math.cos(angle) * force * 3;
@@ -840,7 +861,6 @@
                     }
                 });
 
-                // Remove inimigos derrotados
                 if (enemy.health <= 0) {
                     createExplosion(enemy.x, enemy.y, enemy.size);
                     enemies.splice(index, 1);
@@ -849,7 +869,6 @@
                                    enemy.type === 'blackhole' ? 50 : 10;
                     addXP(xpValue * (config.coopMode ? 0.8 : 1));
 
-                    // Atualiza missão e conquista
                     config.enemiesDestroyed++;
                     if(!config.achievements.enemyDestroyer.unlocked && 
                        config.enemiesDestroyed >= config.achievements.enemyDestroyer.required) {
@@ -862,7 +881,6 @@
         }
 
         function createExplosion(x, y, size) {
-            // Partículas de explosão
             for (let i = 0; i < 15; i++) {
                 particles.push({
                     x: x,
@@ -881,7 +899,6 @@
 
         function drawEnemies() {
             enemies.forEach(enemy => {
-                // Corpo do inimigo
                 const gradient = ctx.createRadialGradient(
                     enemy.x, enemy.y, enemy.size * 0.3,
                     enemy.x, enemy.y, enemy.size
@@ -907,7 +924,6 @@
                 ctx.arc(enemy.x, enemy.y, enemy.size, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Efeito especial para buraco negro
                 if(enemy.type === 'blackhole') {
                     ctx.strokeStyle = 'rgba(100, 0, 255, 0.7)';
                     ctx.lineWidth = 3;
@@ -916,7 +932,6 @@
                     ctx.stroke();
                 }
 
-                // Carinha do inimigo
                 ctx.font = `${enemy.size/2}px monospace`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
@@ -924,7 +939,6 @@
                                enemy.type === 'blackhole' ? '#8A2BE2' : 'white';
                 ctx.fillText(enemy.face, enemy.x, enemy.y + (enemy.size * 0.05));
 
-                // Barra de vida
                 const healthBarWidth = enemy.size * 1.5;
                 const healthPercent = enemy.health / enemy.maxHealth;
 
@@ -951,7 +965,6 @@
             if (config.bigBangCooldown <= 0 && !config.isBigBangActive) {
                 config.isBigBangActive = true;
 
-                // Efeito visual
                 const bang = document.createElement('div');
                 bang.style.position = 'fixed';
                 bang.style.left = '0';
@@ -974,7 +987,6 @@
                     setTimeout(() => bang.remove(), 1000);
                 }, 100);
 
-                // Efeito no jogo
                 const bangPower = 1 + config.skills.find(s => s.id === 'bigbang_power').level * 0.5;
 
                 enemies.forEach(enemy => {
@@ -987,7 +999,6 @@
                     p.speedY = (Math.random() - 0.5) * 20 * bangPower;
                 });
 
-                // Adiciona novas partículas
                 for (let i = 0; i < 100 * bangPower; i++) {
                     particles.push({
                         x: mouse.x || canvas.width/2,
@@ -1023,7 +1034,6 @@
                 config.health = config.maxHealth;
                 updateHealthBar();
 
-                // Desbloqueia galáxias
                 if (config.level >= 2 && !galaxies.electric.unlocked) {
                     galaxies.electric.unlocked = true;
                     showUnlockMessage("Galáxia Elétrica desbloqueada!");
@@ -1043,14 +1053,13 @@
         }
 
         function updateHealthBar() {
-            // Calcula a média de saúde dos jogadores ativos
             let totalHealth = 0;
             let totalMaxHealth = 0;
             let activePlayers = 0;
 
             config.players.forEach(player => {
                 if(player.active) {
-                    totalHealth += player.health;
+                    totalHealth += Math.max(0, player.health);
                     totalMaxHealth += player.maxHealth;
                     activePlayers++;
                 }
@@ -1060,19 +1069,14 @@
 
             const healthPercent = totalHealth / totalMaxHealth;
             document.getElementById('health-bar').style.width = `${healthPercent * 100}%`;
+            document.getElementById('health-bar').style.background = 
+                `linear-gradient(90deg, hsl(${healthPercent * 120}, 100%, 50%), hsl(${healthPercent * 120}, 100%, 30%))`;
 
             if (healthPercent <= 0) {
-                // Game Over
-                alert(`Game Over! Seu nível: ${config.level}`);
-                config.players.forEach(player => {
-                    player.health = player.maxHealth;
-                });
-                config.xp = 0;
-                config.level = 1;
-                enemies = [];
-                initParticles();
-                updateHealthBar();
-                updateXPBar();
+                setTimeout(() => {
+                    alert(`Game Over! Seu nível: ${config.level}`);
+                    resetGameState();
+                }, 500);
             }
         }
 
@@ -1093,30 +1097,36 @@
         }
 
         function showUnlockMessage(text) {
-            const message = document.createElement('div');
-            message.style.position = 'fixed';
-            message.style.top = '50%';
-            message.style.left = '50%';
-            message.style.transform = 'translate(-50%, -50%)';
-            message.style.backgroundColor = 'rgba(0,0,0,0.9)';
-            message.style.color = '#00F5A0';
-            message.style.padding = '20px 30px';
-            message.style.borderRadius = '10px';
-            message.style.zIndex = '10000';
-            message.style.textAlign = 'center';
-            message.style.fontSize = '24px';
-            message.style.boxShadow = '0 0 20px #00F5A0';
-            message.style.border = '2px solid #00F5A0';
-            message.style.fontWeight = 'bold';
-            message.textContent = text;
+            messageQueue.push(text);
+            showNextMessage();
+        }
 
+        function showNextMessage() {
+            if (isShowingMessage || messageQueue.length === 0) return;
+            
+            isShowingMessage = true;
+            const text = messageQueue.shift();
+            
+            const message = document.createElement('div');
+            message.className = 'unlock-message';
+            message.textContent = text;
+            
             document.body.appendChild(message);
 
             setTimeout(() => {
-                message.style.transition = 'all 0.5s';
+                message.style.opacity = '1';
+                message.style.transform = 'translate(-50%, -50%) scale(1)';
+            }, 10);
+
+            setTimeout(() => {
                 message.style.opacity = '0';
-                message.style.transform = 'translate(-50%, -50%) scale(1.2)';
-                setTimeout(() => message.remove(), 500);
+                message.style.transform = 'translate(-50%, -50%) scale(0.9)';
+                
+                setTimeout(() => {
+                    message.remove();
+                    isShowingMessage = false;
+                    showNextMessage();
+                }, 500);
             }, 2000);
         }
 
@@ -1141,37 +1151,33 @@
             config.players.forEach(player => {
                 if(!player.active || !player.x || !player.y) return;
 
-                // Cursor do jogador
                 ctx.fillStyle = player.color;
                 ctx.beginPath();
                 ctx.arc(player.x, player.y, 10, 0, Math.PI * 2);
                 ctx.fill();
 
-                // Ícone do modo atual e face
-                ctx.font = '20px Arial';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillStyle = 'white';
-
                 let icon = '';
                 switch(player.mode) {
                     case 'attract': 
-                        icon = '🌀';
+                        icon = '🧲';
                         break;
                     case 'repel': 
-                        icon = '✨';
+                        icon = '💥';
                         break;
                     case 'vortex': 
-                        icon = '🌪️';
+                        icon = '🌀';
                         break;
                     default: 
-                        icon = player.face;
+                        icon = player.id === 1 ? '🐶' : '🐱';
                         break;
                 }
 
+                ctx.font = '24px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = 'white';
                 ctx.fillText(icon, player.x, player.y);
 
-                // Desenha área de influência
                 if(player.mode !== 'normal') {
                     ctx.beginPath();
                     ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
@@ -1188,29 +1194,22 @@
             updateBigBangCooldown();
             config.gameTime++;
 
-            // Garante que tenha partículas e inimigos
             forceSpawn();
 
-            // Limpa o canvas
             ctx.fillStyle = `rgba(10, 10, 20, ${config.galaxies.current === 'chaos' ? 0.1 : 0.2})`;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Atualiza inimigos
             updateEnemies();
 
-            // Atualiza partículas
             particles.forEach((p, index) => {
-                // Remove partículas antigas
                 if (p.life !== undefined && p.life-- <= 0) {
                     particles.splice(index, 1);
                     return;
                 }
 
-                // Reseta velocidade base
                 p.speedX = p.baseSpeedX;
                 p.speedY = p.baseSpeedY;
 
-                // Interações com os jogadores
                 config.players.forEach(player => {
                     if(!player.active || !player.x || !player.y || player.mode === 'normal' || config.isBigBangActive) return;
 
@@ -1223,10 +1222,8 @@
                         const force = (maxDist - distance) / maxDist;
                         const angle = Math.atan2(dy, dx);
 
-                        // Aplica efeitos baseados no modo
                         switch(player.mode) {
                             case 'attract':
-                                // Atração mais forte no centro
                                 const attractForce = 0.1 * player.power * (1 + (maxDist - distance)/maxDist);
                                 p.speedX += dx * attractForce;
                                 p.speedY += dy * attractForce;
@@ -1261,26 +1258,21 @@
                     }
                 });
 
-                // Atualiza posição
                 p.x += p.speedX;
                 p.y += p.speedY;
 
-                // Verifica bordas com bounce mais suave
                 if (p.x < 0) { p.x = 0; p.speedX *= -0.7; }
                 if (p.x > canvas.width) { p.x = canvas.width; p.speedX *= -0.7; }
                 if (p.y < 0) { p.y = 0; p.speedY *= -0.7; }
                 if (p.y > canvas.height) { p.y = canvas.height; p.speedY *= -0.7; }
 
-                // Rastro
                 if (p.trail) {
                     p.trail.push({x: p.x, y: p.y});
                     if (p.trail.length > 10) p.trail.shift();
                 }
             });
 
-            // Desenha partículas
             particles.forEach(p => {
-                // Rastro
                 if (p.trail && p.trail.length > 1) {
                     ctx.beginPath();
                     ctx.moveTo(p.trail[0].x, p.trail[0].y);
@@ -1292,7 +1284,6 @@
                     ctx.stroke();
                 }
 
-                // Partícula
                 ctx.fillStyle = p.color;
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
@@ -1330,7 +1321,6 @@
 
         // Teclado
         document.addEventListener('keydown', (e) => {
-            // Jogador 1
             switch(e.key.toLowerCase()) {
                 case '1': 
                     config.players[0].mode = 'attract'; 
@@ -1349,7 +1339,6 @@
                     break;
             }
 
-            // Jogador 2 (modo cooperativo)
             if(config.coopMode) {
                 const speed = 5;
                 const player = config.players[1];
@@ -1381,7 +1370,6 @@
                         break;
                 }
 
-                // Limita ao canvas
                 if(player.x) player.x = Math.max(10, Math.min(canvas.width - 10, player.x));
                 if(player.y) player.y = Math.max(10, Math.min(canvas.height - 10, player.y));
             }
