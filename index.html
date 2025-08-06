@@ -382,63 +382,7 @@
             from { filter: brightness(100%) sepia(0); }
             to { filter: brightness(150%) sepia(1); }
         }
-    /* Efeito de explosão nuclear */
-@keyframes supernova-explosion {
-    0% {
-        transform: scale(0.1);
-        opacity: 1;
-        background: radial-gradient(circle, 
-            #FFD700 0%, 
-            #FF8C00 30%, 
-            #FF4500 60%, 
-            rgba(0, 0, 0, 0) 90%);
-    }
-    50% {
-        transform: scale(2);
-        background: radial-gradient(circle, 
-            white 0%, 
-            #FF00FF 40%, 
-            #4B0082 80%, 
-            rgba(0, 0, 0, 0) 100%);
-    }
-    100% {
-        transform: scale(5);
-        opacity: 0;
-        background: radial-gradient(circle, 
-            #00FFFF 0%, 
-            #008B8B 30%, 
-            #00008B 70%, 
-            rgba(0, 0, 0, 0) 100%);
-    }
-}
-
-/* Onda de choque */
-@keyframes shockwave {
-    0% {
-        transform: scale(0);
-        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.8);
-    }
-    100% {
-        transform: scale(10);
-        box-shadow: 0 0 0 50vh rgba(255, 255, 255, 0);
-    }
-}
-
-/* Tremor de tela */
-@keyframes screen-shake {
-    0%, 100% { transform: translate(0, 0); }
-    10%, 30%, 50%, 70%, 90% { transform: translate(-10px, -10px); }
-    20%, 40%, 60%, 80% { transform: translate(10px, 10px); }
-}
-
-/* Efeito de distorção pós-explosão */
-@keyframes cosmic-distortion {
-    0% { filter: blur(0) brightness(1); }
-    50% { filter: blur(10px) brightness(3); }
-    100% { filter: blur(0) brightness(1); }
-}
-
-   </style>
+    </style>
 </head>
 <body>
     <!-- Menu Hamburguer -->
@@ -1093,163 +1037,66 @@
 
         // BIG BANG - ATUALIZADO
         function activateBigBang() {
-    if (config.bigBangCooldown <= 0 && !config.isBigBangActive) {
-        config.isBigBangActive = true;
-        const btn = document.getElementById('bigbang-btn');
-        btn.classList.remove('bigbang-ready');
-        
-        // ===== [FASE 1: AVISO CÓSMICO] =====
-        const warning = document.createElement('div');
-        warning.className = 'universe-warning';
-        warning.textContent = '⚠ BIG BANG IMINENTE ⚠';
-        document.body.appendChild(warning);
-        
-        // Efeito de pulsação no canvas
-        canvas.style.animation = 'pulse-warning 1s infinite';
-        
-        // ===== [FASE 2: IMPLOSÃO] =====
-        setTimeout(() => {
-            warning.remove();
-            
-            // Cria um buraco negro central
-            const blackHole = document.createElement('div');
-            blackHole.style.position = 'fixed';
-            blackHole.style.left = '50%';
-            blackHole.style.top = '50%';
-            blackHole.style.transform = 'translate(-50%, -50%)';
-            blackHole.style.width = '0';
-            blackHole.style.height = '0';
-            blackHole.style.borderRadius = '50%';
-            blackHole.style.background = 'radial-gradient(circle, #000000, #4B0082)';
-            blackHole.style.boxShadow = '0 0 0 0 rgba(0, 0, 0, 0.9)';
-            blackHole.style.transition = 'all 1.5s ease-out';
-            document.body.appendChild(blackHole);
-            
-            // Animação de implosão
-            setTimeout(() => {
-                blackHole.style.width = '100vmax';
-                blackHole.style.height = '100vmax';
-                blackHole.style.boxShadow = '0 0 0 100vmax rgba(0, 0, 0, 0.9)';
-                
-                // Succiona todas as partículas para o centro
-                particles.forEach(p => {
-                    const dx = canvas.width/2 - p.x;
-                    const dy = canvas.height/2 - p.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    
-                    p.speedX = dx / distance * 30;
-                    p.speedY = dy / distance * 30;
-                    p.color = `hsl(${(Math.atan2(dy, dx) * 180/Math.PI + 180}, 100%, 50%)`;
-                });
-                
-                // Succiona inimigos
-                enemies.forEach(e => {
-                    const dx = canvas.width/2 - e.x;
-                    const dy = canvas.height/2 - e.y;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    
-                    e.speedX = dx / distance * 15;
-                    e.speedY = dy / distance * 15;
-                });
-                
-            }, 100);
-            
-            // ===== [FASE 3: EXPLOSÃO] =====
-            setTimeout(() => {
-                // Remove o buraco negro
-                blackHole.remove();
-                
-                // Cria a supernova
-                const supernova = document.createElement('div');
-                supernova.className = 'bigbang-effect';
-                supernova.style.animation = 'supernova-explosion 2s forwards';
-                document.body.appendChild(supernova);
-                
-                // Onda de choque
-                const shockwave = document.createElement('div');
-                shockwave.style.position = 'fixed';
-                shockwave.style.left = '50%';
-                shockwave.style.top = '50%';
-                shockwave.style.transform = 'translate(-50%, -50%)';
-                shockwave.style.width = '0';
-                shockwave.style.height = '0';
-                shockwave.style.borderRadius = '50%';
-                shockwave.style.boxShadow = '0 0 0 0 rgba(255, 255, 255, 0.8)';
-                shockwave.style.animation = 'shockwave 3s forwards';
-                document.body.appendChild(shockwave);
-                
-                // Tremor de tela
-                document.body.style.animation = 'screen-shake 0.5s linear infinite';
-                
-                // Destrói tudo
+            if (config.bigBangCooldown <= 0 && !config.isBigBangActive) {
+                config.isBigBangActive = true;
+                const btn = document.getElementById('bigbang-btn');
+                btn.classList.remove('bigbang-ready');
+
+                const bang = document.createElement('div');
+                bang.style.position = 'fixed';
+                bang.style.left = '0';
+                bang.style.top = '0';
+                bang.style.width = '100%';
+                bang.style.height = '100%';
+                bang.style.background = 'radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,0,255,0) 70%)';
+                bang.style.zIndex = '1000';
+                bang.style.pointerEvents = 'none';
+                bang.style.opacity = '0';
+                bang.style.transition = 'opacity 1s';
+                document.body.appendChild(bang);
+
                 setTimeout(() => {
-                    enemies = [];
-                    particles = [];
-                    
-                    // Efeito de distorção
-                    canvas.style.animation = 'cosmic-distortion 3s forwards';
-                    
-                    // Flash branco
-                    document.body.style.backgroundColor = 'white';
-                    setTimeout(() => {
-                        document.body.style.backgroundColor = 'black';
-                    }, 100);
-                    
-                    // ===== [FASE 4: RENASCIMENTO] =====
-                    setTimeout(() => {
-                        // Limpa efeitos
-                        supernova.remove();
-                        shockwave.remove();
-                        document.body.style.animation = '';
-                        canvas.style.animation = '';
-                        canvas.style.filter = '';
-                        
-                        // Recria o universo gradualmente
-                        const particlesPerFrame = 15;
-                        const creationInterval = setInterval(() => {
-                            if (particles.length >= config.particleCount) {
-                                clearInterval(creationInterval);
-                                
-                                // Recria inimigos após 2 segundos
-                                setTimeout(() => {
-                                    config.wave.spawned = 0;
-                                    config.wave.timer = 0;
-                                }, 2000);
-                                
-                                config.isBigBangActive = false;
-                                config.bigBangCooldown = config.bigBangMaxCooldown;
-                                return;
-                            }
-                            
-                            for (let i = 0; i < particlesPerFrame; i++) {
-                                const angle = Math.random() * Math.PI * 2;
-                                const distance = Math.random() * 300 + 100;
-                                const x = canvas.width/2 + Math.cos(angle) * distance;
-                                const y = canvas.height/2 + Math.sin(angle) * distance;
-                                
-                                particles.push({
-                                    x: x,
-                                    y: y,
-                                    size: Math.random() * 4 + 2,
-                                    color: `hsl(${Math.random() * 360}, 80%, 60%)`,
-                                    speedX: (Math.random() - 0.5) * 3,
-                                    speedY: (Math.random() - 0.5) * 3,
-                                    baseSpeedX: (Math.random() - 0.5) * 3,
-                                    baseSpeedY: (Math.random() - 0.5) * 3,
-                                    trail: []
-                                });
-                            }
-                        }, 50);
-                        
-                    }, 3000); // Tempo de escuridão
-                    
-                }, 500); // Tempo da explosão
-                
-            }, 1500); // Tempo da implosão
-            
-        }, 3000); // Tempo do aviso
-    }
-}
+                    bang.style.opacity = '1';
+                }, 10);
+
+                setTimeout(() => {
+                    bang.style.opacity = '0';
+                    setTimeout(() => bang.remove(), 1000);
+                }, 100);
+
+                const bangPower = 1 + config.skills.find(s => s.id === 'bigbang_power').level * 0.5;
+
+                enemies.forEach(enemy => {
+                    enemy.health -= 10 * bangPower;
+                });
+
+                particles.forEach(p => {
+                    p.color = `hsl(${Math.random() * 360}, 100%, 70%)`;
+                    p.speedX = (Math.random() - 0.5) * 20 * bangPower;
+                    p.speedY = (Math.random() - 0.5) * 20 * bangPower;
+                });
+
+                for (let i = 0; i < 100 * bangPower; i++) {
+                    particles.push({
+                        x: mouse.x || canvas.width/2,
+                        y: mouse.y || canvas.height/2,
+                        size: Math.random() * 5 + 2,
+                        color: `hsl(${Math.random() * 360}, 100%, 70%)`,
+                        speedX: (Math.random() - 0.5) * 20 * bangPower,
+                        speedY: (Math.random() - 0.5) * 20 * bangPower,
+                        baseSpeedX: 0,
+                        baseSpeedY: 0,
+                        life: 100 + Math.random() * 50,
+                        trail: []
+                    });
+                }
+
+                setTimeout(() => {
+                    config.isBigBangActive = false;
+                    config.bigBangCooldown = config.bigBangMaxCooldown;
+                }, 2000);
+            }
+        }
 
         // SISTEMA DE XP E NÍVEL - ATUALIZADO COM COMBO
         function addXP(amount) {
