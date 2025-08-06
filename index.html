@@ -537,7 +537,19 @@
     <canvas id="canvas"></canvas>
 
     <script>
-        // Configurações do jogo
+        // Inicialização do canvas
+const canvas = document.getElementById("canvas");
+        const ctx = canvas.getContext("2d");
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Posicionamento inicial dos jogadores (ADICIONADO)
+        config.players[0].x = canvas.width / 2;
+        config.players[0].y = canvas.height / 2;
+        config.players[1].x = canvas.width / 3;
+        config.players[1].y = canvas.height / 3;
+
+// Configurações do jogo
         const config = {
             particleCount: 200,
             mouseRadius: 150,
@@ -621,7 +633,7 @@
         let enemies = [];
         let particles = [];
         let powerUpsOnScreen = [];
-        const enemyFaces = [">:['", ">:(", "X_X", ">_<", ":O", "◉_◉", "ಠ_ಠ", "⊙_⊙", "≧◡≦", "◕‿◕"];
+        const enemyFaces = [">:[", ">:(", "X_X", ">_<", ":O", "◉_◉", "ಠ_ಠ", "⊙_⊙", "≧◡≦", "◕‿◕"];
         const mouse = { x: null, y: null };
 
         // Ajuste para dispositivos móveis
