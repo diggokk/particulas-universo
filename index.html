@@ -382,77 +382,7 @@
             from { filter: brightness(100%) sepia(0); }
             to { filter: brightness(150%) sepia(1); }
         }
-    /* Adicione ao seu CSS */
-.universe-warning {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: #FFD700;
-    font-size: 2.5rem;
-    text-align: center;
-    text-shadow: 0 0 10px #FF4500, 0 0 20px #FF8C00;
-    z-index: 10000;
-    opacity: 0;
-    animation: warning-pulse 3s forwards;
-    font-weight: bold;
-    letter-spacing: 3px;
-}
-
-@keyframes warning-pulse {
-    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
-    20% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
-    80% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
-    100% { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
-}
-
-@keyframes star-explosion {
-    0% { 
-        transform: scale(0.1); 
-        opacity: 1;
-        background: radial-gradient(circle, #FFD700 0%, rgba(255,215,0,0) 70%);
-        box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7);
-    }
-    50% { 
-        transform: scale(1); 
-        opacity: 0.9;
-        background: radial-gradient(circle, #FF4500 0%, rgba(255,69,0,0) 70%);
-        box-shadow: 0 0 100px 50px rgba(255, 69, 0, 0.7);
-    }
-    100% { 
-        transform: scale(3); 
-        opacity: 0;
-        background: radial-gradient(circle, #4B0082 0%, rgba(75,0,130,0) 70%);
-        box-shadow: 0 0 200px 100px rgba(75, 0, 130, 0.5);
-    }
-}
-
-@keyframes cosmic-rebirth {
-    0% { background-color: rgba(0,0,0,1); }
-    20% { background-color: rgba(10,5,30,0.8); }
-    40% { background-color: rgba(20,10,60,0.6); }
-    60% { background-color: rgba(30,15,90,0.4); }
-    80% { background-color: rgba(40,20,120,0.2); }
-    100% { background-color: rgba(0,0,0,0); }
-}
-
-.particle-spawn {
-    position: absolute;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: currentColor;
-    opacity: 0;
-    animation: particle-spawn 1s forwards;
-}
-
-@keyframes particle-spawn {
-    0% { transform: scale(0); opacity: 0; }
-    50% { transform: scale(1.5); opacity: 1; }
-    100% { transform: scale(1); opacity: 0.7; }
-}
-
-   </style>
+    </style>
 </head>
 <body>
     <!-- Menu Hamburguer -->
@@ -1107,130 +1037,66 @@
 
         // BIG BANG - ATUALIZADO
         function activateBigBang() {
-    if (config.bigBangCooldown <= 0 && !config.isBigBangActive) {
-        config.isBigBangActive = true;
-        const btn = document.getElementById('bigbang-btn');
-        btn.classList.remove('bigbang-ready');
-        
-        // 1. Mostra aviso de que o universo vai recomeçar
-        const warning = document.createElement('div');
-        warning.className = 'universe-warning';
-        warning.textContent = 'O UNIVERSO IRÁ RECOMEÇAR!';
-        document.body.appendChild(warning);
-        
-        // 2. Pausa breve antes da explosão
-        setTimeout(() => {
-            warning.remove();
-            
-            // 3. Criação da estrela central
-            const star = document.createElement('div');
-            star.className = 'bigbang-effect';
-            star.style.background = 'radial-gradient(circle, #FFD700, #FF8C00)';
-            star.style.borderRadius = '50%';
-            star.style.width = '0';
-            star.style.height = '0';
-            star.style.boxShadow = '0 0 0 0 rgba(255, 215, 0, 0)';
-            star.style.animation = 'star-explosion 2s forwards';
-            document.body.appendChild(star);
-            
-            // 4. Efeito de distorção cósmica
-            const cosmicDistortion = document.createElement('div');
-            cosmicDistortion.className = 'bigbang-effect';
-            cosmicDistortion.style.background = 'rgba(0,0,0,0)';
-            cosmicDistortion.style.animation = 'cosmic-rebirth 3s forwards';
-            document.body.appendChild(cosmicDistortion);
-            
-            // 5. Remove todos os inimigos e partículas com efeito
-            enemies.forEach(enemy => {
-                createExplosion(enemy.x, enemy.y, enemy.size * 2);
-            });
-            
-            enemies = [];
-            
-            particles.forEach(p => {
-                // Cria efeito de partícula sendo sugada
-                const particleEffect = document.createElement('div');
-                particleEffect.className = 'particle-spawn';
-                particleEffect.style.color = p.color;
-                particleEffect.style.left = `${p.x}px`;
-                particleEffect.style.top = `${p.y}px`;
-                document.body.appendChild(particleEffect);
-                
+            if (config.bigBangCooldown <= 0 && !config.isBigBangActive) {
+                config.isBigBangActive = true;
+                const btn = document.getElementById('bigbang-btn');
+                btn.classList.remove('bigbang-ready');
+
+                const bang = document.createElement('div');
+                bang.style.position = 'fixed';
+                bang.style.left = '0';
+                bang.style.top = '0';
+                bang.style.width = '100%';
+                bang.style.height = '100%';
+                bang.style.background = 'radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,0,255,0) 70%)';
+                bang.style.zIndex = '1000';
+                bang.style.pointerEvents = 'none';
+                bang.style.opacity = '0';
+                bang.style.transition = 'opacity 1s';
+                document.body.appendChild(bang);
+
                 setTimeout(() => {
-                    particleEffect.remove();
-                }, 1000);
-            });
-            
-            particles = [];
-            
-            // 6. Efeitos especiais
-            document.body.style.backgroundColor = '#000';
-            canvas.style.filter = 'blur(3px) brightness(200%)';
-            
-            // 7. Vibração (se disponível)
-            if (navigator.vibrate) {
-                navigator.vibrate([500, 200, 500]);
-            }
-            
-            // 8. Recriação do universo após 3 segundos
-            setTimeout(() => {
-                // Remove efeitos visuais
-                star.remove();
-                cosmicDistortion.remove();
-                canvas.style.filter = '';
-                
-                // Recria partículas com efeito de surgimento
-                const centerX = canvas.width / 2;
-                const centerY = canvas.height / 2;
-                
-                for (let i = 0; i < config.particleCount; i++) {
-                    setTimeout(() => {
-                        const angle = Math.random() * Math.PI * 2;
-                        const distance = Math.random() * 300;
-                        
-                        const newParticle = {
-                            x: centerX + Math.cos(angle) * distance,
-                            y: centerY + Math.sin(angle) * distance,
-                            size: Math.random() * 4 + 2,
-                            color: `hsl(${Math.random() * 360}, 80%, 60%)`,
-                            speedX: (Math.random() - 0.5) * 3,
-                            speedY: (Math.random() - 0.5) * 3,
-                            baseSpeedX: (Math.random() - 0.5) * 3,
-                            baseSpeedY: (Math.random() - 0.5) * 3,
-                            trail: []
-                        };
-                        
-                        particles.push(newParticle);
-                        
-                        // Efeito visual de spawn
-                        const spawnEffect = document.createElement('div');
-                        spawnEffect.className = 'particle-spawn';
-                        spawnEffect.style.color = newParticle.color;
-                        spawnEffect.style.left = `${newParticle.x}px`;
-                        spawnEffect.style.top = `${newParticle.y}px`;
-                        document.body.appendChild(spawnEffect);
-                        
-                        setTimeout(() => {
-                            spawnEffect.remove();
-                        }, 1000);
-                        
-                    }, Math.random() * 2000);
+                    bang.style.opacity = '1';
+                }, 10);
+
+                setTimeout(() => {
+                    bang.style.opacity = '0';
+                    setTimeout(() => bang.remove(), 1000);
+                }, 100);
+
+                const bangPower = 1 + config.skills.find(s => s.id === 'bigbang_power').level * 0.5;
+
+                enemies.forEach(enemy => {
+                    enemy.health -= 10 * bangPower;
+                });
+
+                particles.forEach(p => {
+                    p.color = `hsl(${Math.random() * 360}, 100%, 70%)`;
+                    p.speedX = (Math.random() - 0.5) * 20 * bangPower;
+                    p.speedY = (Math.random() - 0.5) * 20 * bangPower;
+                });
+
+                for (let i = 0; i < 100 * bangPower; i++) {
+                    particles.push({
+                        x: mouse.x || canvas.width/2,
+                        y: mouse.y || canvas.height/2,
+                        size: Math.random() * 5 + 2,
+                        color: `hsl(${Math.random() * 360}, 100%, 70%)`,
+                        speedX: (Math.random() - 0.5) * 20 * bangPower,
+                        speedY: (Math.random() - 0.5) * 20 * bangPower,
+                        baseSpeedX: 0,
+                        baseSpeedY: 0,
+                        life: 100 + Math.random() * 50,
+                        trail: []
+                    });
                 }
-                
-                // Recria inimigos após 4 segundos
+
                 setTimeout(() => {
-                    config.wave.spawned = 0;
-                    config.wave.timer = 0;
-                }, 4000);
-                
-                config.isBigBangActive = false;
-                config.bigBangCooldown = config.bigBangMaxCooldown;
-                
-            }, 3000);
-            
-        }, 3000); // Tempo que o aviso fica na tela
-    }
-}
+                    config.isBigBangActive = false;
+                    config.bigBangCooldown = config.bigBangMaxCooldown;
+                }, 2000);
+            }
+        }
 
         // SISTEMA DE XP E NÍVEL - ATUALIZADO COM COMBO
         function addXP(amount) {
