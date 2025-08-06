@@ -640,7 +640,7 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        // Função de inicialização do jogo - NOVA
+        // Função de inicialização do jogo
         function initializeGame() {
             // Posição inicial dos jogadores
             config.players[0].x = canvas.width / 2;
@@ -649,6 +649,8 @@
             if(config.coopMode) {
                 config.players[1].x = canvas.width / 3;
                 config.players[1].y = canvas.height / 2;
+                config.players[1].active = true;
+                document.getElementById('player2-indicator').style.display = 'block';
             }
             
             // Inicializa sistema de ondas
@@ -792,10 +794,10 @@
                     
                     particles.forEach(p => {
                         p.behavior = 'biological';
-                        p.size = Math.random() * 3 + 2;
-                        p.color = `hsl(${Math.random() * 60 + 100}, 80%, 60%)`;
-                        p.growth = 0;
-                        p.energy = 100;
+                        p.size: Math.random() * 3 + 2,
+                        p.color: `hsl(${Math.random() * 60 + 100}, 80%, 60%)`,
+                        p.growth: 0,
+                        p.energy: 100
                     });
                 }
             }
@@ -819,7 +821,7 @@
             }
         }
 
-        // Menu Hamburguer - CORRIGIDO
+        // Menu Hamburguer
         const menuToggle = document.getElementById('menu-toggle');
         const menu = document.getElementById('menu');
 
@@ -868,7 +870,7 @@
         // Botão Big Bang
         document.getElementById('bigbang-btn').addEventListener('click', activateBigBang);
 
-        // Controles mobile - CORRIGIDO
+        // Controles mobile
         document.getElementById("mobileAttract").addEventListener('click', () => {
             config.players[0].mode = 'attract';
             updateMenuButtons();
@@ -907,7 +909,7 @@
             }
         });
 
-        // Mouse e toques - CORRIGIDO
+        // Mouse e toques
         canvas.addEventListener('mousemove', (e) => {
             mouse.x = e.clientX;
             mouse.y = e.clientY;
@@ -947,11 +949,359 @@
             }
         }, {passive: false});
 
-        // (O RESTANTE DO SEU CÓDIGO ORIGINAL PERMANECE IGUAL...)
+        // Funções do jogo
+        function toggleCoopMode() {
+            config.coopMode = !config.coopMode;
+            document.getElementById('menu-coop').textContent = 
+                `🔵 Cooperativo: ${config.coopMode ? 'ON' : 'OFF'}`;
+            
+            config.players[1].active = config.coopMode;
+            document.getElementById('player2-indicator').style.display = 
+                config.coopMode ? 'block' : 'none';
+            document.getElementById('mobile-controls-p2').style.display = 
+                config.coopMode ? 'flex' : 'none';
+            
+            if(config.coopMode) {
+                initializeGame();
+            }
+        }
 
-        // LOOP DO JOGO - COM CORREÇÃO
+        function showGalaxyMap() {
+            const map = document.getElementById('galaxy-map');
+            const list = document.getElementById('galaxies-list');
+            
+            list.innerHTML = '';
+            
+            Object.keys(galaxies).forEach(key => {
+                const galaxy = galaxies[key];
+                const element = document.createElement('div');
+                element.className = `galaxy ${galaxy.unlocked ? 'unlocked' : 'locked'}`;
+                element.innerHTML = `
+                    <div style="font-size: 24px;">${galaxy.icon}</div>
+                    <h3>${galaxy.name}</h3>
+                    <p>${galaxy.description}</p>
+                    ${!galaxy.unlocked ? `<small>Requer: ${galaxy.requirement}</small>` : ''}
+                `;
+                
+                if(galaxy.unlocked) {
+                    element.addEventListener('click', () => {
+                        config.galaxies.current = key;
+                        galaxy.init();
+                        map.style.display = 'none';
+                        showMessage(`Galáxia ${galaxy.name} carregada`, 60);
+                    });
+                }
+                
+                list.appendChild(element);
+            });
+            
+            map.style.display = 'block';
+        }
+
+        function closeGalaxyMap() {
+            document.getElementById('galaxy-map').style.display = 'none';
+        }
+
+        function resetGame() {
+            if(confirm("Deseja realmente reiniciar o jogo? Todo o progresso será perdido.")) {
+                location.reload();
+            }
+        }
+
+        function activateBigBang() {
+            if(config.bigBangCooldown <= 0) {
+                config.isBigBangActive = true;
+                config.bigBangCooldown = config.bigBangMaxCooldown;
+                document.getElementById('bigbang-btn').classList.remove('ready');
+                
+                // Efeito visual
+                showMessage("BIG BANG!", 30);
+                
+                setTimeout(() => {
+                    config.isBigBangActive = false;
+                }, 1000);
+            }
+        }
+
+        function activateShield() {
+            showMessage("Escudo Ativado!", 30);
+            config.players[1].health += 20;
+            if(config.players[1].health > config.players[1].maxHealth) {
+                config.players[1].health = config.players[1].maxHealth;
+            }
+            updateHealthBar();
+        }
+
+        function activateHeal() {
+            showMessage("Cura Ativada!", 30);
+            config.players[1].health += 30;
+            if(config.players[1].health > config.players[1].maxHealth) {
+                config.players[1].health = config.players[1].maxHealth;
+            }
+            updateHealthBar();
+        }
+
+        function activateTeleport() {
+            showMessage("Teletransporte!", 30);
+            config.players[1].x = Math.random() * canvas.width;
+            config.players[1].y = Math.random() * canvas.height;
+        }
+
+        function updateMenuButtons() {
+            const player = config.players[0];
+            document.getElementById('menu-attract').style.fontWeight = 
+                player.mode === 'attract' ? 'bold' : 'normal';
+            document.getElementById('menu-repel').style.fontWeight = 
+                player.mode === 'repel' ? 'bold' : 'normal';
+            document.getElementById('menu-vortex').style.fontWeight = 
+                player.mode === 'vortex' ? 'bold' : 'normal';
+            document.getElementById('menu-normal').style.fontWeight = 
+                player.mode === 'normal' ? 'bold' : 'normal';
+        }
+
+        function updateHealthBar() {
+            const healthPercent = (config.health / config.maxHealth) * 100;
+            document.getElementById('health-bar').style.width = `${healthPercent}%`;
+            document.getElementById('health-bar').style.background = 
+                `linear-gradient(90deg, hsl(${healthPercent * 1.2}, 100%, 50%), hsl(${healthPercent}, 100%, 40%))`;
+        }
+
+        function updateXPBar() {
+            const xpNeeded = config.level * 100;
+            const xpPercent = (config.xp / xpNeeded) * 100;
+            document.getElementById('xp-bar').style.width = `${xpPercent}%`;
+            document.getElementById('xp-text').textContent = 
+                `${config.xp}/${xpNeeded} XP (Nível ${config.level})`;
+        }
+
+        function updateBigBangCooldown() {
+            if(config.bigBangCooldown > 0) {
+                config.bigBangCooldown--;
+                const percent = 100 - (config.bigBangCooldown / config.bigBangMaxCooldown) * 100;
+                document.getElementById('bigbang-progress').style.width = `${percent}%`;
+                
+                if(config.bigBangCooldown <= 0) {
+                    document.getElementById('bigbang-btn').classList.add('ready');
+                }
+            }
+        }
+
+        function updateFPSCounter() {
+            // Implementação simplificada - você pode adicionar um contador FPS real se quiser
+        }
+
+        function showMessage(text, duration) {
+            const message = document.createElement('div');
+            message.className = 'unlock-message';
+            message.textContent = text;
+            document.body.appendChild(message);
+            
+            setTimeout(() => {
+                message.style.opacity = '1';
+                message.style.transform = 'translate(-50%, -50%) scale(1)';
+            }, 10);
+            
+            setTimeout(() => {
+                message.style.opacity = '0';
+                message.style.transform = 'translate(-50%, -50%) scale(0.5)';
+                setTimeout(() => message.remove(), 300);
+            }, duration * 1000 / 2);
+        }
+
+        function processMessages() {
+            // Implementação básica - você pode expandir isso
+        }
+
+        // Sistema de ondas de inimigos
+        function updateWaveSystem() {
+            if(config.wave.timer <= 0 && config.wave.spawned < config.wave.enemiesToSpawn) {
+                spawnEnemy();
+                config.wave.spawned++;
+                config.wave.timer = 60; // 1 segundo entre inimigos
+            } else {
+                config.wave.timer--;
+            }
+            
+            // Próxima wave
+            if(config.wave.spawned >= config.wave.enemiesToSpawn && enemies.length === 0) {
+                nextWave();
+            }
+        }
+
+        function spawnEnemy() {
+            const typeRoll = Math.random();
+            let type, size, health, speed;
+            
+            if(typeRoll < 0.6) {
+                type = 'normal';
+                size = 30 + Math.random() * 20;
+                health = 1;
+                speed = 1 + Math.random() * 2;
+            } else if(typeRoll < 0.9) {
+                type = 'elite';
+                size = 40 + Math.random() * 30;
+                health = 3;
+                speed = 1.5 + Math.random() * 1.5;
+            } else {
+                type = 'boss';
+                size = 80 + Math.random() * 40;
+                health = 10;
+                speed = 0.5 + Math.random();
+            }
+            
+            // Posição aleatória nas bordas
+            let x, y;
+            if(Math.random() > 0.5) {
+                x = Math.random() > 0.5 ? -size : canvas.width + size;
+                y = Math.random() * canvas.height;
+            } else {
+                x = Math.random() * canvas.width;
+                y = Math.random() > 0.5 ? -size : canvas.height + size;
+            }
+            
+            enemies.push({
+                x, y, size, health, speed, type,
+                face: enemyFaces[Math.floor(Math.random() * enemyFaces.length)],
+                element: null
+            });
+        }
+
+        function nextWave() {
+            config.wave.number++;
+            config.wave.enemiesToSpawn = Math.floor(5 + config.wave.number * 1.5);
+            config.wave.spawned = 0;
+            config.wave.timer = 120; // 2 segundos antes da próxima wave
+            
+            // Mostra mensagem da nova wave
+            showMessage(`Wave ${config.wave.number}`, 60);
+        }
+
+        // Desenha partículas
+        function drawParticles() {
+            particles.forEach(p => {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+                
+                // Desenha trail se existir
+                if(p.trail && p.trail.length > 0) {
+                    ctx.beginPath();
+                    ctx.moveTo(p.x, p.y);
+                    p.trail.forEach(point => {
+                        ctx.lineTo(point.x, point.y);
+                    });
+                    ctx.strokeStyle = p.color.replace(')', ', 0.3)').replace('rgb', 'rgba');
+                    ctx.lineWidth = p.size / 2;
+                    ctx.stroke();
+                }
+            });
+        }
+
+        // Desenha inimigos
+        function drawEnemies() {
+            enemies.forEach(enemy => {
+                const element = document.createElement('div');
+                element.className = `enemy ${enemy.type}`;
+                element.style.width = `${enemy.size}px`;
+                element.style.height = `${enemy.size}px`;
+                element.style.left = `${enemy.x - enemy.size/2}px`;
+                element.style.top = `${enemy.y - enemy.size/2}px`;
+                element.textContent = enemy.face;
+                
+                if(!enemy.element) {
+                    document.body.appendChild(element);
+                    enemy.element = element;
+                } else {
+                    enemy.element.style.left = `${enemy.x - enemy.size/2}px`;
+                    enemy.element.style.top = `${enemy.y - enemy.size/2}px`;
+                }
+            });
+        }
+
+        // Desenha jogadores
+        function drawPlayers() {
+            config.players.forEach(player => {
+                if(player.active) {
+                    // Desenha jogador principal
+                    ctx.beginPath();
+                    ctx.arc(player.x, player.y, player.radius, 0, Math.PI * 2);
+                    
+                    // Efeito visual baseado no modo
+                    switch(player.mode) {
+                        case 'attract':
+                            ctx.fillStyle = `rgba(138, 43, 226, 0.3)`;
+                            ctx.strokeStyle = '#8A2BE2';
+                            break;
+                        case 'repel':
+                            ctx.fillStyle = `rgba(255, 69, 0, 0.3)`;
+                            ctx.strokeStyle = '#FF4500';
+                            break;
+                        case 'vortex':
+                            ctx.fillStyle = `rgba(0, 191, 255, 0.3)`;
+                            ctx.strokeStyle = '#00BFFF';
+                            break;
+                        default:
+                            ctx.fillStyle = `rgba(74, 0, 224, 0.3)`;
+                            ctx.strokeStyle = '#4A00E0';
+                    }
+                    
+                    ctx.fill();
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    
+                    // Desenha rosto do jogador
+                    ctx.font = `${player.radius}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillStyle = 'white';
+                    ctx.fillText(player.face, player.x, player.y);
+                }
+            });
+        }
+
+        // Desenha power-ups
+        function drawPowerUps() {
+            powerUpsOnScreen.forEach(pu => {
+                ctx.beginPath();
+                ctx.arc(pu.x, pu.y, pu.size, 0, Math.PI * 2);
+                
+                switch(pu.type) {
+                    case 'health':
+                        ctx.fillStyle = 'rgba(255, 50, 50, 0.7)';
+                        break;
+                    case 'power':
+                        ctx.fillStyle = 'rgba(255, 215, 0, 0.7)';
+                        break;
+                    default:
+                        ctx.fillStyle = 'rgba(100, 255, 100, 0.7)';
+                }
+                
+                ctx.fill();
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Ícone
+                ctx.font = `${pu.size}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = 'white';
+                
+                let icon = '';
+                switch(pu.type) {
+                    case 'health': icon = '❤️'; break;
+                    case 'power': icon = '⚡'; break;
+                    case 'ability': icon = '✨'; break;
+                }
+                
+                ctx.fillText(icon, pu.x, pu.y);
+            });
+        }
+
+        // LOOP DO JOGO
         function animate() {
-            // Garante que o canvas seja limpo
+            // Limpa o canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             // Verifica inicialização
@@ -959,11 +1309,20 @@
                 initializeGame();
             }
             
+            // Atualiza sistemas
             updateFPSCounter();
             updateBigBangCooldown();
+            updateWaveSystem();
             config.gameTime++;
-
-            // (O RESTO DA SUA FUNÇÃO ANIMATE ORIGINAL)
+            
+            // Desenha elementos
+            drawParticles();
+            drawEnemies();
+            drawPlayers();
+            drawPowerUps();
+            
+            // Processa mensagens
+            processMessages();
             
             requestAnimationFrame(animate);
         }
@@ -980,18 +1339,22 @@
             switch(e.key.toLowerCase()) {
                 case '1': 
                     config.players[0].mode = 'attract'; 
+                    updateMenuButtons();
                     break;
                 case '2': 
                     config.players[0].mode = 'repel'; 
+                    updateMenuButtons();
                     break;
                 case '3': 
                     config.players[0].mode = 'vortex'; 
+                    updateMenuButtons();
                     break;
                 case ' ': 
                     activateBigBang(); 
                     break;
                 case '0':
                     config.players[0].mode = 'normal';
+                    updateMenuButtons();
                     break;
             }
 
@@ -1043,9 +1406,10 @@
 
         // Inicia o jogo
         galaxies.classica.init();
-        initializeGame(); // Chama a nova função de inicialização
+        initializeGame();
         updateHealthBar();
         updateXPBar();
+        updateMenuButtons();
         animate();
     </script>
 </body>
