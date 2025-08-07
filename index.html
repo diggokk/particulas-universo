@@ -482,6 +482,43 @@
             }
         }
 
+        /* NOVOS ESTILOS ADICIONADOS */
+        .enemy-glow {
+            animation: enemyPulse 2s infinite alternate;
+        }
+        @keyframes enemyPulse {
+            from { box-shadow: 0 0 10px currentColor; }
+            to { box-shadow: 0 0 30px currentColor; }
+        }
+        .cosmic-shield {
+            animation: shieldPulse 3s infinite alternate;
+        }
+        @keyframes shieldPulse {
+            0% { opacity: 0.3; }
+            100% { opacity: 0.7; }
+        }
+        .black-hole-effect {
+            animation: blackHolePulse 2s infinite alternate;
+        }
+        @keyframes blackHolePulse {
+            0% { box-shadow: 0 0 0 0 rgba(100, 0, 255, 0.5); }
+            100% { box-shadow: 0 0 0 20px rgba(100, 0, 255, 0.2); }
+        }
+        @keyframes singularityPulse {
+            0% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 10px #00FFFF; }
+            100% { transform: translate(-50%, -50%) scale(1.5); box-shadow: 0 0 30px #0088FF; }
+        }
+        @keyframes singularityExplosion {
+            to { transform: translate(-50%, -50%) scale(var(--radius)); opacity: 0; }
+        }
+        @keyframes singularitySpin {
+            from { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+            to { transform: translate(-50%, -50%) rotate(360deg) scale(1.5); }
+        }
+        @keyframes pulseExpand {
+            to { transform: translate(-50%, -50%) scale(var(--radius)); opacity: 0; }
+        }
+
         @media (max-width: 768px) {
             .mobile-controls { display: flex; }
             #menu {
@@ -632,7 +669,27 @@
                 { id: 'health_boost', name: "Vitalidade", level: 0, max: 3, effect: "Aumenta vida máxima em 15%", cost: 2 },
                 { id: 'bigbang_power', name: "Big Bang+", level: 0, max: 2, effect: "Aumenta poder do Big Bang", cost: 4 },
                 { id: 'coop_shield', name: "Escudo Cósmico", description: "Protege ambos jogadores quando próximos", max: 3, cost: 4, unlocked: false },
-                { id: 'particle_bridge', name: "Ponte de Partículas", description: "Cria um fluxo de energia entre os jogadores", max: 2, cost: 3, unlocked: false }
+                { id: 'particle_bridge', name: "Ponte de Partículas", description: "Cria um fluxo de energia entre os jogadores", max: 2, cost: 3, unlocked: false },
+                // NOVAS HABILIDADES ADICIONADAS
+                { 
+                    id: 'cosmic_pulse',
+                    name: "Pulsar Cósmico",
+                    description: "Libera uma onda de energia que empurra inimigos e energiza partículas",
+                    cooldown: 180,
+                    currentCooldown: 0,
+                    radius: 200,
+                    unlocked: true 
+                },
+                { 
+                    id: 'quantum_singularity',
+                    name: "Singularidade Quântica",
+                    description: "Cria um ponto gravitacional que atrai tudo e depois explode",
+                    cooldown: 300,
+                    currentCooldown: 0,
+                    radius: 250,
+                    unlocked: true,
+                    activeSingularities: [] 
+                }
             ],
             currentMission: null,
             missionProgress: 0,
@@ -684,7 +741,21 @@
                     reward: 60
                 }
             ],
-            specialParticles: []
+            specialParticles: [],
+            // NOVAS CONFIGURAÇÕES DE INIMIGOS
+            enemySystem: {
+                spawnRate: 180,
+                baseHealth: 3,
+                healthIncreasePerLevel: 0.5,
+                types: {
+                    normal: { chance: 0.6, speed: 2.5, behavior: 'wander', face: [">:(", "X_X", ">_<", ":O"] },
+                    hunter: { chance: 0.25, speed: 3.5, behavior: 'hunt', face: ["ಠ_ಠ", "◉_◉", "⊙_⊙", "⚆_⚆"] },
+                    cosmic: { chance: 0.1, speed: 2, behavior: 'teleport', face: ["☄️", "🌌", "🌠", "✨"], special: 'shield' },
+                    ancient: { chance: 0.05, speed: 1.2, behavior: 'orbit', face: ["👁️", "🜏", "⚚", "♆"], special: 'healer' }
+                },
+                eliteMultiplier: 1.8,
+                blackHoleChance: 0.03
+            }
         };
 
         // Sistema de fila de mensagens
@@ -1003,156 +1074,288 @@
         let enemySpawnTimer = 0;
         const enemyFaces = [">:['", ">:(", "X_X", ">_<", ":O", "◉_◉", "ಠ_ಠ", "⊙_⊙", "≧◡≦", "◕‿◕"];
 
-        function spawnEnemy() {
-            const isElite = Math.random() < 0.1;
-            const isBlackHole = config.level > 3 && Math.random() < 0.05;
-            const sizeBase = isBlackHole ? 40 : (isElite ? 30 : 20);
-
-            const enemy = {
-                x: Math.random() * (canvas.width - sizeBase) + sizeBase/2,
-                y: Math.random() * (canvas.height - sizeBase) + sizeBase/2,
-                size: sizeBase * (1 + config.level * 0.05),
-                speedX: (Math.random() - 0.5) * (3 + config.level * 0.5),
-                speedY: (Math.random() - 0.5) * (3 + config.level * 0.5),
-                health: (isBlackHole ? 15 : (isElite ? 5 : 3)) + config.level * (isBlackHole ? 2 : 1),
-                maxHealth: (isBlackHole ? 15 : (isElite ? 5 : 3)) + config.level * (isBlackHole ? 2 : 1),
-                face: enemyFaces[Math.floor(Math.random() * enemyFaces.length)],
-                type: isBlackHole ? 'blackhole' : (isElite ? 'elite' : 'normal'),
-                damage: isBlackHole ? 1 : (isElite ? 0.7 : 0.5)
-            };
-
-            if(enemy.type === 'blackhole') {
-                enemy.face = "(@_@)";
-                enemy.speedX *= 0.5;
-                enemy.speedY *= 0.5;
+        // NOVO SISTEMA DE INIMIGOS (sobrescreve o original sem modificar)
+        const originalSpawnEnemy = window.spawnEnemy;
+        window.spawnEnemy = function() {
+            // 15% de chance de usar o novo sistema (aumenta com o nível)
+            if (Math.random() < 0.15 + (config.level * 0.01)) {
+                const type = weightedRandomEnemyType();
+                const isElite = Math.random() < 0.15;
+                const isBlackHole = Math.random() < config.enemySystem.blackHoleChance && config.level > 5;
+                
+                let size = 20;
+                if (type === 'cosmic') size = 25;
+                if (type === 'ancient') size = 30;
+                if (isElite) size *= config.enemySystem.eliteMultiplier;
+                if (isBlackHole) size = 40;
+                
+                const enemy = {
+                    x: Math.random() * (canvas.width - size) + size/2,
+                    y: Math.random() * (canvas.height - size) + size/2,
+                    size: size,
+                    health: calculateEnemyHealth(type, isElite),
+                    maxHealth: calculateEnemyHealth(type, isElite),
+                    speed: config.enemySystem.types[type].speed * (isElite ? 1.3 : 1),
+                    type: isBlackHole ? 'blackhole' : type,
+                    behavior: isBlackHole ? 'blackhole' : config.enemySystem.types[type].behavior,
+                    face: getRandomFace(type),
+                    isElite: isElite,
+                    special: isBlackHole ? 'singularity' : config.enemySystem.types[type].special,
+                    angle: Math.random() * Math.PI * 2,
+                    orbitDistance: 100 + Math.random() * 200,
+                    teleportCooldown: 0,
+                    shieldActive: false
+                };
+                
+                if (enemy.type === 'cosmic') {
+                    enemy.shieldActive = true;
+                    enemy.shieldRadius = enemy.size * 1.5;
+                }
+                
+                enemies.push(enemy);
+                config.wave.spawned++;
+            } else {
+                // Chama a função original
+                return originalSpawnEnemy();
             }
+        };
 
-            enemies.push(enemy);
-            config.wave.spawned++;
+        function weightedRandomEnemyType() {
+            const types = Object.keys(config.enemySystem.types);
+            const chances = types.map(t => config.enemySystem.types[t].chance);
+            const total = chances.reduce((a, b) => a + b, 0);
+            let random = Math.random() * total;
+            
+            for (let i = 0; i < types.length; i++) {
+                if (random < chances[i]) return types[i];
+                random -= chances[i];
+            }
+            return 'normal';
         }
 
-        function updateEnemies() {
-            enemies.forEach((enemy, index) => {
-                switch(enemy.type) {
-                    case 'blackhole':
-                        particles.forEach(p => {
-                            const dx = enemy.x - p.x;
-                            const dy = enemy.y - p.y;
-                            const distance = Math.sqrt(dx * dx + dy * dy);
+        function calculateEnemyHealth(type, isElite) {
+            const base = config.enemySystem.baseHealth;
+            const typeMultiplier = {
+                normal: 1,
+                hunter: 0.8,
+                cosmic: 1.5,
+                ancient: 2
+            };
+            return (base + (config.level * config.enemySystem.healthIncreasePerLevel)) * 
+                   typeMultiplier[type] * 
+                   (isElite ? config.enemySystem.eliteMultiplier : 1);
+        }
 
-                            if(distance < enemy.size * 2) {
-                                const force = (enemy.size * 2 - distance) / (enemy.size * 2);
-                                const angle = Math.atan2(dy, dx);
-                                p.speedX += Math.cos(angle) * force * 0.5;
-                                p.speedY += Math.sin(angle) * force * 0.5;
+        function getRandomFace(type) {
+            const faces = config.enemySystem.types[type].face;
+            return faces[Math.floor(Math.random() * faces.length)];
+        }
 
-                                if(distance < enemy.size * 0.5) {
-                                    particles.splice(particles.indexOf(p), 1);
-                                }
-                            }
-                        });
-                        break;
+        function getClosestPlayer(enemy) {
+            let closestPlayer = null;
+            let minDistance = Infinity;
 
-                    default:
-                        let closestPlayer = null;
-                        let minDistance = Infinity;
-
-                        config.players.forEach(player => {
-                            if(player.active && player.x && player.y) {
-                                const dx = player.x - enemy.x;
-                                const dy = player.y - enemy.y;
-                                const distance = Math.sqrt(dx * dx + dy * dy);
-
-                                if(distance < minDistance) {
-                                    minDistance = distance;
-                                    closestPlayer = player;
-                                }
-                            }
-                        });
-
-                        if(closestPlayer && Math.random() > 0.95) {
-                            const dx = closestPlayer.x - enemy.x;
-                            const dy = closestPlayer.y - enemy.y;
-                            const angle = Math.atan2(dy, dx);
-                            enemy.speedX = Math.cos(angle) * 2;
-                            enemy.speedY = Math.sin(angle) * 2;
-                        }
-                }
-
-                enemy.x += enemy.speedX;
-                enemy.y += enemy.speedY;
-
-                if (enemy.x < enemy.size/2) enemy.x = enemy.size/2;
-                if (enemy.x > canvas.width - enemy.size/2) enemy.x = canvas.width - enemy.size/2;
-                if (enemy.y < enemy.size/2) enemy.y = enemy.size/2;
-                if (enemy.y > canvas.height - enemy.size/2) enemy.y = canvas.height - enemy.size/2;
-
-                // Aplicar dano de combos cooperativos
-                if(config.coopMode && config.coop.activeCombos.includes('dualRepel')) {
-                    const [p1, p2] = config.players;
-                    const distanceToP1 = Math.sqrt(Math.pow(p1.x - enemy.x, 2) + Math.pow(p1.y - enemy.y, 2));
-                    const distanceToP2 = Math.sqrt(Math.pow(p2.x - enemy.x, 2) + Math.pow(p2.y - enemy.y, 2));
-                    
-                    if(distanceToP1 < 300 || distanceToP2 < 300) {
-                        enemy.health -= 0.02;
-                    }
-                }
-
-                config.players.forEach(player => {
-                    if(player.active && player.x && player.y) {
-                        const dx = player.x - enemy.x;
-                        const dy = player.y - enemy.y;
-                        const distance = Math.sqrt(dx * dx + dy * dy);
-
-                        if (distance < enemy.size/2 + 15) {
-                            player.health -= enemy.damage * (config.coopMode ? 0.7 : 1);
-                            updateHealthBar();
-
-                            if(player.id === 1) {
-                                document.body.style.boxShadow = 'inset 0 0 30px red';
-                                setTimeout(() => {
-                                    document.body.style.boxShadow = 'none';
-                                }, 100);
-                            }
-                        }
-                    }
-                });
-
-                particles.forEach(particle => {
-                    const dx = enemy.x - particle.x;
-                    const dy = enemy.y - particle.y;
+            config.players.forEach(player => {
+                if(player.active && player.x && player.y) {
+                    const dx = player.x - enemy.x;
+                    const dy = player.y - enemy.y;
                     const distance = Math.sqrt(dx * dx + dy * dy);
-                    const minDist = enemy.size/2 + particle.size/2;
 
-                    if (distance < minDist) {
-                        enemy.health -= 0.05;
-                        const angle = Math.atan2(dy, dx);
-                        const force = (minDist - distance) * 0.1;
-                        particle.speedX = -Math.cos(angle) * force * 3;
-                        particle.speedY = -Math.sin(angle) * force * 3;
-                    }
-                });
-
-                if (enemy.health <= 0) {
-                    createExplosion(enemy.x, enemy.y, enemy.size);
-                    enemies.splice(index, 1);
-
-                    // Bônus de XP para combos cooperativos
-                    const xpMultiplier = config.coop.activeCombos.includes('vortexAttract') ? 2 : 1;
-                    const xpValue = (enemy.type === 'elite' ? 25 : 
-                                   enemy.type === 'blackhole' ? 50 : 10) * xpMultiplier;
-                    
-                    addXP(xpValue * (config.coopMode ? 0.8 : 1));
-
-                    config.enemiesDestroyed++;
-                    if(!config.achievements.enemyDestroyer.unlocked && 
-                       config.enemiesDestroyed >= config.achievements.enemyDestroyer.required) {
-                        config.achievements.enemyDestroyer.unlocked = true;
-                        showUnlockMessage("Conquista: Destruidor de Inimigos!");
-                        addXP(100);
+                    if(distance < minDistance) {
+                        minDistance = distance;
+                        closestPlayer = player;
                     }
                 }
             });
+
+            return closestPlayer;
+        }
+
+        // COMPORTAMENTOS DE INIMIGOS
+        function updateEnemies() {
+            enemies.forEach((enemy, index) => {
+                // Atualiza estados especiais
+                if (enemy.teleportCooldown > 0) enemy.teleportCooldown--;
+                
+                // Executa comportamento específico
+                switch(enemy.behavior) {
+                    case 'wander': updateWanderBehavior(enemy); break;
+                    case 'hunt': updateHuntBehavior(enemy); break;
+                    case 'teleport': updateTeleportBehavior(enemy); break;
+                    case 'orbit': updateOrbitBehavior(enemy); break;
+                    case 'blackhole': updateBlackHoleBehavior(enemy); break;
+                }
+                
+                // Atualiza posição e verifica colisões
+                updateEnemyPosition(enemy, index);
+            });
+        }
+
+        function updateWanderBehavior(enemy) {
+            if (Math.random() < 0.02) {
+                enemy.speedX = (Math.random() - 0.5) * enemy.speed;
+                enemy.speedY = (Math.random() - 0.5) * enemy.speed;
+            }
+        }
+
+        function updateHuntBehavior(enemy) {
+            const player = getClosestPlayer(enemy);
+            if (!player) return;
+            
+            const dx = player.x - enemy.x;
+            const dy = player.y - enemy.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance > 400) return;
+            
+            const angle = Math.atan2(dy, dx);
+            enemy.speedX = Math.cos(angle) * enemy.speed;
+            enemy.speedY = Math.sin(angle) * enemy.speed;
+        }
+
+        function updateTeleportBehavior(enemy) {
+            if (enemy.teleportCooldown <= 0 && Math.random() < 0.3) {
+                const player = getClosestPlayer(enemy);
+                if (player) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const distance = 100 + Math.random() * 150;
+                    enemy.x = player.x + Math.cos(angle) * distance;
+                    enemy.y = player.y + Math.sin(angle) * distance;
+                    enemy.teleportCooldown = 120;
+                    createTeleportEffect(enemy.x, enemy.y);
+                }
+            }
+        }
+
+        function updateOrbitBehavior(enemy) {
+            const player = getClosestPlayer(enemy);
+            if (!player) return;
+            
+            enemy.angle += 0.01;
+            enemy.x = player.x + Math.cos(enemy.angle) * enemy.orbitDistance;
+            enemy.y = player.y + Math.sin(enemy.angle) * enemy.orbitDistance;
+            
+            if (enemy.special === 'healer' && Math.random() < 0.01) {
+                enemies.forEach(other => {
+                    if (other !== enemy) {
+                        const dist = Math.sqrt(Math.pow(other.x - enemy.x, 2) + Math.pow(other.y - enemy.y, 2));
+                        if (dist < 150) {
+                            other.health = Math.min(other.health + 0.5, other.maxHealth);
+                        }
+                    }
+                });
+            }
+        }
+
+        function updateBlackHoleBehavior(enemy) {
+            particles.forEach(p => {
+                const dx = enemy.x - p.x;
+                const dy = enemy.y - p.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < enemy.size * 3) {
+                    const force = (enemy.size * 3 - distance) / (enemy.size * 3);
+                    const angle = Math.atan2(dy, dx);
+                    p.speedX += Math.cos(angle) * force * 0.8;
+                    p.speedY += Math.sin(angle) * force * 0.8;
+                    
+                    if (distance < enemy.size * 0.7) {
+                        particles.splice(particles.indexOf(p), 1);
+                        enemy.health = Math.min(enemy.health + 0.05, enemy.maxHealth);
+                    }
+                }
+            });
+            
+            enemies.forEach(other => {
+                if (other !== enemy && other.size < enemy.size * 0.7) {
+                    const dx = enemy.x - other.x;
+                    const dy = enemy.y - other.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < enemy.size * 2) {
+                        const force = (enemy.size * 2 - distance) / (enemy.size * 2);
+                        const angle = Math.atan2(dy, dx);
+                        other.speedX += Math.cos(angle) * force * 0.5;
+                        other.speedY += Math.sin(angle) * force * 0.5;
+                    }
+                }
+            });
+        }
+
+        function updateEnemyPosition(enemy, index) {
+            enemy.x += enemy.speedX;
+            enemy.y += enemy.speedY;
+
+            if (enemy.x < enemy.size/2) enemy.x = enemy.size/2;
+            if (enemy.x > canvas.width - enemy.size/2) enemy.x = canvas.width - enemy.size/2;
+            if (enemy.y < enemy.size/2) enemy.y = enemy.size/2;
+            if (enemy.y > canvas.height - enemy.size/2) enemy.y = canvas.height - enemy.size/2;
+
+            // Aplicar dano de combos cooperativos
+            if(config.coopMode && config.coop.activeCombos.includes('dualRepel')) {
+                const [p1, p2] = config.players;
+                const distanceToP1 = Math.sqrt(Math.pow(p1.x - enemy.x, 2) + Math.pow(p1.y - enemy.y, 2));
+                const distanceToP2 = Math.sqrt(Math.pow(p2.x - enemy.x, 2) + Math.pow(p2.y - enemy.y, 2));
+                
+                if(distanceToP1 < 300 || distanceToP2 < 300) {
+                    enemy.health -= 0.02;
+                }
+            }
+
+            config.players.forEach(player => {
+                if(player.active && player.x && player.y) {
+                    const dx = player.x - enemy.x;
+                    const dy = player.y - enemy.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < enemy.size/2 + 15) {
+                        player.health -= enemy.damage * (config.coopMode ? 0.7 : 1);
+                        updateHealthBar();
+
+                        if(player.id === 1) {
+                            document.body.style.boxShadow = 'inset 0 0 30px red';
+                            setTimeout(() => {
+                                document.body.style.boxShadow = 'none';
+                            }, 100);
+                        }
+                    }
+                }
+            });
+
+            particles.forEach(particle => {
+                const dx = enemy.x - particle.x;
+                const dy = enemy.y - particle.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                const minDist = enemy.size/2 + particle.size/2;
+
+                if (distance < minDist) {
+                    enemy.health -= 0.05;
+                    const angle = Math.atan2(dy, dx);
+                    const force = (minDist - distance) * 0.1;
+                    particle.speedX = -Math.cos(angle) * force * 3;
+                    particle.speedY = -Math.sin(angle) * force * 3;
+                }
+            });
+
+            if (enemy.health <= 0) {
+                createExplosion(enemy.x, enemy.y, enemy.size);
+                enemies.splice(index, 1);
+
+                // Bônus de XP para combos cooperativos
+                const xpMultiplier = config.coop.activeCombos.includes('vortexAttract') ? 2 : 1;
+                const xpValue = (enemy.type === 'elite' ? 25 : 
+                               enemy.type === 'blackhole' ? 50 : 10) * xpMultiplier;
+                
+                addXP(xpValue * (config.coopMode ? 0.8 : 1));
+
+                config.enemiesDestroyed++;
+                if(!config.achievements.enemyDestroyer.unlocked && 
+                   config.enemiesDestroyed >= config.achievements.enemyDestroyer.required) {
+                    config.achievements.enemyDestroyer.unlocked = true;
+                    showUnlockMessage("Conquista: Destruidor de Inimigos!");
+                    addXP(100);
+                }
+            }
         }
 
         function createExplosion(x, y, size) {
@@ -1172,72 +1375,200 @@
             }
         }
 
-        function drawEnemies() {
+        function createTeleportEffect(x, y) {
+            for (let i = 0; i < 20; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    size: Math.random() * 4 + 2,
+                    color: `hsla(${Math.random() * 60 + 200}, 100%, 60%, 0.8)`,
+                    speedX: (Math.random() - 0.5) * 10,
+                    speedY: (Math.random() - 0.5) * 10,
+                    life: 30 + Math.random() * 30,
+                    trail: []
+                });
+            }
+        }
+
+        // HABILIDADES ESPECIAIS
+        function activateCosmicPulse(player) {
+            const skill = config.skills.find(s => s.id === 'cosmic_pulse');
+            if (skill.currentCooldown > 0) return;
+            
+            skill.currentCooldown = skill.cooldown;
+            const centerX = player.x;
+            const centerY = player.y;
+            
+            createPulseEffect(centerX, centerY, skill.radius);
+            
             enemies.forEach(enemy => {
-                const gradient = ctx.createRadialGradient(
-                    enemy.x, enemy.y, enemy.size * 0.3,
-                    enemy.x, enemy.y, enemy.size
-                );
-
-                switch(enemy.type) {
-                    case 'elite':
-                        gradient.addColorStop(0, 'rgba(255, 215, 0, 0.9)');
-                        gradient.addColorStop(1, 'rgba(255, 50, 0, 0.8)');
-                        break;
-                    case 'blackhole':
-                        gradient.addColorStop(0, 'rgba(0, 0, 0, 0.9)');
-                        gradient.addColorStop(0.5, 'rgba(50, 0, 100, 0.8)');
-                        gradient.addColorStop(1, 'rgba(150, 0, 0, 0.8)');
-                        break;
-                    default:
-                        gradient.addColorStop(0, 'rgba(255, 50, 50, 0.8)');
-                        gradient.addColorStop(1, 'rgba(150, 0, 0, 0.8)');
+                const dx = enemy.x - centerX;
+                const dy = enemy.y - centerY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < skill.radius) {
+                    const angle = Math.atan2(dy, dx);
+                    const force = (skill.radius - distance) / skill.radius * 15;
+                    enemy.speedX = Math.cos(angle) * force;
+                    enemy.speedY = Math.sin(angle) * force;
+                    
+                    if (distance < skill.radius * 0.7) {
+                        enemy.health -= 5;
+                        enemy.stunned = 30;
+                    }
                 }
-
-                ctx.fillStyle = gradient;
-                ctx.beginPath();
-                ctx.arc(enemy.x, enemy.y, enemy.size, 0, Math.PI * 2);
-                ctx.fill();
-
-                if(enemy.type === 'blackhole') {
-                    ctx.strokeStyle = 'rgba(100, 0, 255, 0.7)';
-                    ctx.lineWidth = 3;
-                    ctx.beginPath();
-                    ctx.arc(enemy.x, enemy.y, enemy.size * 1.5, 0, Math.PI * 2);
-                    ctx.stroke();
-                }
-
-                ctx.font = `${enemy.size/2}px monospace`;
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillStyle = enemy.type === 'elite' ? 'gold' : 
-                               enemy.type === 'blackhole' ? '#8A2BE2' : 'white';
-                ctx.fillText(enemy.face, enemy.x, enemy.y + (enemy.size * 0.05));
-
-                const healthBarWidth = enemy.size * 1.5;
-                const healthPercent = enemy.health / enemy.maxHealth;
-
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-                ctx.fillRect(
-                    enemy.x - healthBarWidth/2, 
-                    enemy.y - enemy.size - 15, 
-                    healthBarWidth, 
-                    8
-                );
-
-                ctx.fillStyle = `hsl(${healthPercent * 120}, 100%, 50%)`;
-                ctx.fillRect(
-                    enemy.x - healthBarWidth/2, 
-                    enemy.y - enemy.size - 15, 
-                    healthBarWidth * healthPercent, 
-                    8
-                );
             });
+            
+            particles.forEach(p => {
+                const dx = p.x - centerX;
+                const dy = p.y - centerY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < skill.radius) {
+                    p.energized = 180;
+                    p.color = `hsl(${(Date.now()/10) % 360}, 100%, 70%)`;
+                    p.size *= 1.5;
+                }
+            });
+        }
+
+        function activateQuantumSingularity(player) {
+            const skill = config.skills.find(s => s.id === 'quantum_singularity');
+            if (skill.currentCooldown > 0) return;
+            
+            skill.currentCooldown = skill.cooldown;
+            const singularity = {
+                x: player.x + (Math.random() - 0.5) * 50,
+                y: player.y + (Math.random() - 0.5) * 50,
+                radius: skill.radius,
+                timer: 120,
+                pullStrength: 0.5,
+                damage: 0.5
+            };
+            
+            skill.activeSingularities.push(singularity);
+            createSingularityEffect(singularity.x, singularity.y);
+        }
+
+        function updateSingularities() {
+            const skill = config.skills.find(s => s.id === 'quantum_singularity');
+            
+            skill.activeSingularities.forEach((sing, index) => {
+                sing.timer--;
+                
+                if (sing.timer > 0) {
+                    enemies.forEach(enemy => {
+                        const dx = sing.x - enemy.x;
+                        const dy = sing.y - enemy.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < sing.radius) {
+                            const angle = Math.atan2(dy, dx);
+                            const force = (sing.radius - distance) / sing.radius * sing.pullStrength;
+                            enemy.speedX = Math.cos(angle) * force * 5;
+                            enemy.speedY = Math.sin(angle) * force * 5;
+                            
+                            if (distance < sing.radius * 0.3) {
+                                enemy.health -= sing.damage;
+                            }
+                        }
+                    });
+                    
+                    particles.forEach(p => {
+                        const dx = sing.x - p.x;
+                        const dy = sing.y - p.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < sing.radius) {
+                            const angle = Math.atan2(dy, dx);
+                            const force = (sing.radius - distance) / sing.radius * sing.pullStrength * 0.7;
+                            p.speedX = Math.cos(angle) * force * 3;
+                            p.speedY = Math.sin(angle) * force * 3;
+                            
+                            if (distance < sing.radius * 0.5) {
+                                p.color = `hsl(${(Date.now()/20) % 360}, 100%, 60%)`;
+                            }
+                        }
+                    });
+                } else if (sing.timer === 0) {
+                    createSingularityExplosion(sing.x, sing.y, sing.radius);
+                    
+                    enemies.forEach(enemy => {
+                        const dx = sing.x - enemy.x;
+                        const dy = sing.y - enemy.y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < sing.radius) {
+                            const damage = (sing.radius - distance) / sing.radius * 20;
+                            enemy.health -= damage;
+                        }
+                    });
+                    
+                    skill.activeSingularities.splice(index, 1);
+                }
+            });
+        }
+
+        function createPulseEffect(x, y, radius) {
+            const pulse = document.createElement('div');
+            pulse.style.cssText = `
+                position: fixed;
+                top: ${y}px;
+                left: ${x}px;
+                width: 10px;
+                height: 10px;
+                border-radius: 50%;
+                background: radial-gradient(circle, rgba(100,200,255,0.8), transparent 70%);
+                transform: translate(-50%, -50%) scale(0);
+                animation: pulseExpand 0.5s ease-out forwards;
+                pointer-events: none;
+                z-index: 999;
+                --radius: ${radius/10};
+            `;
+            document.body.appendChild(pulse);
+            setTimeout(() => pulse.remove(), 500);
+        }
+
+        function createSingularityEffect(x, y) {
+            const sing = document.createElement('div');
+            sing.className = 'quantum-singularity';
+            sing.style.cssText = `
+                position: fixed;
+                top: ${y}px;
+                left: ${x}px;
+                width: 20px;
+                height: 20px;
+                background: radial-gradient(circle, #00FFFF, #0088FF, #000000);
+                border-radius: 50%;
+                transform: translate(-50%, -50%);
+                z-index: 998;
+                animation: singularityPulse 1s infinite alternate;
+            `;
+            document.body.appendChild(sing);
+            setTimeout(() => sing.remove(), 2000);
+        }
+
+        function createSingularityExplosion(x, y, radius) {
+            const explosion = document.createElement('div');
+            explosion.style.cssText = `
+                position: fixed;
+                top: ${y}px;
+                left: ${x}px;
+                width: 10px;
+                height: 10px;
+                background: radial-gradient(circle, #FFFFFF, #00FFFF, #0088FF);
+                border-radius: 50%;
+                transform: translate(-50%, -50%) scale(0);
+                animation: singularityExplosion 0.5s ease-out forwards;
+                z-index: 999;
+                --radius: ${radius/10};
+            `;
+            document.body.appendChild(explosion);
+            setTimeout(() => explosion.remove(), 500);
         }
 
         // BIG BANG MELHORADO - SUPERNOVA CÓSMICA
         function activateBigBang() {
-            // Verifica se pode usar (a cada 15 níveis)
             if (config.level < 15 || (config.level % 15 !== 0)) {
                 return;
             }
@@ -1837,6 +2168,84 @@
             });
         }
 
+        // Desenha os inimigos
+        function drawEnemies() {
+            enemies.forEach(enemy => {
+                const gradient = ctx.createRadialGradient(
+                    enemy.x, enemy.y, enemy.size * 0.3,
+                    enemy.x, enemy.y, enemy.size
+                );
+
+                // Estilo baseado no tipo de inimigo
+                if (enemy.type === 'cosmic') {
+                    gradient.addColorStop(0, 'rgba(100, 200, 255, 0.9)');
+                    gradient.addColorStop(1, 'rgba(0, 100, 255, 0.8)');
+                } else if (enemy.type === 'ancient') {
+                    gradient.addColorStop(0, 'rgba(150, 0, 255, 0.9)');
+                    gradient.addColorStop(1, 'rgba(50, 0, 150, 0.8)');
+                } else if (enemy.type === 'hunter') {
+                    gradient.addColorStop(0, 'rgba(255, 100, 50, 0.8)');
+                    gradient.addColorStop(1, 'rgba(200, 50, 0, 0.8)');
+                } else if (enemy.type === 'blackhole') {
+                    gradient.addColorStop(0, 'rgba(0, 0, 0, 0.9)');
+                    gradient.addColorStop(0.5, 'rgba(50, 0, 100, 0.8)');
+                    gradient.addColorStop(1, 'rgba(150, 0, 0, 0.8)');
+                } else {
+                    gradient.addColorStop(0, 'rgba(255, 50, 50, 0.8)');
+                    gradient.addColorStop(1, 'rgba(150, 0, 0, 0.8)');
+                }
+
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(enemy.x, enemy.y, enemy.size, 0, Math.PI * 2);
+                ctx.fill();
+
+                if(enemy.type === 'blackhole') {
+                    ctx.strokeStyle = 'rgba(100, 0, 255, 0.7)';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(enemy.x, enemy.y, enemy.size * 1.5, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+
+                if(enemy.shieldActive) {
+                    ctx.beginPath();
+                    ctx.arc(enemy.x, enemy.y, enemy.shieldRadius, 0, Math.PI * 2);
+                    ctx.strokeStyle = 'rgba(100, 200, 255, 0.5)';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+
+                ctx.font = `${enemy.size/2}px monospace`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = enemy.type === 'cosmic' ? '#00FFFF' : 
+                               enemy.type === 'ancient' ? '#FF00FF' :
+                               enemy.type === 'hunter' ? 'gold' : 
+                               enemy.type === 'blackhole' ? '#8A2BE2' : 'white';
+                ctx.fillText(enemy.face, enemy.x, enemy.y + (enemy.size * 0.05));
+
+                const healthBarWidth = enemy.size * 1.5;
+                const healthPercent = enemy.health / enemy.maxHealth;
+
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(
+                    enemy.x - healthBarWidth/2, 
+                    enemy.y - enemy.size - 15, 
+                    healthBarWidth, 
+                    8
+                );
+
+                ctx.fillStyle = `hsl(${healthPercent * 120}, 100%, 50%)`;
+                ctx.fillRect(
+                    enemy.x - healthBarWidth/2, 
+                    enemy.y - enemy.size - 15, 
+                    healthBarWidth * healthPercent, 
+                    8
+                );
+            });
+        }
+
         // LOOP DO JOGO
         function animate() {
             // Aplicar tremor de tela
@@ -1852,6 +2261,14 @@
             updateFPSCounter();
             updateBigBangCooldown();
             config.gameTime++;
+
+            // Atualiza cooldowns das habilidades
+            config.skills.forEach(skill => {
+                if (skill.currentCooldown > 0) skill.currentCooldown--;
+            });
+
+            // Atualiza singularidades
+            updateSingularities();
 
             forceSpawn();
 
@@ -2023,6 +2440,12 @@
                 case '0':
                     config.players[0].mode = 'normal';
                     config.players[0].lastModeChange = Date.now();
+                    break;
+                case 'c':
+                    activateCosmicPulse(config.players[0]);
+                    break;
+                case 'v':
+                    activateQuantumSingularity(config.players[0]);
                     break;
                 case 'u':
                     if(config.coopMode && config.coopUltimate.available) {
