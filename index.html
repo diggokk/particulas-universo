@@ -17,7 +17,6 @@
             display: block;
             width: 100vw;
             height: 100vh;
-            transition: transform 0.1s, filter 0.3s;
         }
 
         .mobile-controls {
@@ -362,58 +361,6 @@
             max-width: 400px;
         }
 
-        /* NOVOS ESTILOS PARA EFEITOS DO BIG BANG */
-        .bigbang-flash {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: white;
-            z-index: 1000;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.5s ease-out;
-        }
-
-        .bigbang-shockwave {
-            position: fixed;
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,0,255,0) 70%);
-            z-index: 1000;
-            pointer-events: none;
-            transition: all 1.5s cubic-bezier(0.1, 0.8, 0.2, 1);
-        }
-
-        .bigbang-particle-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 999;
-            pointer-events: none;
-        }
-
-        .bigbang-particle {
-            position: absolute;
-            border-radius: 50%;
-            background: currentColor;
-            pointer-events: none;
-            z-index: 1000;
-            transition: opacity 0.5s, transform 2s;
-        }
-
-        .slowmo-effect {
-            animation: slowmo 1s 1;
-        }
-
-        @keyframes slowmo {
-            0% { filter: brightness(1.5) contrast(1.5); }
-            100% { filter: brightness(1) contrast(1); }
-        }
-
         @media (max-width: 768px) {
             .mobile-controls { display: flex; }
             #menu {
@@ -560,26 +507,7 @@
                 { id: 'vortex_power', name: "Vórtice Poderoso", level: 0, max: 3, effect: "Aumenta força do vórtice em 30%", cost: 3 },
                 { id: 'double_vortex', name: "Vórtice Duplo", level: 0, max: 1, effect: "Cria um segundo vórtice", cost: 5 },
                 { id: 'health_boost', name: "Vitalidade", level: 0, max: 3, effect: "Aumenta vida máxima em 15%", cost: 2 },
-                { id: 'bigbang_power', name: "Big Bang+", level: 0, max: 2, effect: "Aumenta poder do Big Bang", cost: 4 },
-                // Novas habilidades para o Big Bang
-                { 
-                    id: 'bigbang_frequency', 
-                    name: "Frequência Cósmica", 
-                    level: 0, 
-                    max: 3, 
-                    effect: "Reduz o tempo de recarga em 20% por nível", 
-                    cost: [3, 4, 5],
-                    unlocked: true
-                },
-                { 
-                    id: 'bigbang_aftermath', 
-                    name: "Resquícios do Big Bang", 
-                    level: 0, 
-                    max: 2, 
-                    effect: "Cria um campo de atração/repulsão após a explosão", 
-                    cost: [4, 6],
-                    unlocked: false
-                }
+                { id: 'bigbang_power', name: "Big Bang+", level: 0, max: 2, effect: "Aumenta poder do Big Bang", cost: 4 }
             ],
             currentMission: null,
             missionProgress: 0,
@@ -594,32 +522,12 @@
             gameTime: 0,
             isMobile: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
             comboCount: 0,
-            lastAbsorptionTime: 0,
-            // Novas configurações para efeitos do Big Bang
-            postBigBangEffects: {
-                active: false,
-                timer: 0,
-                duration: 300 // 5 segundos a 60fps
-            },
-            cameraShake: {
-                intensity: 0,
-                duration: 0,
-                timer: 0
-            },
-            bigBangCombos: {
-                lastUsed: 0,
-                count: 0,
-                multiplier: 1
-            },
-            shockwaves: []
+            lastAbsorptionTime: 0
         };
 
         // Sistema de fila de mensagens
         const messageQueue = [];
         let isShowingMessage = false;
-
-        // Audio Context para efeitos sonoros
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
         // Ajuste para dispositivos móveis
         if(config.isMobile) {
@@ -663,8 +571,8 @@
                         color: `hsl(${Math.random() * 360}, 80%, 60%)`,
                         speedX: (Math.random() - 0.5) * 3,
                         speedY: (Math.random() - 0.5) * 3,
-                        baseSpeedX: 0,
-                        baseSpeedY: 0,
+                        baseSpeedX: (Math.random() - 0.5) * 3,
+                        baseSpeedY: (Math.random() - 0.5) * 3,
                         trail: []
                     });
                 }
@@ -716,6 +624,55 @@
         // Botão Big Bang - NOVA IMPLEMENTAÇÃO
         document.getElementById('bigbang-btn').addEventListener('click', activateBigBang);
 
+        function toggleCoopMode() {
+            config.coopMode = !config.coopMode;
+            config.players[1].active = config.coopMode;
+
+            const coopButton = document.getElementById('menu-coop');
+            coopButton.textContent = `🔵 Cooperativo: ${config.coopMode ? 'ON' : 'OFF'}`;
+
+            if(config.isMobile) {
+                document.getElementById('mobile-controls-p2').style.display = 
+                    config.coopMode ? 'flex' : 'none';
+            }
+
+            config.players[0].radius = config.coopMode ? 120 : 150;
+            config.players[1].radius = 120;
+        }
+
+        function showGalaxyMap() {
+            document.getElementById('galaxy-map').style.display = 'block';
+            renderGalaxyMap();
+            menu.style.display = 'none';
+        }
+
+        function resetGame() {
+            if(confirm("Tem certeza que quer reiniciar o jogo? Todo progresso será perdido.")) {
+                location.reload();
+            }
+        }
+
+        function resetGameState() {
+            config.players.forEach(player => {
+                player.health = player.maxHealth;
+            });
+            config.xp = 0;
+            config.level = 1;
+            enemies = [];
+            initParticles();
+            updateHealthBar();
+            updateXPBar();
+        }
+
+        function updateMenuButtons() {
+            const modes = ['attract', 'repel', 'vortex'];
+            modes.forEach(mode => {
+                const btn = document.getElementById(`menu-${mode}`);
+                btn.style.background = config.players[0].mode === mode ? 
+                    'rgba(74, 0, 224, 0.5)' : 'transparent';
+            });
+        }
+
         // Controles mobile
         document.getElementById("mobileAttract").addEventListener('click', () => {
             config.players[0].mode = 'attract';
@@ -755,8 +712,6 @@
                 config.players[0].x = e.clientX;
                 config.players[0].y = e.clientY;
             }
-            mouse.x = e.clientX;
-            mouse.y = e.clientY;
         });
 
         canvas.addEventListener('touchmove', (e) => {
@@ -764,15 +719,11 @@
             if(e.touches.length === 1) {
                 config.players[0].x = e.touches[0].clientX;
                 config.players[0].y = e.touches[0].clientY;
-                mouse.x = e.touches[0].clientX;
-                mouse.y = e.touches[0].clientY;
             } else if(e.touches.length === 2 && config.coopMode) {
                 config.players[0].x = e.touches[0].clientX;
                 config.players[0].y = e.touches[0].clientY;
                 config.players[1].x = e.touches[1].clientX;
                 config.players[1].y = e.touches[1].clientY;
-                mouse.x = e.touches[0].clientX;
-                mouse.y = e.touches[0].clientY;
             }
         });
 
@@ -1084,149 +1035,55 @@
             });
         }
 
-        // BIG BANG - IMPLEMENTAÇÃO MELHORADA
+        // BIG BANG - ATUALIZADO
         function activateBigBang() {
             if (config.bigBangCooldown <= 0 && !config.isBigBangActive) {
                 config.isBigBangActive = true;
                 const btn = document.getElementById('bigbang-btn');
                 btn.classList.remove('bigbang-ready');
 
-                // Sistema de combos
-                const now = Date.now();
-                if (now - config.bigBangCombos.lastUsed < 5000) { // 5 segundos para combo
-                    config.bigBangCombos.count++;
-                    config.bigBangCombos.multiplier = 1 + Math.min(5, config.bigBangCombos.count) * 0.2;
-                } else {
-                    config.bigBangCombos.count = 0;
-                    config.bigBangCombos.multiplier = 1;
-                }
-                config.bigBangCombos.lastUsed = now;
-
-                // Mostrar combo
-                if (config.bigBangCombos.multiplier > 1) {
-                    showUnlockMessage(`COMBO x${config.bigBangCombos.multiplier.toFixed(1)}!`);
-                }
-
-                // Poder base + upgrades + combo
-                const bangPower = (1 + config.skills.find(s => s.id === 'bigbang_power').level * 0.5) * config.bigBangCombos.multiplier;
-                const centerX = mouse.x || canvas.width/2;
-                const centerY = mouse.y || canvas.height/2;
-
-                // Efeito de flash branco
-                const flash = document.createElement('div');
-                flash.className = 'bigbang-flash';
-                document.body.appendChild(flash);
-
-                setTimeout(() => { flash.style.opacity = '0.8'; }, 10);
-                setTimeout(() => { flash.style.opacity = '0'; }, 100);
-                setTimeout(() => { flash.remove(); }, 600);
-
-                // Efeito de onda de choque
-                const shockwave = document.createElement('div');
-                shockwave.className = 'bigbang-shockwave';
-                shockwave.style.left = `${centerX}px`;
-                shockwave.style.top = `${centerY}px`;
-                document.body.appendChild(shockwave);
+                const bang = document.createElement('div');
+                bang.style.position = 'fixed';
+                bang.style.left = '0';
+                bang.style.top = '0';
+                bang.style.width = '100%';
+                bang.style.height = '100%';
+                bang.style.background = 'radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,0,255,0) 70%)';
+                bang.style.zIndex = '1000';
+                bang.style.pointerEvents = 'none';
+                bang.style.opacity = '0';
+                bang.style.transition = 'opacity 1s';
+                document.body.appendChild(bang);
 
                 setTimeout(() => {
-                    shockwave.style.width = '2000px';
-                    shockwave.style.height = '2000px';
-                    shockwave.style.opacity = '0';
+                    bang.style.opacity = '1';
                 }, 10);
 
-                setTimeout(() => { shockwave.remove(); }, 1500);
-
-                // Efeito de partículas na tela toda
-                const particlesOverlay = document.createElement('div');
-                particlesOverlay.className = 'bigbang-particle-overlay';
-                document.body.appendChild(particlesOverlay);
-
-                // Criar partículas estáticas
-                for (let i = 0; i < 150; i++) {
-                    const particle = document.createElement('div');
-                    particle.className = 'bigbang-particle';
-                    particle.style.width = `${Math.random() * 5 + 2}px`;
-                    particle.style.height = particle.style.width;
-                    particle.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 70%)`;
-                    particle.style.left = `${Math.random() * 100}%`;
-                    particle.style.top = `${Math.random() * 100}%`;
-                    particle.style.opacity = '0';
-                    particlesOverlay.appendChild(particle);
-
-                    // Animação das partículas
-                    setTimeout(() => {
-                        particle.style.opacity = '0.8';
-                        particle.style.transform = `translate(${(Math.random() - 0.5) * 100}px, ${(Math.random() - 0.5) * 100}px)`;
-                    }, Math.random() * 500);
-
-                    setTimeout(() => {
-                        particle.style.opacity = '0';
-                        setTimeout(() => particle.remove(), 500);
-                    }, 1000 + Math.random() * 500);
-                }
-
                 setTimeout(() => {
-                    particlesOverlay.remove();
-                }, 2000);
+                    bang.style.opacity = '0';
+                    setTimeout(() => bang.remove(), 1000);
+                }, 100);
 
-                // Efeito sonoro
-                playBigBangSound(bangPower);
+                const bangPower = 1 + config.skills.find(s => s.id === 'bigbang_power').level * 0.5;
 
-                // Tremor de tela
-                triggerCameraShake(20 * bangPower, 30);
-
-                // Efeito de slow motion
-                document.body.classList.add('slowmo-effect');
-                setTimeout(() => {
-                    document.body.classList.remove('slowmo-effect');
-                }, 1000);
-
-                // Danos aos inimigos
                 enemies.forEach(enemy => {
-                    const dx = enemy.x - centerX;
-                    const dy = enemy.y - centerY;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    
-                    // Quanto mais próximo do centro, mais dano
-                    const damage = 15 * bangPower * (1 - Math.min(1, distance / 500));
-                    enemy.health -= damage;
-                    
-                    // Empurrão radial
-                    if (distance > 0) {
-                        const force = 30 * bangPower / distance;
-                        enemy.speedX += (dx / distance) * force;
-                        enemy.speedY += (dy / distance) * force;
-                    }
+                    enemy.health -= 10 * bangPower;
                 });
 
-                // Modificação das partículas existentes
                 particles.forEach(p => {
-                    const dx = p.x - centerX;
-                    const dy = p.y - centerY;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    
-                    p.color = `hsl(${(Math.random() * 60 + 300) % 360}, 100%, 70%)`;
-                    
-                    if (distance > 0) {
-                        const force = 15 * bangPower / distance;
-                        p.speedX += (dx / distance) * force;
-                        p.speedY += (dy / distance) * force;
-                    }
+                    p.color = `hsl(${Math.random() * 360}, 100%, 70%)`;
+                    p.speedX = (Math.random() - 0.5) * 20 * bangPower;
+                    p.speedY = (Math.random() - 0.5) * 20 * bangPower;
                 });
 
-                // Criação de novas partículas
                 for (let i = 0; i < 100 * bangPower; i++) {
-                    const angle = Math.random() * Math.PI * 2;
-                    const distance = Math.random() * 50;
-                    const speed = 5 + Math.random() * 10 * bangPower;
-                    
                     particles.push({
-                        x: centerX + Math.cos(angle) * distance,
-                        y: centerY + Math.sin(angle) * distance,
+                        x: mouse.x || canvas.width/2,
+                        y: mouse.y || canvas.height/2,
                         size: Math.random() * 5 + 2,
-                        color: `hsl(${(Math.random() * 60 + 300) % 360}, 100%, 70%)`,
-                        speedX: Math.cos(angle) * speed,
-                        speedY: Math.sin(angle) * speed,
+                        color: `hsl(${Math.random() * 360}, 100%, 70%)`,
+                        speedX: (Math.random() - 0.5) * 20 * bangPower,
+                        speedY: (Math.random() - 0.5) * 20 * bangPower,
                         baseSpeedX: 0,
                         baseSpeedY: 0,
                         life: 100 + Math.random() * 50,
@@ -1234,68 +1091,11 @@
                     });
                 }
 
-                // Ativar efeitos pós-Big Bang
-                config.postBigBangEffects.active = true;
-                config.postBigBangEffects.timer = config.postBigBangEffects.duration;
-
-                // Finalização
                 setTimeout(() => {
                     config.isBigBangActive = false;
-                    // Aplicar redução de cooldown baseado em upgrades
-                    const cooldownReduction = config.skills.find(s => s.id === 'bigbang_frequency').level * 0.2;
-                    config.bigBangCooldown = config.bigBangMaxCooldown * (1 - cooldownReduction);
+                    config.bigBangCooldown = config.bigBangMaxCooldown;
                 }, 2000);
             }
-        }
-
-        // Função para tocar som do Big Bang
-        function playBigBangSound(power) {
-            try {
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(50, audioContext.currentTime);
-                oscillator.frequency.exponentialRampToValueAtTime(0.1, audioContext.currentTime + 2);
-                
-                gainNode.gain.setValueAtTime(0.5 * power, audioContext.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 2);
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                oscillator.start();
-                oscillator.stop(audioContext.currentTime + 2);
-                
-                // Efeito de reverberação
-                if (audioContext.createConvolver) {
-                    const convolver = audioContext.createConvolver();
-                    const reverbTime = 3;
-                    const sampleRate = audioContext.sampleRate;
-                    const length = sampleRate * reverbTime;
-                    const impulse = audioContext.createBuffer(2, length, sampleRate);
-                    const left = impulse.getChannelData(0);
-                    const right = impulse.getChannelData(1);
-                    
-                    for (let i = 0; i < length; i++) {
-                        left[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2);
-                        right[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, 2);
-                    }
-                    
-                    convolver.buffer = impulse;
-                    gainNode.connect(convolver);
-                    convolver.connect(audioContext.destination);
-                }
-            } catch (e) {
-                console.log("Erro no áudio:", e);
-            }
-        }
-
-        // Função para ativar tremor de câmera
-        function triggerCameraShake(intensity, duration) {
-            config.cameraShake.intensity = intensity;
-            config.cameraShake.duration = duration;
-            config.cameraShake.timer = duration;
         }
 
         // SISTEMA DE XP E NÍVEL - ATUALIZADO COM COMBO
@@ -1388,12 +1188,6 @@
                 document.getElementById('bigbang-progress').style.width = `${percent}%`;
                 document.querySelector('#bigbang-btn .cooldown-overlay').style.width = `${100 - percent}%`;
                 
-                // Efeito de pulsação quando está perto de recarregar
-                if (percent > 90) {
-                    const btn = document.getElementById('bigbang-btn');
-                    btn.style.boxShadow = `0 0 0 ${(percent - 90) * 2}px rgba(142, 45, 226, 0.5)`;
-                }
-                
                 if(config.bigBangCooldown % 30 === 0) {
                     const btn = document.getElementById('bigbang-btn');
                     btn.title = `Recarregando... ${Math.ceil(config.bigBangCooldown/60)}s`;
@@ -1402,7 +1196,6 @@
                 document.querySelector('#bigbang-btn .cooldown-overlay').style.width = '0%';
                 document.getElementById('bigbang-btn').title = 'Big Bang (Espaço)';
                 document.getElementById('bigbang-btn').classList.add('bigbang-ready');
-                document.getElementById('bigbang-btn').style.boxShadow = '';
             }
         }
 
@@ -1498,46 +1291,6 @@
             });
         }
 
-        // Aplica efeitos de distorção do Big Bang
-        function applyBigBangEffects() {
-            if (config.cameraShake.timer > 0) {
-                config.cameraShake.timer--;
-                const shakeX = (Math.random() - 0.5) * config.cameraShake.intensity * (config.cameraShake.timer / config.cameraShake.duration);
-                const shakeY = (Math.random() - 0.5) * config.cameraShake.intensity * (config.cameraShake.timer / config.cameraShake.duration);
-                canvas.style.transform = `translate(${shakeX}px, ${shakeY}px)`;
-            } else {
-                canvas.style.transform = '';
-            }
-
-            // Efeitos pós-Big Bang
-            if (config.postBigBangEffects.active) {
-                config.postBigBangEffects.timer--;
-                if (config.postBigBangEffects.timer <= 0) {
-                    config.postBigBangEffects.active = false;
-                }
-                
-                // Adiciona algumas partículas aleatórias periodicamente
-                if (config.postBigBangEffects.timer % 10 === 0) {
-                    const centerX = mouse.x || canvas.width/2;
-                    const centerY = mouse.y || canvas.height/2;
-                    const angle = Math.random() * Math.PI * 2;
-                    
-                    particles.push({
-                        x: centerX + Math.cos(angle) * 50,
-                        y: centerY + Math.sin(angle) * 50,
-                        size: Math.random() * 3 + 1,
-                        color: `hsl(${(Math.random() * 60 + 300) % 360}, 100%, 70%)`,
-                        speedX: Math.cos(angle) * (1 + Math.random() * 3),
-                        speedY: Math.sin(angle) * (1 + Math.random() * 3),
-                        baseSpeedX: 0,
-                        baseSpeedY: 0,
-                        life: 60 + Math.random() * 60,
-                        trail: []
-                    });
-                }
-            }
-        }
-
         // LOOP DO JOGO
         function animate() {
             updateFPSCounter();
@@ -1545,9 +1298,6 @@
             config.gameTime++;
 
             forceSpawn();
-
-            // Aplica efeitos visuais antes de desenhar
-            applyBigBangEffects();
 
             ctx.fillStyle = `rgba(10, 10, 20, ${config.galaxies.current === 'chaos' ? 0.1 : 0.2})`;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1610,30 +1360,6 @@
                         }
                     }
                 });
-
-                // Reação ao Big Bang
-                if (config.isBigBangActive || config.postBigBangEffects.active) {
-                    const centerX = mouse.x || canvas.width/2;
-                    const centerY = mouse.y || canvas.height/2;
-                    const dx = p.x - centerX;
-                    const dy = p.y - centerY;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-                    
-                    if (distance > 0) {
-                        const intensity = config.isBigBangActive ? 1 : 
-                                        config.postBigBangEffects.timer / config.postBigBangEffects.duration;
-                        
-                        // Partículas mais próximas se movem mais rápido
-                        const force = (intensity * 50) / distance;
-                        p.speedX += (dx / distance) * force;
-                        p.speedY += (dy / distance) * force;
-                        
-                        // Muda de cor baseado na distância
-                        if (config.isBigBangActive && distance < 300) {
-                            p.color = `hsl(${(300 - distance) / 300 * 120 + 240}, 100%, 70%)`;
-                        }
-                    }
-                }
 
                 p.x += p.speedX;
                 p.y += p.speedY;
@@ -1751,56 +1477,6 @@
                 if(player.y) player.y = Math.max(10, Math.min(canvas.height - 10, player.y));
             }
         });
-
-        // Funções auxiliares
-        function toggleCoopMode() {
-            config.coopMode = !config.coopMode;
-            config.players[1].active = config.coopMode;
-
-            const coopButton = document.getElementById('menu-coop');
-            coopButton.textContent = `🔵 Cooperativo: ${config.coopMode ? 'ON' : 'OFF'}`;
-
-            if(config.isMobile) {
-                document.getElementById('mobile-controls-p2').style.display = 
-                    config.coopMode ? 'flex' : 'none';
-            }
-
-            config.players[0].radius = config.coopMode ? 120 : 150;
-            config.players[1].radius = 120;
-        }
-
-        function showGalaxyMap() {
-            document.getElementById('galaxy-map').style.display = 'block';
-            renderGalaxyMap();
-            menu.style.display = 'none';
-        }
-
-        function resetGame() {
-            if(confirm("Tem certeza que quer reiniciar o jogo? Todo progresso será perdido.")) {
-                location.reload();
-            }
-        }
-
-        function resetGameState() {
-            config.players.forEach(player => {
-                player.health = player.maxHealth;
-            });
-            config.xp = 0;
-            config.level = 1;
-            enemies = [];
-            initParticles();
-            updateHealthBar();
-            updateXPBar();
-        }
-
-        function updateMenuButtons() {
-            const modes = ['attract', 'repel', 'vortex'];
-            modes.forEach(mode => {
-                const btn = document.getElementById(`menu-${mode}`);
-                btn.style.background = config.players[0].mode === mode ? 
-                    'rgba(74, 0, 224, 0.5)' : 'transparent';
-            });
-        }
 
         // Inicia o jogo
         initParticles();
