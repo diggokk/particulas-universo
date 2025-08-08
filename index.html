@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Universo de Partículas PRO Turbo (Otimizado)</title>
+    <title>Universo de Partículas PRO Turbo - Edição Definitiva (Otimizado)</title>
     <style>
         body {
             margin: 0;
@@ -707,7 +707,7 @@
         };
 
         // =============================================
-        // OTIMIZAÇÕES (NOVO)
+        // OTIMIZAÇÕES IMPLEMENTADAS
         // =============================================
         
         // 1. POOL DE OBJETOS (reutiliza partículas e inimigos)
@@ -752,31 +752,353 @@
             };
         }
 
-        // 2. LIMITE DE ATUALIZAÇÕES POR FRAME
-        const MAX_UPDATES_PER_FRAME = 100; // Máximo de partículas/inimigos atualizados por frame
-        let lastUpdateIndex = 0;
+        // 2. SPATIAL PARTITIONING (para colisões eficientes)
+        const gridSize = 150;
+        const spatialGrid = {};
 
-        // 3. CÁLCULO RÁPIDO DE DISTÂNCIA (sem Math.sqrt)
-        function fastDist(dx, dy) {
-            return (dx * dx + dy * dy);
+        function updateSpatialGrid() {
+            // Reset grid
+            for (let key in spatialGrid) delete spatialGrid[key];
+            
+            // Populate grid
+            particles.forEach((p, i) => {
+                const gridX = Math.floor(p.x / gridSize);
+                const gridY = Math.floor(p.y / gridSize);
+                const key = `${gridX},${gridY}`;
+                
+                if (!spatialGrid[key]) spatialGrid[key] = [];
+                spatialGrid[key].push(i);
+            });
         }
 
-        // 4. CONTROLE DE FPS DINÂMICO
-        const targetFPS = config.isMobile ? 30 : 60;
-        let lastFrameTime = performance.now();
-        let frameDelta = 0;
+        // 3. GAME LOOP OTIMIZADO
+        let lastTime = 0;
+        let fps = 60;
+        let fpsLastChecked = 0;
+        let frameCount = 0;
 
-        // =============================================
-        // INICIALIZAÇÃO (MESMO CÓDIGO ORIGINAL)
-        // =============================================
+        function gameLoop(timestamp) {
+            try {
+                // Calcula deltaTime
+                const deltaTime = timestamp - lastTime;
+                lastTime = timestamp;
+                
+                // Atualiza FPS counter
+                frameCount++;
+                if (timestamp - fpsLastChecked >= 1000) {
+                    fps = Math.round((frameCount * 1000) / (timestamp - fpsLastChecked));
+                    document.getElementById('fps-counter').textContent = `FPS: ${fps}`;
+                    fpsLastChecked = timestamp;
+                    frameCount = 0;
+                }
+                
+                // Processa física em intervalos fixos
+                const physicsSteps = Math.min(Math.floor(deltaTime / (1000/60)), 3); // Limite máximo de 3 steps
+                for (let i = 0; i < physicsSteps; i++) {
+                    updatePhysics(1000/60);
+                }
+                
+                // Renderização
+                render();
+                
+                requestAnimationFrame(gameLoop);
+            } catch (error) {
+                console.error("Erro no game loop:", error);
+                // Tentativa de recuperação
+                initGame();
+            }
+        }
+
+        // 4. SISTEMA DE FÍSICA COMPLETO
+        function updatePhysics(deltaTime) {
+            try {
+                // Atualiza partículas
+                updateParticles(deltaTime);
+                
+                // Atualiza inimigos
+                updateEnemies(deltaTime);
+                
+                // Atualiza sistema de ondas
+                config.wave.update();
+                
+                // Atualiza cooldowns
+                updateCooldowns();
+                
+                // Atualiza grid espacial
+                updateSpatialGrid();
+            } catch (error) {
+                console.error("Erro na física:", error);
+            }
+        }
+
+        function updateParticles(deltaTime) {
+            const player = config.players[0];
+            const updatesThisFrame = Math.min(100, particles.length); // Limite de atualizações por frame
+            
+            for (let i = 0; i < updatesThisFrame; i++) {
+                const idx = (lastUpdateIndex + i) % particles.length;
+                const p = particles[idx];
+                
+                // Movimento básico
+                p.x += p.speedX * (deltaTime / 16.67);
+                p.y += p.speedY * (deltaTime / 16.67);
+                
+                // Interação com o jogador
+                const dx = player.x - p.x;
+                const dy = player.y - p.y;
+                const distSq = dx*dx + dy*dy;
+                
+                if (distSq < player.radius*player.radius) {
+                    // Atração/repulsão baseada no modo
+                    const force = player.mode === 'attract' ? 0.1 : 
+                                 player.mode === 'repel' ? -0.2 : 0;
+                    
+                    if (force !== 0) {
+                        const dist = Math.sqrt(distSq);
+                        const nx = dx/dist;
+                        const ny = dy/dist;
+                        
+                        p.speedX += nx * force * (1 - dist/player.radius) * (deltaTime / 16.67);
+                        p.speedY += ny * force * (1 - dist/player.radius) * (deltaTime / 16.67);
+                    }
+                }
+                
+                // Limites da tela
+                if (p.x < 0 || p.x > canvas.width) p.speedX *= -0.8;
+                if (p.y < 0 || p.y > canvas.height) p.speedY *= -0.8;
+                
+                // Atualiza trilha
+                p.trail.push({x: p.x, y: p.y, size: p.size});
+                if (p.trail.length > 5) p.trail.shift();
+            }
+            
+            lastUpdateIndex = (lastUpdateIndex + updatesThisFrame) % particles.length;
+        }
+
+        function updateEnemies(deltaTime) {
+            enemies.forEach(enemy => {
+                // Comportamento baseado no tipo
+                switch(enemy.behavior) {
+                    case 'hunt':
+                        // Persegue o jogador
+                        const dx = config.players[0].x - enemy.x;
+                        const dy = config.players[0].y - enemy.y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        
+                        if (dist > 0) {
+                            enemy.x += (dx / dist) * enemy.speed * (deltaTime / 16.67);
+                            enemy.y += (dy / dist) * enemy.speed * (deltaTime / 16.67);
+                        }
+                        break;
+                        
+                    case 'teleport':
+                        // Teleporta aleatoriamente
+                        if (Math.random() < 0.01) {
+                            enemy.x = Math.random() * canvas.width;
+                            enemy.y = Math.random() * canvas.height;
+                        }
+                        break;
+                        
+                    default: // 'wander'
+                        // Movimento aleatório
+                        enemy.x += (Math.random() - 0.5) * enemy.speed * (deltaTime / 16.67);
+                        enemy.y += (Math.random() - 0.5) * enemy.speed * (deltaTime / 16.67);
+                }
+                
+                // Mantém dentro da tela
+                enemy.x = Math.max(0, Math.min(canvas.width, enemy.x));
+                enemy.y = Math.max(0, Math.min(canvas.height, enemy.y));
+                
+                // Verifica colisão com jogador
+                const player = config.players[0];
+                const distToPlayer = Math.sqrt(
+                    Math.pow(enemy.x - player.x, 2) + 
+                    Math.pow(enemy.y - player.y, 2)
+                );
+                
+                if (distToPlayer < 30) {
+                    player.health -= 0.5 * (deltaTime / 16.67);
+                    updateHealthBar();
+                }
+            });
+        }
+
+        function updateCooldowns() {
+            // Atualiza cooldown do Big Bang
+            if (config.bigBangCooldown > 0) {
+                config.bigBangCooldown--;
+                const progress = (1 - (config.bigBangCooldown / config.bigBangMaxCooldown)) * 100;
+                document.getElementById('bigbang-progress').style.width = `${progress}%`;
+                document.querySelector('.cooldown-overlay').style.width = `${100 - progress}%`;
+                
+                if (config.bigBangCooldown === 0) {
+                    document.getElementById('bigbang-btn').classList.add('bigbang-ready');
+                }
+            }
+        }
+
+        // 5. SISTEMA DE INIMIGOS COMPLETO
+        let enemies = [];
+
+        function spawnEnemy() {
+            try {
+                const type = weightedRandom(config.enemySystem.types);
+                const isElite = Math.random() < 0.1;
+                
+                const enemy = {
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    type,
+                    health: config.enemySystem.baseHealth + 
+                           (config.wave.number * config.enemySystem.healthIncreasePerLevel),
+                    speed: type.speed * (isElite ? config.enemySystem.eliteMultiplier : 1),
+                    face: type.face[Math.floor(Math.random() * type.face.length)],
+                    isElite,
+                    behavior: type.behavior,
+                    special: type.special
+                };
+                
+                enemies.push(enemy);
+            } catch (error) {
+                console.error("Erro ao spawnar inimigo:", error);
+            }
+        }
+
+        function weightedRandom(options) {
+            const total = Object.values(options).reduce((sum, t) => sum + t.chance, 0);
+            let random = Math.random() * total;
+            
+            for (const [type, data] of Object.entries(options)) {
+                if (random < data.chance) return type;
+                random -= data.chance;
+            }
+            
+            return Object.keys(options)[0]; // Fallback
+        }
+
+        // 6. SISTEMA DE RENDERIZAÇÃO
+        function render() {
+            try {
+                // Limpa o canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Aplica screen shake se necessário
+                const shakeX = config.screenShakeIntensity > 0 ? 
+                    (Math.random() - 0.5) * config.screenShakeIntensity : 0;
+                const shakeY = config.screenShakeIntensity > 0 ? 
+                    (Math.random() - 0.5) * config.screenShakeIntensity : 0;
+                
+                ctx.save();
+                ctx.translate(shakeX, shakeY);
+                
+                // Reduz o screen shake gradualmente
+                if (config.screenShakeIntensity > 0) {
+                    config.screenShakeIntensity -= 0.5;
+                }
+                
+                // Desenha partículas
+                particles.forEach(p => {
+                    // Trilha
+                    p.trail.forEach((trail, i) => {
+                        const alpha = i / p.trail.length;
+                        ctx.fillStyle = p.color.replace(')', `, ${alpha})`).replace('hsl', 'hsla');
+                        ctx.beginPath();
+                        ctx.arc(trail.x, trail.y, trail.size * alpha, 0, Math.PI * 2);
+                        ctx.fill();
+                    });
+                    
+                    // Partícula principal
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+                
+                // Desenha jogador
+                const player = config.players[0];
+                ctx.fillStyle = player.color;
+                ctx.beginPath();
+                ctx.arc(player.x, player.y, 20, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.font = '24px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(player.face, player.x, player.y);
+                
+                // Desenha inimigos
+                enemies.forEach(enemy => {
+                    ctx.fillStyle = enemy.isElite ? 'gold' : 'red';
+                    ctx.beginPath();
+                    ctx.arc(enemy.x, enemy.y, 15, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.font = '20px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(enemy.face, enemy.x, enemy.y);
+                });
+                
+                ctx.restore();
+            } catch (error) {
+                console.error("Erro na renderização:", error);
+            }
+        }
+
+        // 7. FUNÇÕES AUXILIARES
+        function updateHealthBar() {
+            const healthPercent = (config.players[0].health / config.players[0].maxHealth) * 100;
+            document.getElementById('health-bar').style.width = `${healthPercent}%`;
+            document.getElementById('health-bar').style.backgroundColor = 
+                healthPercent > 60 ? '#00F5A0' : 
+                healthPercent > 30 ? '#FFA500' : '#FF0000';
+        }
+
+        function updateXPBar() {
+            const xpNeeded = config.level * 100;
+            const xpPercent = (config.xp / xpNeeded) * 100;
+            document.getElementById('xp-bar').style.width = `${xpPercent}%`;
+            document.getElementById('xp-text').textContent = 
+                `${config.xp}/${xpNeeded} XP (Nível ${config.level})`;
+        }
+
+        function updateStatsPanel() {
+            document.getElementById('stat-level').textContent = config.level;
+            document.getElementById('stat-xp').textContent = `${config.xp}/${config.level * 100}`;
+            document.getElementById('stat-particles').textContent = particles.length;
+            document.getElementById('stat-enemies').textContent = enemies.length;
+            document.getElementById('stat-wave').textContent = config.wave.number;
+        }
+
+        function showUnlockMessage(message) {
+            const el = document.createElement('div');
+            el.className = 'unlock-message';
+            el.textContent = message;
+            document.body.appendChild(el);
+            
+            setTimeout(() => {
+                el.style.opacity = '1';
+                el.style.transform = 'translate(-50%, -50%) scale(1)';
+                
+                setTimeout(() => {
+                    el.style.opacity = '0';
+                    el.style.transform = 'translate(-50%, -50%) scale(0.5)';
+                    
+                    setTimeout(() => {
+                        document.body.removeChild(el);
+                    }, 300);
+                }, 2000);
+            }, 10);
+        }
+
+        // 8. INICIALIZAÇÃO DO JOGO
         const canvas = document.getElementById("canvas");
         const ctx = canvas.getContext("2d");
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
         let particles = [];
-        let enemies = [];
-        let frameCount = 0;
+        let lastUpdateIndex = 0;
 
         function initParticles() {
             particles = [];
@@ -785,52 +1107,120 @@
             }
         }
 
-        // ... (O resto do código original permanece IDÊNTICO, apenas usando as otimizações acima)
-        // Por exemplo, na função animate(), substitua o loop de partículas por:
-
-        function animate(currentTime) {
-            // Controle de FPS
-            frameDelta = currentTime - lastFrameTime;
-            if (frameDelta < (1000 / targetFPS)) {
-                requestAnimationFrame(animate);
-                return;
-            }
-            lastFrameTime = currentTime;
-
-            // Atualiza apenas um subconjunto de partículas por frame
-            const updatesThisFrame = Math.min(MAX_UPDATES_PER_FRAME, particles.length);
-            const endIndex = (lastUpdateIndex + updatesThisFrame) % particles.length;
+        function setupControls() {
+            // Controles do menu
+            document.getElementById('menu-toggle').addEventListener('click', () => {
+                const menu = document.getElementById('menu');
+                menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+            });
             
-            for (let i = 0; i < updatesThisFrame; i++) {
-                const idx = (lastUpdateIndex + i) % particles.length;
-                const p = particles[idx];
-                // ... (lógica de atualização da partícula)
+            // Controles mobile
+            if (config.isMobile) {
+                document.getElementById('mobileAttract').addEventListener('touchstart', () => {
+                    config.players[0].mode = 'attract';
+                });
+                
+                document.getElementById('mobileRepel').addEventListener('touchstart', () => {
+                    config.players[0].mode = 'repel';
+                });
+                
+                document.getElementById('mobileVortex').addEventListener('touchstart', () => {
+                    config.players[0].mode = 'vortex';
+                });
+                
+                // Adiciona event listeners para touch end
+                ['mobileAttract', 'mobileRepel', 'mobileVortex'].forEach(id => {
+                    document.getElementById(id).addEventListener('touchend', () => {
+                        config.players[0].mode = 'normal';
+                    });
+                });
             }
-            lastUpdateIndex = endIndex;
-
-            // Restante do código original...
-            requestAnimationFrame(animate);
+            
+            // Controles de teclado
+            window.addEventListener('keydown', (e) => {
+                switch(e.key) {
+                    case '1': config.players[0].mode = 'attract'; break;
+                    case '2': config.players[0].mode = 'repel'; break;
+                    case '3': config.players[0].mode = 'vortex'; break;
+                    case ' ': activateBigBang(); break;
+                }
+            });
+            
+            window.addEventListener('keyup', (e) => {
+                if (['1', '2', '3'].includes(e.key)) {
+                    config.players[0].mode = 'normal';
+                }
+            });
+            
+            // Mouse/touch
+            canvas.addEventListener('mousemove', (e) => {
+                config.players[0].x = e.clientX;
+                config.players[0].y = e.clientY;
+            });
+            
+            canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                config.players[0].x = touch.clientX;
+                config.players[0].y = touch.clientY;
+            }, { passive: false });
         }
 
-        // =============================================
-        // INICIALIZAR JOGO (MESMO CÓDIGO)
-        // =============================================
-        function initGame() {
-            config.players[0].x = canvas.width/2;
-            config.players[0].y = canvas.height/2;
-            setupControls();
-            galaxies[config.galaxies.current].init();
-            updateHealthBar();
+        function activateBigBang() {
+            if (config.bigBangCooldown > 0) return;
+            
+            config.bigBangCooldown = config.bigBangMaxCooldown;
+            document.getElementById('bigbang-btn').classList.remove('bigbang-ready');
+            
+            // Efeito visual
+            config.screenShakeIntensity = 20;
+            
+            // Remove inimigos
+            enemies.forEach(enemy => {
+                config.xp += enemy.isElite ? 5 : 2;
+                config.enemiesDestroyed++;
+            });
+            enemies = [];
+            
+            // Atualiza UI
             updateXPBar();
             updateStatsPanel();
-            requestAnimationFrame(animate);
+            
+            // Verifica se subiu de nível
+            const xpNeeded = config.level * 100;
+            if (config.xp >= xpNeeded) {
+                config.level++;
+                config.xp -= xpNeeded;
+                showUnlockMessage(`Nível ${config.level} alcançado!`);
+                updateXPBar();
+                updateStatsPanel();
+            }
+        }
+
+        function initGame() {
+            try {
+                config.players[0].x = canvas.width/2;
+                config.players[0].y = canvas.height/2;
+                
+                initParticles();
+                setupControls();
+                updateHealthBar();
+                updateXPBar();
+                updateStatsPanel();
+                
+                // Inicia o game loop
+                lastTime = performance.now();
+                requestAnimationFrame(gameLoop);
+            } catch (error) {
+                console.error("Erro na inicialização:", error);
+                setTimeout(initGame, 1000); // Tenta reiniciar após 1s
+            }
         }
 
         window.addEventListener('load', initGame);
         window.addEventListener('resize', () => {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
-            galaxies[config.galaxies.current].init();
         });
     </script>
 </body>
