@@ -1104,7 +1104,7 @@
                         this.spawned = 0;
                         showUnlockMessage(`Onda ${this.number} começando!`);
                         updateStatsPanel();
-                        updateQuest('wave5', this.number);
+                        updateQuest('wave5', 1);
                     }
                 }
             },
@@ -1167,13 +1167,7 @@
                 ],
                 completed: []
             },
-            soundEffects: {
-                absorb: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3'),
-                enemyDefeat: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-explosion-impact-1684.mp3'),
-                levelUp: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-unlock-game-notification-253.mp3'),
-                bigBang: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-big-explosion-2814.mp3'),
-                gameOver: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-arcade-retro-game-over-213.mp3')
-            },
+            soundEffects: {},
             skills: {
                 unlocked: [],
                 tree: {
@@ -1456,17 +1450,15 @@
                             config.xp += xpGain;
                             config.particlesAbsorbed++;
                             
-                            // Efeito sonoro
-                            if (config.soundEnabled) {
-                                config.soundEffects.absorb.currentTime = 0;
-                                config.soundEffects.absorb.play();
-                            }
+                            // Toca som
+                            playSound('absorb');
                             
                             // Remove a partícula
                             particlePool.push(particles.splice(idx, 1)[0]);
                             updateXPBar();
                             updateStatsPanel();
                             updateQuest('absorb100');
+                            checkLevelUp();
                             continue; // Pula para a próxima partícula
                         }
                     }
@@ -1522,8 +1514,7 @@
             message.style.opacity = '1';
             
             // Toca o som
-            config.soundEffects.bigBang.currentTime = 0;
-            config.soundEffects.bigBang.play();
+            playSound('bigBang');
             
             // Fase 1: Preparação (3 segundos)
             setTimeout(() => {
@@ -1605,15 +1596,7 @@
                     config.gamePaused = false;
                     
                     // Verifica se subiu de nível
-                    const xpNeeded = config.level * 100;
-                    if (config.xp >= xpNeeded) {
-                        config.level++;
-                        config.xp -= xpNeeded;
-                        showUnlockMessage(`Nível ${config.level} alcançado!`);
-                        updateXPBar();
-                        updateStatsPanel();
-                        checkBigBangUnlock();
-                    }
+                    checkLevelUp();
                     
                     // Esconde o botão até o próximo desbloqueio se for o caso
                     if (config.level < config.bigBang.nextUnlockLevel) {
@@ -1835,7 +1818,21 @@
                 sound.muted = !config.soundEnabled;
             }
             
+            // Armazena preferência
+            localStorage.setItem('soundEnabled', config.soundEnabled);
+            
             showUnlockMessage(`Som ${config.soundEnabled ? 'ligado' : 'desligado'}`);
+        }
+
+        function playSound(soundName) {
+            try {
+                if (config.soundEnabled && config.soundEffects[soundName]) {
+                    config.soundEffects[soundName].currentTime = 0;
+                    config.soundEffects[soundName].play().catch(e => console.log("Erro ao tocar som:", e));
+                }
+            } catch (error) {
+                console.error("Erro no sistema de som:", error);
+            }
         }
 
         // 5. SISTEMA DE GALÁXIAS
@@ -1955,21 +1952,32 @@
             const quest = config.quests.active.find(q => q.id === questId);
             if (quest) {
                 quest.current += amount;
+                
+                // Atualiza a UI imediatamente
+                updateQuestUI();
+                
                 if (quest.current >= quest.target) {
                     config.xp += quest.reward;
                     config.quests.completed.push(quest.id);
                     config.quests.active = config.quests.active.filter(q => q.id !== questId);
                     showUnlockMessage(`Missão completa! +${quest.reward}XP`);
                     
-                    // Adicionar nova missão
+                    // Verifica se subiu de nível com a recompensa
+                    checkLevelUp();
+                    
+                    // Adicionar nova missão se for a de absorver partículas
                     if (quest.id === 'absorb100') {
                         config.quests.active.push(
-                            { id: 'absorb500', target: 500, current: 0, reward: 250, title: "Absorver 500 partículas" }
+                            { id: 'absorb500', target: 500, current: config.particlesAbsorbed, reward: 250, title: "Absorver 500 partículas" }
                         );
+                        updateQuestUI();
                     }
-                    
-                    updateXPBar();
-                    updateQuestUI();
+                    else if (quest.id === 'defeat20') {
+                        config.quests.active.push(
+                            { id: 'defeat50', target: 50, current: config.enemiesDestroyed, reward: 300, title: "Derrotar 50 inimigos" }
+                        );
+                        updateQuestUI();
+                    }
                 }
             }
         }
@@ -1999,8 +2007,7 @@
             config.gamePaused = true;
             
             // Toca som de game over
-            config.soundEffects.gameOver.currentTime = 0;
-            config.soundEffects.gameOver.play();
+            playSound('gameOver');
             
             // Preenche estatísticas
             document.getElementById('go-level').textContent = config.level;
@@ -2049,6 +2056,14 @@
             config.wave.enemiesToSpawn = 5;
             config.xp = 0;
             config.level = 1;
+            config.particlesAbsorbed = 0;
+            config.enemiesDestroyed = 0;
+            config.skillPoints = 0;
+            
+            // Reseta habilidades
+            for (const skill of Object.values(config.skills.tree)) {
+                skill.currentLevel = 0;
+            }
             
             // Atualiza UI
             updateHealthBar();
@@ -2056,11 +2071,25 @@
             updateStatsPanel();
             updateQuestUI();
             
+            // Reinicia missões
+            config.quests.active = [
+                { id: 'absorb100', target: 100, current: 0, reward: 50, title: "Absorver 100 partículas" },
+                { id: 'defeat20', target: 20, current: 0, reward: 100, title: "Derrotar 20 inimigos" },
+                { id: 'wave5', target: 5, current: 1, reward: 200, title: "Alcançar onda 5" }
+            ];
+            config.quests.completed = [];
+            
             // Reinicia o loop se necessário
             if (!gameLoopRunning) {
                 lastTime = performance.now();
                 requestAnimationFrame(gameLoop);
             }
+        }
+
+        function resetGame() {
+            restartGame();
+            document.getElementById('menu').style.display = 'none';
+            showUnlockMessage("Jogo reiniciado!");
         }
 
         // 9. SISTEMA DE UI
@@ -2081,6 +2110,23 @@
             }
         }
 
+        function checkLevelUp() {
+            const xpNeeded = config.level * 100;
+            if (config.xp >= xpNeeded) {
+                config.level++;
+                config.xp -= xpNeeded;
+                config.skillPoints++;
+                showUnlockMessage(`Nível ${config.level} alcançado! +1 Ponto de Habilidade`);
+                
+                // Toca som de level up
+                playSound('levelUp');
+                
+                updateXPBar();
+                updateStatsPanel();
+                checkBigBangUnlock();
+            }
+        }
+
         function updateXPBar() {
             const xpNeeded = config.level * 100;
             const xpPercent = (config.xp / xpNeeded) * 100;
@@ -2092,7 +2138,7 @@
         function updateStatsPanel() {
             document.getElementById('stat-level').textContent = config.level;
             document.getElementById('stat-xp').textContent = `${config.xp}/${config.level * 100}`;
-            document.getElementById('stat-particles').textContent = particles.length;
+            document.getElementById('stat-particles').textContent = config.particlesAbsorbed;
             document.getElementById('stat-enemies').textContent = enemies.length;
             document.getElementById('stat-wave').textContent = config.wave.number;
         }
@@ -2118,7 +2164,34 @@
             }, 10);
         }
 
-        // 10. RENDERIZAÇÃO
+        // 10. INICIALIZAÇÃO DO SISTEMA DE SOM
+        function initSoundSystem() {
+            // Configuração inicial dos sons
+            const soundPaths = {
+                absorb: 'https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3',
+                enemyDefeat: 'https://assets.mixkit.co/sfx/preview/mixkit-explosion-impact-1684.mp3',
+                levelUp: 'https://assets.mixkit.co/sfx/preview/mixkit-unlock-game-notification-253.mp3',
+                bigBang: 'https://assets.mixkit.co/sfx/preview/mixkit-big-explosion-2814.mp3',
+                gameOver: 'https://assets.mixkit.co/sfx/preview/mixkit-arcade-retro-game-over-213.mp3'
+            };
+
+            // Carrega os sons
+            for (const [key, url] of Object.entries(soundPaths)) {
+                config.soundEffects[key] = new Audio(url);
+                config.soundEffects[key].volume = 0.5;
+                config.soundEffects[key].muted = !config.soundEnabled;
+                config.soundEffects[key].load(); // Pré-carrega o áudio
+            }
+
+            // Carrega preferência salva
+            const savedSoundPref = localStorage.getItem('soundEnabled');
+            if (savedSoundPref !== null) {
+                config.soundEnabled = savedSoundPref === 'true';
+            }
+            document.getElementById('sound-status').textContent = config.soundEnabled ? 'ON' : 'OFF';
+        }
+
+        // 11. RENDERIZAÇÃO
         function render() {
             try {
                 // Limpa o canvas
@@ -2203,7 +2276,7 @@
             }
         }
 
-        // 11. GAME LOOP
+        // 12. GAME LOOP
         function gameLoop(timestamp) {
             try {
                 // Calcula deltaTime
@@ -2258,7 +2331,7 @@
             config.wave.update();
         }
 
-        // 12. INICIALIZAÇÃO DO JOGO
+        // 13. INICIALIZAÇÃO DO JOGO
         function initGame() {
             try {
                 canvas.width = window.innerWidth;
@@ -2267,6 +2340,7 @@
                 config.players[0].x = canvas.width/2;
                 config.players[0].y = canvas.height/2;
                 
+                initSoundSystem();
                 initParticles();
                 setupControls();
                 updateHealthBar();
@@ -2275,11 +2349,10 @@
                 updateQuestUI();
                 updateBigBangRequirement();
                 
-                // Configura sons
-                for (const sound of Object.values(config.soundEffects)) {
-                    sound.volume = 0.5;
-                    sound.muted = !config.soundEnabled;
-                }
+                // Atualiza missões com progresso atual
+                updateQuest('absorb100', 0);
+                updateQuest('defeat20', 0);
+                updateQuest('wave5', 0);
                 
                 // Inicia o game loop
                 lastTime = performance.now();
