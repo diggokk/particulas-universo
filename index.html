@@ -791,6 +791,187 @@
             transition: width 0.3s;
         }
 
+        /* Modo História */
+        .story-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 10000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        .cutscene {
+            width: 80%;
+            max-width: 800px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .story-npc {
+            font-size: 100px;
+            margin-bottom: 30px;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .story-dialog-box {
+            background: rgba(0,0,0,0.7);
+            border: 2px solid #4A00E0;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(74,0,224,0.5);
+        }
+        
+        .story-dialog-text {
+            font-size: 20px;
+            margin-bottom: 20px;
+            min-height: 100px;
+            line-height: 1.5;
+        }
+        
+        .next-dialog-btn {
+            background: linear-gradient(145deg, #8e2de2, #4a00e0);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .next-dialog-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 10px rgba(142,45,226,0.5);
+        }
+        
+        /* NPC Fixo */
+        .npc-container {
+            position: fixed;
+            left: 20px;
+            bottom: 20px;
+            display: flex;
+            align-items: flex-end;
+            gap: 10px;
+            z-index: 9999;
+            pointer-events: none;
+        }
+        
+        .npc-face {
+            font-size: 50px;
+            filter: drop-shadow(0 0 10px rgba(100, 0, 255, 0.7));
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .npc-dialog {
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #4A00E0;
+            border-radius: 15px;
+            padding: 10px 15px;
+            max-width: 250px;
+            color: white;
+            font-family: 'Arial', sans-serif;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        
+        .npc-dialog.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Skins Modal */
+        .skins-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .skins-modal-content {
+            background: rgba(0,0,0,0.95);
+            padding: 30px;
+            border-radius: 15px;
+            color: white;
+            max-width: 800px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 2px solid #4A00E0;
+            box-shadow: 0 0 30px rgba(74,0,224,0.5);
+        }
+        
+        .skins-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .skin-card {
+            background: rgba(74,0,224,0.2);
+            border: 1px solid #4A00E0;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .skin-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(74,0,224,0.5);
+        }
+        
+        .skin-card.selected {
+            border-color: #00F5A0;
+            box-shadow: 0 0 15px rgba(0,245,160,0.5);
+        }
+        
+        .skin-card.premium {
+            border-color: gold;
+            background: rgba(255,215,0,0.1);
+        }
+        
+        .skin-card.locked {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .skin-emoji {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+        
+        .skin-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .skin-type {
+            font-size: 12px;
+            color: #aaa;
+        }
+        
+        .skin-requirement {
+            font-size: 11px;
+            color: #ff5555;
+            margin-top: 5px;
+        }
+
         @media (max-width: 768px) {
             .mobile-controls { display: flex; }
             #menu {
@@ -840,6 +1021,17 @@
                 left: 10px;
                 max-width: 180px;
             }
+            .npc-container {
+                left: 10px;
+                bottom: 100px;
+            }
+            .npc-face {
+                font-size: 40px;
+            }
+            .npc-dialog {
+                max-width: 200px;
+                font-size: 14px;
+            }
         }
     </style>
 </head>
@@ -882,6 +1074,10 @@
             <div class="menu-item" data-action="showSkills">
                 <span class="menu-icon">🌟</span> 
                 <span class="menu-text">Habilidades</span>
+            </div>
+            <div class="menu-item" data-action="showSkins">
+                <span class="menu-icon">🎭</span> 
+                <span class="menu-text">Skins</span>
             </div>
         </div>
 
@@ -982,6 +1178,34 @@
     <div id="big-bang-message" class="big-bang-message">O universo irá recomeçar...</div>
     <div id="supernova" class="supernova"></div>
     <div id="shockwave" class="shockwave"></div>
+
+    <!-- Modo História -->
+    <div id="story-mode" class="story-container" style="display:none;">
+        <div class="cutscene">
+            <div class="story-npc" id="story-npc">👁️</div>
+            <div class="story-dialog-box">
+                <div class="story-dialog-text" id="story-dialog-text"></div>
+                <button class="next-dialog-btn" id="next-dialog-btn">Continuar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NPC Fixo -->
+    <div id="cosmic-npc" class="npc-container">
+        <div class="npc-face">👁️</div>
+        <div class="npc-dialog" id="npc-dialog">
+            <span id="npc-text">...</span>
+        </div>
+    </div>
+
+    <!-- Modal de Skins -->
+    <div id="skins-modal" class="skins-modal" style="display:none;">
+        <div class="skins-modal-content">
+            <h2>Selecione sua Skin</h2>
+            <div class="skins-grid" id="skins-grid"></div>
+            <button id="close-skins">Fechar</button>
+        </div>
+    </div>
 
     <canvas id="canvas"></canvas>
 
@@ -1209,7 +1433,88 @@
                     }
                 }
             },
-            skillPoints: 0
+            skillPoints: 0,
+            story: {
+                enabled: true,
+                currentScene: 0,
+                scenes: [
+                    {
+                        npc: "👁️",
+                        text: "Bem-vindo, viajante cósmico... Eu sou o Observador. O universo está em perigo e só você pode restaurar o equilíbrio.",
+                        background: "radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%)"
+                    },
+                    {
+                        npc: "👁️",
+                        text: "Use seus poderes de atração e repulsão para coletar partículas de energia. Elas são essenciais para fortalecer suas habilidades.",
+                        background: "radial-gradient(ellipse at bottom, #0f0c29 0%, #302b63 50%, #24243e 100%)"
+                    },
+                    {
+                        npc: "👁️",
+                        text: "Cuidado com as entidades cósmicas hostis! Elas tentarão impedir sua missão. Derrote-as para avançar para novas galáxias.",
+                        background: "radial-gradient(ellipse at bottom, #200122 0%, #6f0000 100%)"
+                }
+                ]
+            },
+            npc: {
+                active: true,
+                currentDialog: 0,
+                dialogs: [
+                    "Ah, finalmente acordou... Tava demorando, hein?",
+                    "Olha só, um novato no universo. Vamos ver quanto tempo você dura...",
+                    "Cuidado com essas partículas, elas são mais espertas do que parecem!",
+                    "Tá com medo? Eu também estaria...",
+                    "Se você chegar no nível 50, algo MUITO grande te espera...",
+                    "Você realmente acha que está no controle? Kkk...",
+                    "Pressione 1, 2 ou 3... se conseguir lembrar qual é qual.",
+                    "Já tentou o Big Bang? Ou ainda não é digno?",
+                    "Os inimigos estão rindo de você... literalmente.",
+                    "Você é lento... mas pelo menos é consistente."
+                ],
+                bossDialog: "🏆 PARABÉNS! Agora o verdadeiro desafio começa... 🐉"
+            },
+            skins: {
+                available: [
+                    {
+                        id: 'default',
+                        name: 'Viajante',
+                        emoji: '🐶',
+                        type: 'normal',
+                        unlocked: true
+                    },
+                    {
+                        id: 'cosmic',
+                        name: 'Ser Cósmico',
+                        emoji: '👽',
+                        type: 'premium',
+                        unlocked: false,
+                        unlockCondition: 'Alcançar nível 10'
+                    },
+                    {
+                        id: 'nebula',
+                        name: 'Nebulosa',
+                        emoji: '🌌',
+                        type: 'normal',
+                        unlocked: true
+                    },
+                    {
+                        id: 'blackhole',
+                        name: 'Buraco Negro',
+                        emoji: '⚫',
+                        type: 'premium',
+                        unlocked: false,
+                        unlockCondition: 'Derrotar 100 inimigos'
+                    },
+                    {
+                        id: 'ancient',
+                        name: 'Antigo',
+                        emoji: '👁️',
+                        type: 'premium',
+                        unlocked: false,
+                        unlockCondition: 'Completar todas as missões'
+                    }
+                ],
+                current: 'default'
+            }
         };
 
         // =============================================
@@ -1595,7 +1900,7 @@
                     config.bigBang.active = false;
                     config.gamePaused = false;
                     
-                    // Verifica se subiu de nível
+                    // Verifica se subiu de nível com a recompensa
                     checkLevelUp();
                     
                     // Esconde o botão até o próximo desbloqueio se for o caso
@@ -1670,6 +1975,10 @@
                         
                     case 'showSkills':
                         showSkillTree();
+                        break;
+                        
+                    case 'showSkins':
+                        showSkinsModal();
                         break;
                         
                     case 'resetGame':
@@ -1771,6 +2080,14 @@
 
             document.getElementById('close-skill-tree').addEventListener('click', () => {
                 document.getElementById('skill-tree').style.display = 'none';
+            });
+
+            // Modo História
+            document.getElementById('next-dialog-btn').addEventListener('click', nextStoryDialog);
+
+            // Skins Modal
+            document.getElementById('close-skins').addEventListener('click', () => {
+                document.getElementById('skins-modal').style.display = 'none';
             });
         }
 
@@ -2124,6 +2441,8 @@
                 updateXPBar();
                 updateStatsPanel();
                 checkBigBangUnlock();
+                checkSkinUnlocks();
+                checkForBossDialog();
             }
         }
 
@@ -2191,7 +2510,153 @@
             document.getElementById('sound-status').textContent = config.soundEnabled ? 'ON' : 'OFF';
         }
 
-        // 11. RENDERIZAÇÃO
+        // 11. MODO HISTÓRIA
+        function startStoryMode() {
+            if (!config.story.enabled) return;
+            
+            config.gamePaused = true;
+            document.getElementById('story-mode').style.display = 'flex';
+            showStoryScene(0);
+        }
+
+        function showStoryScene(index) {
+            if (index >= config.story.scenes.length) {
+                endStoryMode();
+                return;
+            }
+            
+            config.story.currentScene = index;
+            const scene = config.story.scenes[index];
+            
+            document.getElementById('story-npc').textContent = scene.npc;
+            document.getElementById('story-dialog-text').textContent = scene.text;
+            document.body.style.background = scene.background;
+        }
+
+        function nextStoryDialog() {
+            showStoryScene(config.story.currentScene + 1);
+        }
+
+        function endStoryMode() {
+            document.getElementById('story-mode').style.display = 'none';
+            config.gamePaused = false;
+            config.story.enabled = false;
+            initParticles();
+        }
+
+        // 12. NPC FIXO
+        function showNPCDialog() {
+            if (!config.npc.active || config.level >= 50) return;
+
+            const npcDialog = document.getElementById("npc-dialog");
+            const npcText = document.getElementById("npc-text");
+            
+            npcDialog.classList.add("show");
+
+            // Escolhe um diálogo aleatório (exceto o atual)
+            let randomDialog;
+            do {
+                randomDialog = Math.floor(Math.random() * config.npc.dialogs.length);
+            } while (randomDialog === config.npc.currentDialog);
+
+            config.npc.currentDialog = randomDialog;
+            npcText.textContent = config.npc.dialogs[randomDialog];
+
+            // Esconde o diálogo após 5 segundos
+            setTimeout(() => {
+                npcDialog.classList.remove("show");
+            }, 5000);
+        }
+
+        function checkForBossDialog() {
+            if (config.level === 50 && config.npc.active) {
+                const npcText = document.getElementById("npc-text");
+                const npcDialog = document.getElementById("npc-dialog");
+                
+                npcText.textContent = config.npc.bossDialog;
+                npcDialog.classList.add("show");
+                
+                setTimeout(() => {
+                    npcDialog.classList.remove("show");
+                    config.npc.active = false; // NPC desaparece após o Boss
+                }, 7000);
+            }
+        }
+
+        // 13. SISTEMA DE SKINS
+        function showSkinsModal() {
+            const modal = document.getElementById('skins-modal');
+            const grid = document.getElementById('skins-grid');
+            
+            grid.innerHTML = '';
+            
+            config.skins.available.forEach(skin => {
+                const skinCard = document.createElement('div');
+                skinCard.className = `skin-card ${skin.type} ${skin.id === config.skins.current ? 'selected' : ''} ${skin.unlocked ? '' : 'locked'}`;
+                skinCard.innerHTML = `
+                    <div class="skin-emoji">${skin.emoji}</div>
+                    <div class="skin-name">${skin.name}</div>
+                    <div class="skin-type">${skin.type.toUpperCase()}</div>
+                    ${!skin.unlocked ? `<div class="skin-requirement">${skin.unlockCondition}</div>` : ''}
+                `;
+                
+                if (skin.unlocked) {
+                    skinCard.addEventListener('click', () => {
+                        selectSkin(skin.id);
+                    });
+                }
+                
+                grid.appendChild(skinCard);
+            });
+            
+            modal.style.display = 'flex';
+        }
+
+        function selectSkin(skinId) {
+            const skin = config.skins.available.find(s => s.id === skinId);
+            if (!skin || !skin.unlocked) return;
+            
+            config.skins.current = skinId;
+            config.players[0].face = skin.emoji;
+            
+            // Atualiza UI
+            document.querySelectorAll('.skin-card').forEach(card => {
+                card.classList.remove('selected');
+                if (card.querySelector('.skin-name').textContent === skin.name) {
+                    card.classList.add('selected');
+                }
+            });
+            
+            showUnlockMessage(`Skin "${skin.name}" selecionada!`);
+        }
+
+        function checkSkinUnlocks() {
+            config.skins.available.forEach(skin => {
+                if (skin.unlocked) return;
+                
+                let unlocked = false;
+                
+                if (skin.unlockCondition.includes('nível') && 
+                    config.level >= parseInt(skin.unlockCondition.match(/nível (\d+)/)[1])) {
+                    unlocked = true;
+                }
+                else if (skin.unlockCondition.includes('inimigos') && 
+                         config.enemiesDestroyed >= parseInt(skin.unlockCondition.match(/Derrotar (\d+) inimigos/)[1])) {
+                    unlocked = true;
+                }
+                else if (skin.unlockCondition.includes('missões') && 
+                         config.quests.active.length === 0) {
+                    unlocked = true;
+                }
+                
+                if (unlocked && !skin.unlocked) {
+                    skin.unlocked = true;
+                    showUnlockMessage(`Skin desbloqueada: ${skin.name}!`);
+                }
+            });
+        }
+
+        // 14. RENDERIZAÇÃO
         function render() {
             try {
                 // Limpa o canvas
@@ -2276,7 +2741,7 @@
             }
         }
 
-        // 12. GAME LOOP
+        // 15. GAME LOOP
         function gameLoop(timestamp) {
             try {
                 // Calcula deltaTime
@@ -2331,7 +2796,7 @@
             config.wave.update();
         }
 
-        // 13. INICIALIZAÇÃO DO JOGO
+        // 16. INICIALIZAÇÃO DO JOGO
         function initGame() {
             try {
                 canvas.width = window.innerWidth;
@@ -2341,7 +2806,6 @@
                 config.players[0].y = canvas.height/2;
                 
                 initSoundSystem();
-                initParticles();
                 setupControls();
                 updateHealthBar();
                 updateXPBar();
@@ -2353,6 +2817,18 @@
                 updateQuest('absorb100', 0);
                 updateQuest('defeat20', 0);
                 updateQuest('wave5', 0);
+                
+                // Inicia diálogos do NPC
+                setInterval(showNPCDialog, 5000 + Math.random() * 10000);
+                
+                // Inicia com o modo história se for a primeira vez
+                const hasPlayedBefore = localStorage.getItem('hasPlayedBefore');
+                if (!hasPlayedBefore) {
+                    startStoryMode();
+                    localStorage.setItem('hasPlayedBefore', 'true');
+                } else {
+                    initParticles();
+                }
                 
                 // Inicia o game loop
                 lastTime = performance.now();
