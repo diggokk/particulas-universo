@@ -518,6 +518,7 @@
             z-index: 50;
             border: 1px solid rgba(74, 0, 224, 0.3);
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            max-width: 180px;
         }
 
         .skill {
@@ -756,7 +757,7 @@
 
         .quest-panel {
             position: fixed;
-            top: 50px;
+            top: 150px;
             left: 10px;
             background: rgba(0,0,0,0.7);
             padding: 10px;
@@ -765,6 +766,7 @@
             font-size: 12px;
             max-width: 200px;
             border-left: 3px solid #4A00E0;
+            z-index: 50;
         }
 
         .quest-item {
@@ -826,6 +828,17 @@
             }
             .big-bang-message {
                 font-size: 2rem;
+            }
+            #stats-panel {
+                top: 60px;
+                left: 10px;
+                max-width: 160px;
+                font-size: 11px;
+            }
+            .quest-panel {
+                top: 220px;
+                left: 10px;
+                max-width: 180px;
             }
         }
     </style>
@@ -1201,7 +1214,8 @@
                         requires: ["attractRadius:3"] 
                     }
                 }
-            }
+            },
+            skillPoints: 0
         };
 
         // =============================================
@@ -1419,19 +1433,49 @@
                 const dx = player.x - p.x;
                 const dy = player.y - p.y;
                 const distSq = dx*dx + dy*dy;
+                const dist = Math.sqrt(distSq);
                 
                 if (distSq < player.radius*player.radius) {
-                    // Atração/repulsão baseada no modo
-                    const force = player.mode === 'attract' ? 0.1 : 
-                                 player.mode === 'repel' ? -0.2 : 0;
+                    // Efeito de sucção quando muito próximo (20% do raio)
+                    const suctionRadius = player.radius * 0.2;
+                    const isVeryClose = dist < suctionRadius;
                     
-                    if (force !== 0) {
-                        const dist = Math.sqrt(distSq);
+                    // Modo atração - efeito mais forte quando perto
+                    if (player.mode === 'attract') {
+                        const force = isVeryClose ? 0.5 : 0.1; // Mais forte quando perto
                         const nx = dx/dist;
                         const ny = dy/dist;
                         
                         p.speedX += nx * force * (1 - dist/player.radius) * (deltaTime / 16.67);
                         p.speedY += ny * force * (1 - dist/player.radius) * (deltaTime / 16.67);
+                        
+                        // Absorve a partícula se estiver muito perto
+                        if (isVeryClose && dist < player.size * 0.8) {
+                            // Ganha XP baseado no tipo de partícula
+                            const xpGain = p.xpValue || 1;
+                            config.xp += xpGain;
+                            config.particlesAbsorbed++;
+                            
+                            // Efeito sonoro
+                            if (config.soundEnabled) {
+                                config.soundEffects.absorb.currentTime = 0;
+                                config.soundEffects.absorb.play();
+                            }
+                            
+                            // Remove a partícula
+                            particlePool.push(particles.splice(idx, 1)[0]);
+                            updateXPBar();
+                            updateStatsPanel();
+                            updateQuest('absorb100');
+                            continue; // Pula para a próxima partícula
+                        }
+                    }
+                    // Modo repulsão (mantido igual)
+                    else if (player.mode === 'repel') {
+                        const nx = dx/dist;
+                        const ny = dy/dist;
+                        p.speedX -= nx * 0.2 * (1 - dist/player.radius) * (deltaTime / 16.67);
+                        p.speedY -= ny * 0.2 * (1 - dist/player.radius) * (deltaTime / 16.67);
                     }
                 }
                 
