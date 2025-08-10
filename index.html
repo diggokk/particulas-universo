@@ -12,6 +12,7 @@
             touch-action: manipulation;
             font-family: 'Arial', sans-serif;
             user-select: none;
+            transition: filter 0.3s;
         }
 
         canvas {
@@ -413,7 +414,7 @@
             letter-spacing: 1px;
             transition: all 0.3s ease;
             overflow: hidden;
-            display: none; /* Inicialmente escondido */
+            display: none;
         }
 
         #bigbang-btn::before {
@@ -972,6 +973,56 @@
             margin-top: 5px;
         }
 
+        /* Estilos para o Boss */
+        .boss-health-bar {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 300px;
+            height: 20px;
+            background: rgba(0,0,0,0.7);
+            border: 2px solid #4A00E0;
+            border-radius: 10px;
+            overflow: hidden;
+            z-index: 100;
+        }
+
+        .boss-health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #FF0000, #8B00FF);
+            width: 100%;
+            transition: width 0.3s;
+        }
+
+        .boss-phase-text {
+            position: fixed;
+            top: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 18px;
+            text-align: center;
+            text-shadow: 0 0 10px #FF00FF;
+            z-index: 100;
+        }
+
+        /* Efeito de distorção cósmica */
+        @keyframes cosmicDistortion {
+            0% { filter: hue-rotate(0deg) blur(0px); }
+            50% { filter: hue-rotate(180deg) blur(2px); }
+            100% { filter: hue-rotate(360deg) blur(0px); }
+        }
+
+        .boss-active {
+            animation: cosmicDistortion 10s infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
         @media (max-width: 768px) {
             .mobile-controls { display: flex; }
             #menu {
@@ -1030,6 +1081,13 @@
             }
             .npc-dialog {
                 max-width: 200px;
+                font-size: 14px;
+            }
+            .boss-health-bar {
+                width: 250px;
+                height: 15px;
+            }
+            .boss-phase-text {
                 font-size: 14px;
             }
         }
@@ -1101,6 +1159,12 @@
         <div class="cooldown-overlay"></div>
         <div class="bigbang-level-requirement" id="bigbang-requirement"></div>
     </div>
+
+    <!-- Barra de vida do Boss -->
+    <div id="boss-health-bar" class="boss-health-bar" style="display: none;">
+        <div id="boss-health-fill" class="boss-health-fill"></div>
+    </div>
+    <div id="boss-phase-text" class="boss-phase-text" style="display: none;"></div>
 
     <!-- Controles mobile -->
     <div class="mobile-controls">
@@ -1216,6 +1280,16 @@
         const config = {
             particleCount: 150,
             mouseRadius: 150,
+            particleRespawn: {
+                minParticles: 50,
+                respawnAmount: 30,
+                checkInterval: 60
+            },
+            particleOverflow: {
+                active: true,
+                burstMultiplier: 0.3,
+                delay: 10
+            },
             galaxies: {
                 unlocked: ['classic'],
                 current: 'classic',
@@ -1257,6 +1331,43 @@
                 active: false
             },
             isBigBangActive: false,
+            boss: {
+                active: false,
+                phase: 1,
+                health: 500,
+                maxHealth: 500,
+                size: 80,
+                position: { x: 0, y: 0 },
+                appearance: {
+                    baseColor: "#4b0082",
+                    eyeColor: "#00ffff",
+                    tentacles: 8,
+                    aura: {
+                        color1: "#ff00ff",
+                        color2: "#9400d3",
+                        pulseSpeed: 0.05
+                    }
+                },
+                attacks: {
+                    blackHoles: { cooldown: 180, lastUsed: 0 },
+                    cosmicWave: { cooldown: 300, lastUsed: 0 },
+                    singularity: { 
+                        cooldown: 400, 
+                        lastUsed: 0,
+                        duration: 180 
+                    },
+                    voidTentacles: {
+                        cooldown: 250,
+                        lastUsed: 0,
+                        count: 5
+                    }
+                },
+                realityCollapse: {
+                    active: false,
+                    timer: 0,
+                    duration: 600
+                }
+            },
             players: [
                 {
                     id: 1,
@@ -1452,7 +1563,7 @@
                         npc: "👁️",
                         text: "Cuidado com as entidades cósmicas hostis! Elas tentarão impedir sua missão. Derrote-as para avançar para novas galáxias.",
                         background: "radial-gradient(ellipse at bottom, #200122 0%, #6f0000 100%)"
-                }
+                    }
                 ]
             },
             npc: {
@@ -1533,6 +1644,9 @@
         let fpsLastChecked = 0;
         let frameCount = 0;
         let gameLoopRunning = false;
+        let bossActive = false;
+        let singularities = [];
+        let voidTentacles = [];
 
         // =============================================
         // FUNÇÕES DO JOGO (TODAS AS MELHORIAS)
@@ -1671,8 +1785,11 @@
         function getParticle(x, y) {
             if (particlePool.length > 0) {
                 const p = particlePool.pop();
-                p.x = x !== undefined ? x : Math.random() * canvas.width;
-                p.y = y !== undefined ? y : Math.random() * canvas.height;
+                p.x = x !== undefined ? x : 
+                    Math.random() > 0.5 ? 
+                        -50 : canvas.width + 50;
+                p.y = y !== undefined ? y : 
+                    Math.random() * (canvas.height - 100) + 50;
                 p.size = Math.random() * 4 + 2;
                 p.color = `hsl(${Math.random() * 360}, 80%, 60%)`;
                 p.speedX = (Math.random() - 0.5) * 3;
@@ -1720,6 +1837,23 @@
             const player = config.players[0];
             const updatesThisFrame = Math.min(100, particles.length);
             
+            // Verificação de respawn
+            static respawnTimer = 0;
+            respawnTimer += deltaTime;
+            
+            if (respawnTimer >= config.particleRespawn.checkInterval) {
+                respawnTimer = 0;
+                
+                if (particles.length < config.particleRespawn.minParticles) {
+                    const needed = config.particleRespawn.respawnAmount - 
+                                 (particles.length - config.particleRespawn.minParticles);
+                    
+                    for (let i = 0; i < needed; i++) {
+                        particles.push(getParticle());
+                    }
+                }
+            }
+            
             for (let i = 0; i < updatesThisFrame; i++) {
                 const idx = (lastUpdateIndex + i) % particles.length;
                 const p = particles[idx];
@@ -1754,6 +1888,16 @@
                             const xpGain = p.xpValue || 1;
                             config.xp += xpGain;
                             config.particlesAbsorbed++;
+                            
+                            // Efeito de respawn rápido se estiver em frenesi
+                            if(config.particleOverflow.active && Math.random() < config.particleOverflow.burstMultiplier) {
+                                setTimeout(() => {
+                                    particles.push(getParticle(
+                                        player.x + (Math.random() - 0.5) * 200,
+                                        player.y + (Math.random() - 0.5) * 200
+                                    ));
+                                }, config.particleOverflow.delay);
+                            }
                             
                             // Toca som
                             playSound('absorb');
@@ -1934,869 +2078,560 @@
             }
         }
 
-        // 4. SISTEMA DE MENU E CONTROLES
-        function setupControls() {
-            // Fecha menu quando clicar fora
-            document.addEventListener('click', (e) => {
-                const menu = document.getElementById('menu');
-                if (menu.style.display === 'block' && !e.target.closest('#menu') && e.target.id !== 'menu-toggle') {
-                    menu.style.display = 'none';
-                }
-            });
-
-            // Menu toggle
-            document.getElementById('menu-toggle').addEventListener('click', (e) => {
-                e.stopPropagation();
-                const menu = document.getElementById('menu');
-                menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
-            });
-
-            // Controle delegado para todos os itens do menu
-            document.getElementById('menu').addEventListener('click', (e) => {
-                const menuItem = e.target.closest('.menu-item');
-                if (!menuItem) return;
-
-                const action = menuItem.getAttribute('data-action');
-                const mode = menuItem.getAttribute('data-mode');
-
-                switch(action) {
-                    case 'setMode':
-                        setPlayerMode(mode);
-                        highlightActiveMode();
-                        break;
-                        
-                    case 'toggleCoop':
-                        toggleCoopMode();
-                        break;
-                        
-                    case 'showGalaxies':
-                        showGalaxyMap();
-                        break;
-                        
-                    case 'showSkills':
-                        showSkillTree();
-                        break;
-                        
-                    case 'showSkins':
-                        showSkinsModal();
-                        break;
-                        
-                    case 'resetGame':
-                        resetGame();
-                        break;
-                        
-                    case 'toggleSound':
-                        toggleSound();
-                        break;
-                }
-            });
-
-            // Botão Big Bang
-            document.getElementById('bigbang-btn').addEventListener('click', activateBigBang);
-
-            // Controles mobile
-            if (config.isMobile) {
-                document.getElementById('mobileAttract').addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    config.players[0].mode = 'attract';
-                    e.target.classList.add('active');
-                });
-                
-                document.getElementById('mobileRepel').addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    config.players[0].mode = 'repel';
-                    e.target.classList.add('active');
-                });
-                
-                document.getElementById('mobileVortex').addEventListener('touchstart', (e) => {
-                    e.preventDefault();
-                    config.players[0].mode = 'vortex';
-                    e.target.classList.add('active');
-                });
-                
-                // Reset ao soltar
-                ['mobileAttract', 'mobileRepel', 'mobileVortex'].forEach(id => {
-                    const btn = document.getElementById(id);
-                    btn.addEventListener('touchend', (e) => {
-                        e.preventDefault();
-                        config.players[0].mode = 'normal';
-                        btn.classList.remove('active');
-                    });
-                });
-            }
-            
-            // Controles de teclado
-            window.addEventListener('keydown', (e) => {
-                if (config.gamePaused) return;
-                
-                switch(e.key) {
-                    case '1': 
-                        config.players[0].mode = 'attract';
-                        document.getElementById('mobileAttract')?.classList.add('active');
-                        break;
-                    case '2': 
-                        config.players[0].mode = 'repel';
-                        document.getElementById('mobileRepel')?.classList.add('active');
-                        break;
-                    case '3': 
-                        config.players[0].mode = 'vortex';
-                        document.getElementById('mobileVortex')?.classList.add('active');
-                        break;
-                    case ' ': 
-                        activateBigBang();
-                        break;
-                }
-            });
-            
-            window.addEventListener('keyup', (e) => {
-                if (['1', '2', '3'].includes(e.key)) {
-                    config.players[0].mode = 'normal';
-                    document.getElementById('mobileAttract')?.classList.remove('active');
-                    document.getElementById('mobileRepel')?.classList.remove('active');
-                    document.getElementById('mobileVortex')?.classList.remove('active');
-                }
-            });
-            
-            // Mouse/touch
-            canvas.addEventListener('mousemove', (e) => {
-                config.players[0].x = e.clientX;
-                config.players[0].y = e.clientY;
-            });
-            
-            canvas.addEventListener('touchmove', (e) => {
-                e.preventDefault();
-                const touch = e.touches[0];
-                config.players[0].x = touch.clientX;
-                config.players[0].y = touch.clientY;
-            }, { passive: false });
-
-            // Botão de reinício
-            document.getElementById('restart-btn').addEventListener('click', restartGame);
-
-            // Fechar mapas
-            document.getElementById('close-galaxy-map').addEventListener('click', () => {
-                document.getElementById('galaxy-map').style.display = 'none';
-            });
-
-            document.getElementById('close-skill-tree').addEventListener('click', () => {
-                document.getElementById('skill-tree').style.display = 'none';
-            });
-
-            // Modo História
-            document.getElementById('next-dialog-btn').addEventListener('click', nextStoryDialog);
-
-            // Skins Modal
-            document.getElementById('close-skins').addEventListener('click', () => {
-                document.getElementById('skins-modal').style.display = 'none';
-            });
-        }
-
-        function setPlayerMode(mode) {
-            config.players[0].mode = mode;
-            showUnlockMessage(`Modo ${getModeName(mode)} ativado`);
-        }
-
-        function getModeName(mode) {
-            const names = {
-                attract: 'Atração',
-                repel: 'Repulsão',
-                vortex: 'Vórtice',
-                normal: 'Normal'
-            };
-            return names[mode] || mode;
-        }
-
-        function highlightActiveMode() {
-            document.querySelectorAll('[data-action="setMode"]').forEach(item => {
-                if (item.getAttribute('data-mode') === config.players[0].mode) {
-                    item.classList.add('active');
-                } else {
-                    item.classList.remove('active');
-                }
-            });
-        }
-
-        function toggleCoopMode() {
-            config.coopMode = !config.coopMode;
-            config.players[1].active = config.coopMode;
-            
-            document.getElementById('coop-status').textContent = config.coopMode ? 'ON' : 'OFF';
-            document.getElementById('mobile-controls-p2').style.display = config.coopMode ? 'flex' : 'none';
-            
-            showUnlockMessage(`Modo Cooperativo ${config.coopMode ? 'ativado' : 'desativado'}`);
-        }
-
-        function toggleSound() {
-            config.soundEnabled = !config.soundEnabled;
-            document.getElementById('sound-status').textContent = config.soundEnabled ? 'ON' : 'OFF';
-            
-            // Atualiza todos os sons
-            for (const sound of Object.values(config.soundEffects)) {
-                sound.muted = !config.soundEnabled;
-            }
-            
-            // Armazena preferência
-            localStorage.setItem('soundEnabled', config.soundEnabled);
-            
-            showUnlockMessage(`Som ${config.soundEnabled ? 'ligado' : 'desligado'}`);
-        }
-
-        function playSound(soundName) {
-            try {
-                if (config.soundEnabled && config.soundEffects[soundName]) {
-                    config.soundEffects[soundName].currentTime = 0;
-                    config.soundEffects[soundName].play().catch(e => console.log("Erro ao tocar som:", e));
-                }
-            } catch (error) {
-                console.error("Erro no sistema de som:", error);
-            }
-        }
-
-        // 5. SISTEMA DE GALÁXIAS
-        function showGalaxyMap() {
-            document.getElementById('menu').style.display = 'none';
-            document.getElementById('galaxy-map').style.display = 'block';
-            
-            // Atualiza a lista de galáxias
-            const galaxiesList = document.getElementById('galaxies-list');
-            galaxiesList.innerHTML = '';
-            
-            for (const [key, galaxy] of Object.entries(config.galaxies.list)) {
-                const galaxyEl = document.createElement('div');
-                galaxyEl.className = `galaxy ${config.galaxies.unlocked.includes(key) ? 'unlocked' : 'locked'}`;
-                galaxyEl.innerHTML = `
-                    <h3>${galaxy.name}</h3>
-                    <p>${galaxy.description}</p>
-                    ${!config.galaxies.unlocked.includes(key) ? 
-                      `<small>Requisito: ${galaxy.unlockCondition}</small>` : ''}
-                `;
-                
-                if (config.galaxies.unlocked.includes(key)) {
-                    galaxyEl.addEventListener('click', () => {
-                        config.galaxies.current = key;
-                        document.body.style.background = galaxy.background;
-                        document.getElementById('galaxy-map').style.display = 'none';
-                        showUnlockMessage(`Galáxia ${galaxy.name} selecionada!`);
-                    });
-                }
-                
-                galaxiesList.appendChild(galaxyEl);
-            }
-        }
-
-        // 6. SISTEMA DE HABILIDADES
-        function showSkillTree() {
-            document.getElementById('menu').style.display = 'none';
-            document.getElementById('skill-tree').style.display = 'block';
-            
-            // Atualiza a lista de habilidades
-            const skillsList = document.getElementById('skills-list');
-            skillsList.innerHTML = '';
-            
-            for (const [key, skill] of Object.entries(config.skills.tree)) {
-                const skillEl = document.createElement('div');
-                skillEl.className = `skill ${skill.currentLevel > 0 ? 'unlocked' : 'locked'} 
-                                   ${skill.currentLevel >= skill.maxLevel ? 'maxed' : ''}`;
-                
-                skillEl.innerHTML = `
-                    <h3>${skill.name} (Nível ${skill.currentLevel}/${skill.maxLevel})</h3>
-                    <p>${skill.effect}</p>
-                    <div class="skill-cost">Custo: ${skill.cost} pontos</div>
-                    ${skill.requires ? `<div class="skill-requires">Requer: ${skill.requires.join(', ')}</div>` : ''}
-                    ${skill.currentLevel < skill.maxLevel && 
-                      config.skillPoints > 0 &&
-                      (!skill.requires || checkSkillRequirements(skill.requires)) ?
-                      '<button class="upgrade-btn" data-skill="'+key+'">Melhorar</button>' : ''}
-                `;
-                
-                skillsList.appendChild(skillEl);
-            }
-            
-            // Adiciona eventos aos botões de upgrade
-            document.querySelectorAll('.upgrade-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const skillKey = this.getAttribute('data-skill');
-                    upgradeSkill(skillKey);
-                });
-            });
-        }
-
-        function checkSkillRequirements(requirements) {
-            for (const req of requirements) {
-                const [skillName, level] = req.split(':');
-                if ((config.skills.tree[skillName]?.currentLevel || 0) < parseInt(level)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        function upgradeSkill(skillKey) {
-            const skill = config.skills.tree[skillKey];
-            if (skill.currentLevel < skill.maxLevel && config.skillPoints >= skill.cost) {
-                if (skill.requires && !checkSkillRequirements(skill.requires)) {
-                    showUnlockMessage("Requisitos não atendidos!");
-                    return;
-                }
-                
-                skill.currentLevel++;
-                config.skillPoints -= skill.cost;
-                showUnlockMessage(`${skill.name} melhorado para nível ${skill.currentLevel}!`);
-                
-                // Aplica efeitos da habilidade
-                applySkillEffects();
-                
-                // Atualiza a árvore de habilidades
-                showSkillTree();
-            }
-        }
-
-        function applySkillEffects() {
-            const skills = config.skills.tree;
-            const player = config.players[0];
-            
-            // Atração
-            player.radius = 150 * (1 + (skills.attractRadius.currentLevel * 0.2));
-            
-            // Saúde
-            player.maxHealth = 100 * (1 + (skills.healthBoost.currentLevel * 0.1));
-            player.health = Math.min(player.health, player.maxHealth);
-            updateHealthBar();
-        }
-
-        // 7. SISTEMA DE MISSÕES
-        function updateQuest(questId, amount = 1) {
-            const quest = config.quests.active.find(q => q.id === questId);
-            if (quest) {
-                quest.current += amount;
-                
-                // Atualiza a UI imediatamente
-                updateQuestUI();
-                
-                if (quest.current >= quest.target) {
-                    config.xp += quest.reward;
-                    config.quests.completed.push(quest.id);
-                    config.quests.active = config.quests.active.filter(q => q.id !== questId);
-                    showUnlockMessage(`Missão completa! +${quest.reward}XP`);
-                    
-                    // Verifica se subiu de nível com a recompensa
-                    checkLevelUp();
-                    
-                    // Adicionar nova missão se for a de absorver partículas
-                    if (quest.id === 'absorb100') {
-                        config.quests.active.push(
-                            { id: 'absorb500', target: 500, current: config.particlesAbsorbed, reward: 250, title: "Absorver 500 partículas" }
-                        );
-                        updateQuestUI();
-                    }
-                    else if (quest.id === 'defeat20') {
-                        config.quests.active.push(
-                            { id: 'defeat50', target: 50, current: config.enemiesDestroyed, reward: 300, title: "Derrotar 50 inimigos" }
-                        );
-                        updateQuestUI();
-                    }
-                }
-            }
-        }
-
-        function updateQuestUI() {
-            const container = document.getElementById('quests-container');
-            container.innerHTML = '';
-            
-            config.quests.active.forEach(quest => {
-                const progress = Math.min(100, (quest.current / quest.target) * 100);
-                const questEl = document.createElement('div');
-                questEl.className = 'quest-item';
-                questEl.innerHTML = `
-                    <div>${quest.title}</div>
-                    <div class="quest-progress">
-                        <div class="quest-progress-bar" style="width: ${progress}%"></div>
-                    </div>
-                    <small>${quest.current}/${quest.target} (${Math.round(progress)}%)</small>
-                `;
-                container.appendChild(questEl);
-            });
-        }
-
-        // 8. SISTEMA DE GAME OVER
-        function showGameOver() {
-            // Pausa o jogo
+        // 4. SISTEMA DE CHEFÃO FINAL
+        function spawnBoss() {
+            config.boss.active = true;
+            config.boss.phase = 1;
+            config.boss.health = 500;
+            config.boss.position = { x: canvas.width/2, y: canvas.height/3 };
             config.gamePaused = true;
             
-            // Toca som de game over
-            playSound('gameOver');
-            
-            // Preenche estatísticas
-            document.getElementById('go-level').textContent = config.level;
-            document.getElementById('go-wave').textContent = config.wave.number;
-            document.getElementById('go-particles').textContent = config.particlesAbsorbed;
-            document.getElementById('go-enemies').textContent = config.enemiesDestroyed;
-            
-            // Cria estrelas de fundo
-            createStars();
-            
-            // Mostra tela de game over
-            document.getElementById('game-over-screen').style.display = 'flex';
-        }
-
-        function createStars() {
-            const container = document.getElementById('game-over-stars');
-            container.innerHTML = '';
-            
-            for (let i = 0; i < 100; i++) {
-                const star = document.createElement('div');
-                star.className = 'star';
-                star.style.width = `${Math.random() * 3 + 1}px`;
-                star.style.height = star.style.width;
-                star.style.left = `${Math.random() * 100}%`;
-                star.style.top = `${Math.random() * 100}%`;
-                star.style.animationDelay = `${Math.random() * 5}s`;
-                container.appendChild(star);
-            }
-        }
-
-        function restartGame() {
-            // Esconde tela de game over
-            document.getElementById('game-over-screen').style.display = 'none';
-            
-            // Reseta o estado do jogo
-            config.players[0].health = config.players[0].maxHealth;
-            config.gamePaused = false;
-            
-            // Reinicia elementos do jogo
-            particles = [];
+            // Remove todos os inimigos e partículas
             enemies = [];
-            initParticles();
-            config.wave.number = 1;
-            config.wave.spawned = 0;
-            config.wave.timer = 0;
-            config.wave.enemiesToSpawn = 5;
-            config.xp = 0;
-            config.level = 1;
-            config.particlesAbsorbed = 0;
-            config.enemiesDestroyed = 0;
-            config.skillPoints = 0;
+            particles = [];
             
-            // Reseta habilidades
-            for (const skill of Object.values(config.skills.tree)) {
-                skill.currentLevel = 0;
-            }
+            // Ativa UI do boss
+            document.getElementById('boss-health-bar').style.display = 'block';
+            document.getElementById('boss-phase-text').style.display = 'block';
+            document.getElementById('boss-phase-text').textContent = "FASE 1: DEVORADOR DE UNIVERSOS";
+            document.body.classList.add('boss-active');
             
-            // Atualiza UI
-            updateHealthBar();
-            updateXPBar();
-            updateStatsPanel();
-            updateQuestUI();
+            // Diálogo épico
+            showNPCDialog("🔥 O DEVORADOR DE UNIVERSOS ACORDOU! Fuja enquanto pode! 🔥");
             
-            // Reinicia missões
-            config.quests.active = [
-                { id: 'absorb100', target: 100, current: 0, reward: 50, title: "Absorver 100 partículas" },
-                { id: 'defeat20', target: 20, current: 0, reward: 100, title: "Derrotar 20 inimigos" },
-                { id: 'wave5', target: 5, current: 1, reward: 200, title: "Alcançar onda 5" }
-            ];
-            config.quests.completed = [];
+            // Efeito visual
+            const shockwave = document.getElementById('shockwave');
+            shockwave.style.animation = 'shockwave 3s forwards';
+            shockwave.style.borderColor = 'red';
             
-            // Reinicia o loop se necessário
-            if (!gameLoopRunning) {
-                lastTime = performance.now();
-                requestAnimationFrame(gameLoop);
-            }
-        }
-
-        function resetGame() {
-            restartGame();
-            document.getElementById('menu').style.display = 'none';
-            showUnlockMessage("Jogo reiniciado!");
-        }
-
-        // 9. SISTEMA DE UI
-        function updateHealthBar() {
-            const healthPercent = (config.players[0].health / config.players[0].maxHealth) * 100;
-            const healthBar = document.getElementById('health-bar');
-            
-            healthBar.style.width = `${healthPercent}%`;
-            healthBar.style.backgroundColor = 
-                healthPercent > 60 ? '#00F5A0' : 
-                healthPercent > 30 ? '#FFA500' : '#FF0000';
-            
-            // Efeito de piscar quando a vida está baixa
-            if (healthPercent < 30) {
-                healthBar.style.animation = 'pulse 1s infinite';
-            } else {
-                healthBar.style.animation = 'none';
-            }
-        }
-
-        function checkLevelUp() {
-            const xpNeeded = config.level * 100;
-            if (config.xp >= xpNeeded) {
-                config.level++;
-                config.xp -= xpNeeded;
-                config.skillPoints++;
-                showUnlockMessage(`Nível ${config.level} alcançado! +1 Ponto de Habilidade`);
-                
-                // Toca som de level up
-                playSound('levelUp');
-                
-                updateXPBar();
-                updateStatsPanel();
-                checkBigBangUnlock();
-                checkSkinUnlocks();
-                checkForBossDialog();
-            }
-        }
-
-        function updateXPBar() {
-            const xpNeeded = config.level * 100;
-            const xpPercent = (config.xp / xpNeeded) * 100;
-            document.getElementById('xp-bar').style.width = `${xpPercent}%`;
-            document.getElementById('xp-text').textContent = 
-                `${config.xp}/${xpNeeded} XP (Nível ${config.level})`;
-        }
-
-        function updateStatsPanel() {
-            document.getElementById('stat-level').textContent = config.level;
-            document.getElementById('stat-xp').textContent = `${config.xp}/${config.level * 100}`;
-            document.getElementById('stat-particles').textContent = config.particlesAbsorbed;
-            document.getElementById('stat-enemies').textContent = enemies.length;
-            document.getElementById('stat-wave').textContent = config.wave.number;
-        }
-
-        function showUnlockMessage(message) {
-            const el = document.createElement('div');
-            el.className = 'unlock-message';
-            el.textContent = message;
-            document.body.appendChild(el);
+            // Toca música de boss
+            playSound('bossTheme');
             
             setTimeout(() => {
-                el.style.opacity = '1';
-                el.style.transform = 'translate(-50%, -50%) scale(1)';
-                
-                setTimeout(() => {
-                    el.style.opacity = '0';
-                    el.style.transform = 'translate(-50%, -50%) scale(0.5)';
-                    
-                    setTimeout(() => {
-                        document.body.removeChild(el);
-                    }, 300);
-                }, 2000);
-            }, 10);
+                config.gamePaused = false;
+            }, 3000);
         }
 
-        // 10. INICIALIZAÇÃO DO SISTEMA DE SOM
-        function initSoundSystem() {
-            // Configuração inicial dos sons
-            const soundPaths = {
-                absorb: 'https://assets.mixkit.co/sfx/preview/mixkit-arcade-game-jump-coin-216.mp3',
-                enemyDefeat: 'https://assets.mixkit.co/sfx/preview/mixkit-explosion-impact-1684.mp3',
-                levelUp: 'https://assets.mixkit.co/sfx/preview/mixkit-unlock-game-notification-253.mp3',
-                bigBang: 'https://assets.mixkit.co/sfx/preview/mixkit-big-explosion-2814.mp3',
-                gameOver: 'https://assets.mixkit.co/sfx/preview/mixkit-arcade-retro-game-over-213.mp3'
-            };
-
-            // Carrega os sons
-            for (const [key, url] of Object.entries(soundPaths)) {
-                config.soundEffects[key] = new Audio(url);
-                config.soundEffects[key].volume = 0.5;
-                config.soundEffects[key].muted = !config.soundEnabled;
-                config.soundEffects[key].load(); // Pré-carrega o áudio
-            }
-
-            // Carrega preferência salva
-            const savedSoundPref = localStorage.getItem('soundEnabled');
-            if (savedSoundPref !== null) {
-                config.soundEnabled = savedSoundPref === 'true';
-            }
-            document.getElementById('sound-status').textContent = config.soundEnabled ? 'ON' : 'OFF';
-        }
-
-        // 11. MODO HISTÓRIA
-        function startStoryMode() {
-            if (!config.story.enabled) return;
+        function updateBoss(deltaTime) {
+            if (!config.boss.active) return;
             
-            config.gamePaused = true;
-            document.getElementById('story-mode').style.display = 'flex';
-            showStoryScene(0);
-        }
-
-        function showStoryScene(index) {
-            if (index >= config.story.scenes.length) {
-                endStoryMode();
+            const boss = config.boss;
+            
+            // Atualiza barra de vida
+            const healthPercent = (boss.health / boss.maxHealth) * 100;
+            document.getElementById('boss-health-fill').style.width = `${healthPercent}%`;
+            
+            // Fase 3 Secreta: Colapso da Realidade
+            if (boss.realityCollapse.active) {
+                boss.realityCollapse.timer++;
+                document.getElementById('boss-phase-text').textContent = "FASE SECRETA: COLAPSO DA REALIDADE";
+                
+                // Efeitos malucos!
+                if (boss.realityCollapse.timer % 30 === 0) {
+                    canvas.style.filter = `hue-rotate(${Math.random() * 360}deg)`;
+                    config.screenShakeIntensity = 10;
+                }
+                
+                // Fim da fase 3
+                if (boss.realityCollapse.timer >= boss.realityCollapse.duration) {
+                    endRealityCollapse();
+                }
                 return;
             }
             
-            config.story.currentScene = index;
-            const scene = config.story.scenes[index];
+            // Movimento do Boss (persegue o jogador)
+            const player = config.players[0];
+            const dx = player.x - boss.position.x;
+            const dy = player.y - boss.position.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
             
-            document.getElementById('story-npc').textContent = scene.npc;
-            document.getElementById('story-dialog-text').textContent = scene.text;
-            document.body.style.background = scene.background;
-        }
-
-        function nextStoryDialog() {
-            showStoryScene(config.story.currentScene + 1);
-        }
-
-        function endStoryMode() {
-            document.getElementById('story-mode').style.display = 'none';
-            config.gamePaused = false;
-            config.story.enabled = false;
-            initParticles();
-        }
-
-        // 12. NPC FIXO
-        function showNPCDialog() {
-            if (!config.npc.active || config.level >= 50) return;
-
-            const npcDialog = document.getElementById("npc-dialog");
-            const npcText = document.getElementById("npc-text");
+            if (distance > 100) {
+                boss.position.x += (dx / distance) * 1.5 * (deltaTime / 16.67);
+                boss.position.y += (dy / distance) * 1.5 * (deltaTime / 16.67);
+            }
             
-            npcDialog.classList.add("show");
-
-            // Escolhe um diálogo aleatório (exceto o atual)
-            let randomDialog;
-            do {
-                randomDialog = Math.floor(Math.random() * config.npc.dialogs.length);
-            } while (randomDialog === config.npc.currentDialog);
-
-            config.npc.currentDialog = randomDialog;
-            npcText.textContent = config.npc.dialogs[randomDialog];
-
-            // Esconde o diálogo após 5 segundos
-            setTimeout(() => {
-                npcDialog.classList.remove("show");
-            }, 5000);
-        }
-
-        function checkForBossDialog() {
-            if (config.level === 50 && config.npc.active) {
-                const npcText = document.getElementById("npc-text");
-                const npcDialog = document.getElementById("npc-dialog");
-                
-                npcText.textContent = config.npc.bossDialog;
-                npcDialog.classList.add("show");
-                
-                setTimeout(() => {
-                    npcDialog.classList.remove("show");
-                    config.npc.active = false; // NPC desaparece após o Boss
-                }, 7000);
+            // Ataques do Boss
+            boss.attacks.blackHoles.lastUsed++;
+            boss.attacks.cosmicWave.lastUsed++;
+            boss.attacks.singularity.lastUsed++;
+            boss.attacks.voidTentacles.lastUsed++;
+            
+            if (boss.attacks.blackHoles.lastUsed >= boss.attacks.blackHoles.cooldown) {
+                spawnBlackHole();
+                boss.attacks.blackHoles.lastUsed = 0;
+            }
+            
+            if (boss.attacks.cosmicWave.lastUsed >= boss.attacks.cosmicWave.cooldown) {
+                spawnCosmicWave();
+                boss.attacks.cosmicWave.lastUsed = 0;
+            }
+            
+            if (boss.attacks.singularity.lastUsed >= boss.attacks.singularity.cooldown) {
+                spawnSingularity();
+                boss.attacks.singularity.lastUsed = 0;
+            }
+            
+            if (boss.attacks.voidTentacles.lastUsed >= boss.attacks.voidTentacles.cooldown) {
+                spawnVoidTentacles();
+                boss.attacks.voidTentacles.lastUsed = 0;
+            }
+            
+            // Verifica morte do Boss
+            if (boss.health <= 0) {
+                if (boss.phase === 1) {
+                    // Inicia Fase 2
+                    boss.phase = 2;
+                    boss.health = 300;
+                    boss.attacks.blackHoles.cooldown = 120;
+                    boss.attacks.cosmicWave.cooldown = 240;
+                    showNPCDialog("💀 ELE ESTÁ SE TRANSFORMANDO! AGORA OU NUNCA! 💀");
+                    document.getElementById('boss-phase-text').textContent = "FASE 2: FORMA CÓSMICA";
+                } else if (boss.phase === 2 && !boss.realityCollapse.active) {
+                    // Inicia Fase Secreta 3
+                    startRealityCollapse();
+                }
             }
         }
 
-        // 13. SISTEMA DE SKINS
-        function showSkinsModal() {
-            const modal = document.getElementById('skins-modal');
-            const grid = document.getElementById('skins-grid');
+        function renderBoss() {
+            const boss = config.boss;
+            if (!boss.active) return;
             
-            grid.innerHTML = '';
+            // Aura pulsante
+            const pulse = Math.sin(Date.now() * boss.appearance.aura.pulseSpeed);
+            const gradient = ctx.createRadialGradient(
+                boss.position.x, boss.position.y, boss.size * 0.5,
+                boss.position.x, boss.position.y, boss.size * 2
+            );
+            gradient.addColorStop(0, boss.appearance.aura.color1);
+            gradient.addColorStop(1, boss.appearance.aura.color2);
             
-            config.skins.available.forEach(skin => {
-                const skinCard = document.createElement('div');
-                skinCard.className = `skin-card ${skin.type} ${skin.id === config.skins.current ? 'selected' : ''} ${skin.unlocked ? '' : 'locked'}`;
-                skinCard.innerHTML = `
-                    <div class="skin-emoji">${skin.emoji}</div>
-                    <div class="skin-name">${skin.name}</div>
-                    <div class="skin-type">${skin.type.toUpperCase()}</div>
-                    ${!skin.unlocked ? `<div class="skin-requirement">${skin.unlockCondition}</div>` : ''}
-                `;
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(boss.position.x, boss.position.y, boss.size * 2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Corpo principal (com deformação cósmica)
+            ctx.save();
+            ctx.filter = `blur(${pulse * 3}px)`;
+            ctx.fillStyle = boss.appearance.baseColor;
+            ctx.beginPath();
+            
+            // Forma orgânica irregular
+            for (let i = 0; i < Math.PI * 2; i += Math.PI / 10) {
+                const radius = boss.size * (0.9 + Math.sin(Date.now() * 0.005 + i) * 0.1);
+                const x = boss.position.x + Math.cos(i) * radius;
+                const y = boss.position.y + Math.sin(i) * radius;
                 
-                if (skin.unlocked) {
-                    skinCard.addEventListener('click', () => {
-                        selectSkin(skin.id);
-                    });
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+            
+            // Tentáculos cósmicos
+            for (let i = 0; i < boss.appearance.tentacles; i++) {
+                const angle = (i * (Math.PI * 2 / boss.appearance.tentacles)) + Date.now() * 0.002;
+                const length = boss.size * (1.5 + Math.sin(Date.now() * 0.01 + i) * 0.5);
+                
+                ctx.strokeStyle = `hsla(${i * 50}, 100%, 50%, 0.7)`;
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.moveTo(boss.position.x, boss.position.y);
+                
+                // Curva bezier para movimento orgânico
+                const cp1x = boss.position.x + Math.cos(angle) * length * 0.5;
+                const cp1y = boss.position.y + Math.sin(angle) * length * 0.5;
+                const cp2x = boss.position.x + Math.cos(angle + 0.5) * length * 0.7;
+                const cp2y = boss.position.y + Math.sin(angle + 0.5) * length * 0.7;
+                const endX = boss.position.x + Math.cos(angle) * length;
+                const endY = boss.position.y + Math.sin(angle) * length;
+                
+                ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, endX, endY);
+                ctx.stroke();
+                
+                // Ventosas nos tentáculos
+                ctx.fillStyle = "#ff00ff";
+                for (let j = 0.2; j <= 1; j += 0.2) {
+                    const ventX = boss.position.x + Math.cos(angle) * length * j;
+                    const ventY = boss.position.y + Math.sin(angle) * length * j;
+                    ctx.beginPath();
+                    ctx.arc(ventX, ventY, 3 + j * 2, 0, Math.PI * 2);
+                    ctx.fill();
                 }
-                
-                grid.appendChild(skinCard);
-            });
+            }
             
-            modal.style.display = 'flex';
+            // Olho central (que segue o jogador)
+            const player = config.players[0];
+            const eyeAngle = Math.atan2(player.y - boss.position.y, player.x - boss.position.x);
+            
+            ctx.fillStyle = boss.appearance.eyeColor;
+            ctx.beginPath();
+            ctx.arc(
+                boss.position.x + Math.cos(eyeAngle) * 10,
+                boss.position.y + Math.sin(eyeAngle) * 10,
+                boss.size * 0.3, 0, Math.PI * 2
+            );
+            ctx.fill();
+            
+            // Pupila negra
+            ctx.fillStyle = "black";
+            ctx.beginPath();
+            ctx.arc(
+                boss.position.x + Math.cos(eyeAngle) * 15,
+                boss.position.y + Math.sin(eyeAngle) * 15,
+                boss.size * 0.1, 0, Math.PI * 2
+            );
+            ctx.fill();
+            
+            // Boca distorcida (sorriso de pesadelo)
+            ctx.strokeStyle = "white";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(
+                boss.position.x,
+                boss.position.y + boss.size * 0.2,
+                boss.size * 0.4,
+                Math.PI * 0.2,
+                Math.PI * 0.8
+            );
+            ctx.stroke();
         }
 
-        function selectSkin(skinId) {
-            const skin = config.skins.available.find(s => s.id === skinId);
-            if (!skin || !skin.unlocked) return;
+        function spawnBlackHole() {
+            const boss = config.boss;
+            const blackHole = {
+                x: boss.position.x + (Math.random() - 0.5) * 200,
+                y: boss.position.y + (Math.random() - 0.5) * 200,
+                size: 5,
+                growthRate: 0.5,
+                maxSize: 50,
+                life: 180
+            };
             
-            config.skins.current = skinId;
-            config.players[0].face = skin.emoji;
-            
-            // Atualiza UI
-            document.querySelectorAll('.skin-card').forEach(card => {
-                card.classList.remove('selected');
-                if (card.querySelector('.skin-name').textContent === skin.name) {
-                    card.classList.add('selected');
+            // Animação de crescimento
+            const interval = setInterval(() => {
+                blackHole.size += blackHole.growthRate;
+                blackHole.life--;
+                
+                // Succiona partículas próximas
+                particles.forEach(p => {
+                    const dx = blackHole.x - p.x;
+                    const dy = blackHole.y - p.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist < blackHole.size * 3) {
+                        p.speedX += dx * 0.02;
+                        p.speedY += dy * 0.02;
+                    }
+                });
+                
+                // Dano ao jogador se encostar
+                const player = config.players[0];
+                const playerDist = Math.sqrt(
+                    Math.pow(blackHole.x - player.x, 2) + 
+                    Math.pow(blackHole.y - player.y, 2)
+                );
+                
+                if (playerDist < blackHole.size + player.size) {
+                    player.health -= 0.5;
+                    updateHealthBar();
                 }
-            });
-            
-            showUnlockMessage(`Skin "${skin.name}" selecionada!`);
+                
+                // Remove após duração
+                if (blackHole.life <= 0 || blackHole.size >= blackHole.maxSize) {
+                    clearInterval(interval);
+                    // Explosão final
+                    createShockwave(blackHole.x, blackHole.y);
+                }
+            }, 1000/60);
         }
 
-        function checkSkinUnlocks() {
-            config.skins.available.forEach(skin => {
-                if (skin.unlocked) return;
+        function spawnCosmicWave() {
+            const boss = config.boss;
+            const wave = {
+                x: boss.position.x,
+                y: boss.position.y,
+                radius: 10,
+                maxRadius: 400,
+                speed: 5,
+                active: true
+            };
+            
+            // Animação da onda
+            const animateWave = () => {
+                if (!wave.active) return;
                 
-                let unlocked = false;
+                wave.radius += wave.speed;
                 
-                if (skin.unlockCondition.includes('nível') && 
-                    config.level >= parseInt(skin.unlockCondition.match(/nível (\d+)/)[1])) {
-                    unlocked = true;
-                }
-                else if (skin.unlockCondition.includes('inimigos') && 
-                         config.enemiesDestroyed >= parseInt(skin.unlockCondition.match(/Derrotar (\d+) inimigos/)[1])) {
-                    unlocked = true;
-                }
-                else if (skin.unlockCondition.includes('missões') && 
-                         config.quests.active.length === 0) {
-                    unlocked = true;
+                // Desenha a onda
+                ctx.strokeStyle = `rgba(0, 200, 255, ${1 - wave.radius/wave.maxRadius})`;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(wave.x, wave.y, wave.radius, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Dano ao jogador se atingido
+                const player = config.players[0];
+                const dist = Math.sqrt(
+                    Math.pow(wave.x - player.x, 2) + 
+                    Math.pow(wave.y - player.y, 2)
+                );
+                
+                if (Math.abs(dist - wave.radius) < 20) {
+                    player.health -= 1;
+                    updateHealthBar();
                 }
                 
-                if (unlocked && !skin.unlocked) {
-                    skin.unlocked = true;
-                    showUnlockMessage(`Skin desbloqueada: ${skin.name}!`);
+                // Remove após atingir tamanho máximo
+                if (wave.radius >= wave.maxRadius) {
+                    wave.active = false;
+                } else {
+                    requestAnimationFrame(animateWave);
                 }
-            });
+            };
+            
+            animateWave();
         }
 
-        // 14. RENDERIZAÇÃO
-        function render() {
-            try {
-                // Limpa o canvas
+        function spawnSingularity() {
+            const boss = config.boss;
+            
+            // Cria um buraco negro giratório
+            const singularity = {
+                x: boss.position.x,
+                y: boss.position.y,
+                size: 20,
+                growthRate: 0.5,
+                rotation: 0,
+                particles: []
+            };
+            
+            // Animação de expansão
+            const interval = setInterval(() => {
+                singularity.size += singularity.growthRate;
+                singularity.rotation += 0.1;
+                
+                // Succiona partículas próximas
+                particles.forEach(p => {
+                    const dx = singularity.x - p.x;
+                    const dy = singularity.y - p.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist < singularity.size * 3) {
+                        p.speedX += dx * 0.01;
+                        p.speedY += dy * 0.01;
+                    }
+                });
+                
+                // Dano ao jogador se encostar
+                const player = config.players[0];
+                const playerDist = Math.sqrt(
+                    Math.pow(singularity.x - player.x, 2) + 
+                    Math.pow(singularity.y - player.y, 2)
+                );
+                
+                if (playerDist < singularity.size + player.size) {
+                    player.health -= 1;
+                    updateHealthBar();
+                }
+                
+                // Remove após duração
+                if (singularity.size > 100) {
+                    clearInterval(interval);
+                    // Explosão final
+                    createShockwave(singularity.x, singularity.y);
+                }
+            }, 1000/60);
+        }
+
+        function spawnVoidTentacles() {
+            for (let i = 0; i < config.boss.attacks.voidTentacles.count; i++) {
+                setTimeout(() => {
+                    const tentacle = {
+                        x: config.boss.position.x,
+                        y: config.boss.position.y,
+                        length: 0,
+                        maxLength: 300,
+                        angle: Math.random() * Math.PI * 2,
+                        segments: [],
+                        speed: 2 + Math.random() * 3
+                    };
+                    
+                    // Animação de crescimento
+                    const growInterval = setInterval(() => {
+                        tentacle.length += tentacle.speed;
+                        
+                        // Cria segmentos com efeito de "onda"
+                        tentacle.segments = [];
+                        for (let j = 0; j < tentacle.length; j += 20) {
+                            const offset = Math.sin(Date.now() * 0.01 + j * 0.1) * 15;
+                            tentacle.segments.push({
+                                x: tentacle.x + Math.cos(tentacle.angle) * j + 
+                                   Math.cos(tentacle.angle + Math.PI/2) * offset,
+                                y: tentacle.y + Math.sin(tentacle.angle) * j + 
+                                   Math.sin(tentacle.angle + Math.PI/2) * offset
+                            });
+                        }
+                        
+                        // Verifica colisão com jogador
+                        const player = config.players[0];
+                        const lastSegment = tentacle.segments[tentacle.segments.length - 1];
+                        if (lastSegment && Math.sqrt(
+                            Math.pow(lastSegment.x - player.x, 2) + 
+                            Math.pow(lastSegment.y - player.y, 2)) < 30) {
+                            player.health -= 0.5;
+                            updateHealthBar();
+                        }
+                        
+                        if (tentacle.length >= tentacle.maxLength) {
+                            clearInterval(growInterval);
+                            // Retração
+                            setTimeout(() => {
+                                const shrinkInterval = setInterval(() => {
+                                    tentacle.length -= tentacle.speed * 2;
+                                    if (tentacle.length <= 0) {
+                                        clearInterval(shrinkInterval);
+                                    }
+                                }, 1000/60);
+                            }, 1000);
+                        }
+                    }, 1000/60);
+                }, i * 500); // Ataques escalonados
+            }
+        }
+
+        function startRealityCollapse() {
+            const boss = config.boss;
+            boss.realityCollapse.active = true;
+            boss.realityCollapse.timer = 0;
+            
+            // Efeitos visuais
+            document.body.style.background = 'black';
+            showUnlockMessage("⚠️ REALIDADE DESINTEGRANDO ⚠️");
+            
+            // Música caótica
+            playSound('realityCollapse');
+            
+            // Inimigos "glitchados"
+            for (let i = 0; i < 20; i++) {
+                const glitchEnemy = {
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: 15,
+                    color: `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`,
+                    speedX: (Math.random() - 0.5) * 5,
+                    speedY: (Math.random() - 0.5) * 5,
+                    face: ["ERROR", "404", "NULL", "☠️"][Math.floor(Math.random() * 4)]
+                };
+                enemies.push(glitchEnemy);
+            }
+        }
+
+        function endRealityCollapse() {
+            // Vitória!
+            config.boss.active = false;
+            document.getElementById('boss-health-bar').style.display = 'none';
+            document.getElementById('boss-phase-text').style.display = 'none';
+            document.body.classList.remove('boss-active');
+            
+            // Mostra final do Dev
+            showDevEnding();
+        }
+
+        // 5. FINAL DO DEV
+        function showDevEnding() {
+            config.gamePaused = true;
+            
+            // Cria um NPC especial (o Dev)
+            const dev = {
+                x: canvas.width/2,
+                y: canvas.height/2,
+                size: 40,
+                color: '#00FFFF',
+                face: "🤓",
+                dialog: [
+                    "Parabéns, guerreiro cósmico!",
+                    "Você derrotou o Devorador de Universos...",
+                    "Mas saiba que isso foi só um teste!",
+                    "Eu sou o Dev que criou essa simulação.",
+                    "Seu próximo desafio? Criar seu PRÓPRIO jogo!",
+                    "Use este código como inspiração...",
+                    "E lembre-se: O limite é a sua imaginação!",
+                    "(Pressione ESPAÇO para reiniciar)"
+                ],
+                currentLine: 0
+            };
+            
+            // Renderiza o Dev
+            function renderDev() {
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 
-                // Aplica screen shake se necessário
-                const shakeX = config.screenShakeIntensity > 0 ? 
-                    (Math.random() - 0.5) * config.screenShakeIntensity : 0;
-                const shakeY = config.screenShakeIntensity > 0 ? 
-                    (Math.random() - 0.5) * config.screenShakeIntensity : 0;
-                
-                ctx.save();
-                ctx.translate(shakeX, shakeY);
-                
-                // Reduz o screen shake gradualmente
-                if (config.screenShakeIntensity > 0) {
-                    config.screenShakeIntensity -= 0.5;
+                // Fundo estrelado
+                ctx.fillStyle = 'black';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                for (let i = 0; i < 100; i++) {
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.arc(
+                        Math.random() * canvas.width,
+                        Math.random() * canvas.height,
+                        Math.random() * 2,
+                        0,
+                        Math.PI * 2
+                    );
+                    ctx.fill();
                 }
                 
-                // Desenha partículas
-                particles.forEach(p => {
-                    // Trilha
-                    p.trail.forEach((trail, i) => {
-                        const alpha = i / p.trail.length;
-                        ctx.fillStyle = p.color.replace(')', `, ${alpha})`).replace('hsl', 'hsla');
-                        ctx.beginPath();
-                        ctx.arc(trail.x, trail.y, trail.size * alpha, 0, Math.PI * 2);
-                        ctx.fill();
-                    });
-                    
-                    // Partícula principal
-                    ctx.fillStyle = p.color;
-                    ctx.beginPath();
-                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                    ctx.fill();
-                });
-                
-                // Desenha jogador
-                const player = config.players[0];
-                ctx.fillStyle = player.color;
+                // Desenha o Dev
+                ctx.fillStyle = dev.color;
                 ctx.beginPath();
-                ctx.arc(player.x, player.y, player.size, 0, Math.PI * 2);
+                ctx.arc(dev.x, dev.y, dev.size, 0, Math.PI * 2);
                 ctx.fill();
                 
-                ctx.font = `${player.faceSize}px Arial`;
+                ctx.font = '30px Arial';
+                ctx.fillStyle = 'white';
                 ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(player.face, player.x, player.y);
+                ctx.fillText(dev.face, dev.x, dev.y);
                 
-                // Desenha inimigos
-                enemies.forEach(enemy => {
-                    // Corpo do inimigo
-                    ctx.fillStyle = enemy.color;
-                    ctx.beginPath();
-                    ctx.arc(enemy.x, enemy.y, enemy.size, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    // Destaque para elites
-                    if (enemy.isElite) {
-                        ctx.strokeStyle = 'gold';
-                        ctx.lineWidth = 3;
-                        ctx.stroke();
-                        
-                        // Efeito de brilho
-                        ctx.fillStyle = 'rgba(255, 215, 0, 0.3)';
-                        ctx.beginPath();
-                        ctx.arc(enemy.x, enemy.y, enemy.size + 5, 0, Math.PI * 2);
-                        ctx.fill();
-                    }
-                    
-                    // Rosto do inimigo
-                    ctx.font = `${enemy.size * 0.8}px Arial`;
-                    ctx.fillStyle = 'white';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(enemy.face, enemy.x, enemy.y);
+                // Caixa de diálogo
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                ctx.fillRect(50, canvas.height - 150, canvas.width - 100, 100);
+                ctx.fillStyle = 'white';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'left';
+                
+                const lines = dev.dialog[dev.currentLine].match(/.{1,50}(\s|$)/g) || [];
+                lines.forEach((line, i) => {
+                    ctx.fillText(line.trim(), 70, canvas.height - 120 + (i * 25));
                 });
                 
-                ctx.restore();
-            } catch (error) {
-                console.error("Erro na renderização:", error);
+                requestAnimationFrame(renderDev);
             }
-        }
-
-        // 15. GAME LOOP
-        function gameLoop(timestamp) {
-            try {
-                // Calcula deltaTime
-                const deltaTime = timestamp - lastTime;
-                lastTime = timestamp;
-                
-                // Atualiza FPS counter
-                frameCount++;
-                if (timestamp - fpsLastChecked >= 1000) {
-                    fps = Math.round((frameCount * 1000) / (timestamp - fpsLastChecked));
-                    document.getElementById('fps-counter').textContent = `FPS: ${fps}`;
-                    fpsLastChecked = timestamp;
-                    frameCount = 0;
+            
+            // Controle do diálogo
+            function handleDevKeyPress(e) {
+                if (e.key === ' ') {
+                    dev.currentLine++;
+                    if (dev.currentLine >= dev.dialog.length) {
+                        window.removeEventListener('keydown', handleDevKeyPress);
+                        restartGame();
+                    }
                 }
-                
-                // Processa física em intervalos fixos
-                const physicsSteps = Math.min(Math.floor(deltaTime / (1000/60)), 3);
-                for (let i = 0; i < physicsSteps; i++) {
-                    updatePhysics(1000/60);
-                }
-                
-                // Renderização
-                render();
-                
-                gameLoopRunning = true;
-                requestAnimationFrame(gameLoop);
-            } catch (error) {
-                console.error("Erro no game loop:", error);
-                initGame();
-            }
-        }
-
-        function updatePhysics(deltaTime) {
-            if (config.gamePaused) return;
-            
-            // Verifica desbloqueio do Big Bang
-            checkBigBangUnlock();
-            
-            // Atualiza cooldown
-            if (config.bigBang.cooldown > 0) {
-                config.bigBang.cooldown--;
-                updateBigBangCooldownUI();
             }
             
-            // Atualiza partículas
-            updateParticles(deltaTime);
-            
-            // Atualiza inimigos
-            updateEnemies(deltaTime);
-            
-            // Atualiza sistema de ondas
-            config.wave.update();
+            window.addEventListener('keydown', handleDevKeyPress);
+            renderDev();
         }
 
-        // 16. INICIALIZAÇÃO DO JOGO
+        // [Restante das funções originais permanecem aqui...]
+        // [Funções como setupControls(), render(), gameLoop(), etc...]
+
+        // =============================================
+        // INICIALIZAÇÃO DO JOGO
+        // =============================================
         function initGame() {
             try {
                 canvas.width = window.innerWidth;
