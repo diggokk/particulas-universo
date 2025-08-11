@@ -383,11 +383,6 @@
             z-index: 5;
         }
 
-        .mobile-controls#mobile-controls-p2 {
-            bottom: 80px;
-            display: none;
-        }
-
         #bigbang-btn {
             position: fixed;
             bottom: 20px;
@@ -1109,13 +1104,6 @@
         <button class="mobile-btn" id="mobileVortex">🌪️</button>
     </div>
 
-    <!-- Controles mobile jogador 2 -->
-    <div class="mobile-controls" id="mobile-controls-p2">
-        <button class="mobile-btn" id="mobileAttractP2">🧲</button>
-        <button class="mobile-btn" id="mobileRepelP2">💥</button>
-        <button class="mobile-btn" id="mobileVortexP2">🌪️</button>
-    </div>
-
     <!-- Mapa Galáctico -->
     <div id="galaxy-map">
         <h2>Mapa Galáctico</h2>
@@ -1452,7 +1440,7 @@
                         npc: "👁️",
                         text: "Cuidado com as entidades cósmicas hostis! Elas tentarão impedir sua missão. Derrote-as para avançar para novas galáxias.",
                         background: "radial-gradient(ellipse at bottom, #200122 0%, #6f0000 100%)"
-                }
+                    }
                 ]
             },
             npc: {
@@ -1468,7 +1456,18 @@
                     "Pressione 1, 2 ou 3... se conseguir lembrar qual é qual.",
                     "Já tentou o Big Bang? Ou ainda não é digno?",
                     "Os inimigos estão rindo de você... literalmente.",
-                    "Você é lento... mas pelo menos é consistente."
+                    "Você é lento... mas pelo menos é consistente.",
+                    // NOVOS DIÁLOGOS ADICIONADOS:
+                    "Sabia que cada galáxia tem suas próprias leis da física? Divertido, né?",
+                    "Eu já vi jogadores melhores... mas também vi piores.",
+                    "Quer um conselho? Não confie nas partículas roxas.",
+                    "O modo cooperativo é para quem não consegue sozinho... igual você!",
+                    "Já perdi a conta de quantos universos eu vi serem destruídos...",
+                    "Você está evoluindo... mas ainda tem muito o que aprender.",
+                    "As habilidades que você desbloqueia são só a ponta do iceberg!",
+                    "Nível 100? Isso é só o tutorial, meu caro...",
+                    "Os inimigos estão ficando mais fortes... ou você que está ficando mais fraco?",
+                    "Você nota como o universo reage às suas ações? Interessante..."
                 ],
                 bossDialog: "🏆 PARABÉNS! Agora o verdadeiro desafio começa... 🐉"
             },
@@ -1595,7 +1594,8 @@
                         // Persegue o jogador apenas dentro do raio de detecção
                         const dx = player.x - enemy.x;
                         const dy = player.y - enemy.y;
-                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        const distSq = dx*dx + dy*dy;
+                        const dist = Math.sqrt(distSq);
                         
                         if (dist > 0 && dist < enemy.huntRadius) {
                             enemy.x += (dx / dist) * enemy.speed * (deltaTime / 16.67);
@@ -2029,6 +2029,20 @@
             window.addEventListener('keydown', (e) => {
                 if (config.gamePaused) return;
                 
+                const player2 = config.players[1];
+                const speed = 5;
+                
+                // Controles do jogador 2 (WASD)
+                if (config.coopMode && player2.active) {
+                    switch(e.key.toLowerCase()) {
+                        case 'w': player2.y -= speed; break;
+                        case 'a': player2.x -= speed; break;
+                        case 's': player2.y += speed; break;
+                        case 'd': player2.x += speed; break;
+                    }
+                }
+                
+                // Controles do jogador 1 (1-3 e espaço)
                 switch(e.key) {
                     case '1': 
                         config.players[0].mode = 'attract';
@@ -2121,9 +2135,13 @@
             config.players[1].active = config.coopMode;
             
             document.getElementById('coop-status').textContent = config.coopMode ? 'ON' : 'OFF';
-            document.getElementById('mobile-controls-p2').style.display = config.coopMode ? 'flex' : 'none';
-            
             showUnlockMessage(`Modo Cooperativo ${config.coopMode ? 'ativado' : 'desativado'}`);
+            
+            // Posiciona o jogador 2 em uma posição inicial
+            if (config.coopMode) {
+                config.players[1].x = canvas.width * 0.3;
+                config.players[1].y = canvas.height * 0.5;
+            }
         }
 
         function toggleSound() {
@@ -2553,14 +2571,39 @@
             
             npcDialog.classList.add("show");
 
-            // Escolhe um diálogo aleatório (exceto o atual)
-            let randomDialog;
-            do {
-                randomDialog = Math.floor(Math.random() * config.npc.dialogs.length);
-            } while (randomDialog === config.npc.currentDialog);
-
-            config.npc.currentDialog = randomDialog;
-            npcText.textContent = config.npc.dialogs[randomDialog];
+            // Diálogos baseados no progresso do jogador
+            let dialog;
+            
+            if (config.level < 5) {
+                // Diálogos para iniciantes
+                dialog = [
+                    "Começando devagar, hein? Não se preocupe, todo mundo foi iniciante um dia...",
+                    "Essas partículas são só o básico, espere até ver o que vem depois!",
+                    "Dica: Partículas coloridas dão mais XP!"
+                ][Math.floor(Math.random() * 3)];
+            }
+            else if (config.level < 15) {
+                // Diálogos intermediários
+                dialog = [
+                    "Começando a pegar o jeito, né? Mas não fique muito confiante...",
+                    "Já percebeu como os inimigos estão ficando mais espertos?",
+                    "O Big Bang está quase ao seu alcance... será que você está pronto?"
+                ][Math.floor(Math.random() * 3)];
+            }
+            else if (config.level < 30) {
+                // Diálogos avançados
+                dialog = [
+                    "Você está indo bem... mas o verdadeiro desafio está por vir!",
+                    "Já notou como o universo muda conforme você avança?",
+                    "Nível 30 é onde a diversão realmente começa..."
+                ][Math.floor(Math.random() * 3)];
+            }
+            else {
+                // Diálogos para especialistas
+                dialog = config.npc.dialogs[Math.floor(Math.random() * config.npc.dialogs.length)];
+            }
+            
+            npcText.textContent = dialog;
 
             // Esconde o diálogo após 5 segundos
             setTimeout(() => {
@@ -2694,7 +2737,7 @@
                     ctx.fill();
                 });
                 
-                // Desenha jogador
+                // Desenha jogador 1
                 const player = config.players[0];
                 ctx.fillStyle = player.color;
                 ctx.beginPath();
@@ -2705,6 +2748,18 @@
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillText(player.face, player.x, player.y);
+                
+                // Desenha jogador 2 se o modo coop estiver ativo
+                if (config.coopMode && config.players[1].active) {
+                    const player2 = config.players[1];
+                    ctx.fillStyle = player2.color;
+                    ctx.beginPath();
+                    ctx.arc(player2.x, player2.y, player2.size, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    ctx.font = `${player2.faceSize}px Arial`;
+                    ctx.fillText(player2.face, player2.x, player2.y);
+                }
                 
                 // Desenha inimigos
                 enemies.forEach(enemy => {
