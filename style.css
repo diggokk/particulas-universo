@@ -1,1082 +1,446 @@
-body {
-    margin: 0;
-    overflow: hidden;
-    background: radial-gradient(ellipse at bottom, #1B2735 0%, #090A0F 100%);
-    touch-action: manipulation;
-    font-family: 'Arial', sans-serif;
-    user-select: none;
-}
-
-canvas {
-    display: block;
-    width: 100vw;
-    height: 100vh;
-    transition: transform 0.1s;
-}
-
-.mobile-controls {
-    display: none;
-    position: fixed;
-    bottom: 15px;
-    left: 0;
-    right: 0;
-    justify-content: center;
-    gap: 10px;
-    padding: 10px;
-    z-index: 100;
-}
-
-.mobile-btn {
-    width: 65px;
-    height: 65px;
-    border-radius: 50%;
-    background: rgba(74, 0, 224, 0.9);
-    border: 2px solid rgba(255,255,255,0.3);
-    color: white;
-    font-size: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.1s;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-    position: relative;
-    overflow: hidden;
-}
-
-.mobile-btn::after {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: rgba(255,255,255,0.1);
-    transform: rotate(30deg);
-    transition: all 0.3s;
-}
-
-.mobile-btn:active {
-    transform: scale(0.9);
-    background: rgba(142, 45, 226, 0.9);
-}
-
-.mobile-btn:active::after {
-    left: 100%;
-    top: 100%;
-}
-
-.mobile-btn.active {
-    background: rgba(142, 45, 226, 0.9);
-    box-shadow: 0 0 15px rgba(142, 45, 226, 0.7),
-                inset 0 0 10px rgba(255,255,255,0.3);
-}
-
-#menu-toggle {
-    position: fixed;
-    top: 15px;
-    right: 15px;
-    z-index: 1000;
-    background: rgba(0,0,0,0.7);
-    border: none;
-    color: white;
-    font-size: 24px;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-}
-
-#menu-toggle:hover {
-    background: rgba(74, 0, 224, 0.7);
-}
-
-#menu {
-    position: fixed;
-    top: 65px;
-    right: 15px;
-    z-index: 1000;
-    background: rgba(0,0,0,0.95);
-    border-radius: 10px;
-    padding: 15px;
-    color: white;
-    display: none;
-    width: 280px;
-    box-shadow: 0 0 25px rgba(74, 0, 224, 0.5);
-    border: 1px solid rgba(74, 0, 224, 0.3);
-    backdrop-filter: blur(5px);
-}
-
-#menu h3 {
-    margin-top: 0;
-    color: #00F5A0;
-    border-bottom: 1px solid #4A00E0;
-    padding-bottom: 10px;
-    text-align: center;
-    font-size: 1.3em;
-}
-
-.menu-item {
-    padding: 12px 15px;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: all 0.3s;
-    margin: 5px 0;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: rgba(74, 0, 224, 0.1);
-}
-
-.menu-item:hover {
-    background: rgba(74, 0, 224, 0.3);
-    transform: translateX(5px);
-}
-
-.menu-icon {
-    font-size: 1.2em;
-    width: 24px;
-    text-align: center;
-}
-
-.menu-text {
-    flex-grow: 1;
-}
-
-.menu-hotkey {
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 0.8em;
-}
-
-.menu-status {
-    color: #00F5A0;
-    font-weight: bold;
-    font-size: 0.9em;
-}
-
-.menu-item.active {
-    background: rgba(74, 0, 224, 0.5);
-    box-shadow: inset 0 0 10px rgba(0, 245, 160, 0.3);
-}
-
-.menu-section {
-    margin-bottom: 15px;
-}
-
-.menu-section h4 {
-    margin-bottom: 10px;
-    color: #8E2DE2;
-    font-size: 1.1em;
-    padding-left: 5px;
-    border-left: 3px solid #4A00E0;
-}
-
-#galaxy-map {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0,0,0,0.95);
-    padding: 25px;
-    border-radius: 15px;
-    color: white;
-    z-index: 1000;
-    display: none;
-    text-align: center;
-    max-width: 90%;
-    max-height: 90%;
-    overflow-y: auto;
-    box-shadow: 0 0 30px rgba(74, 0, 224, 0.5);
-    border: 1px solid rgba(74, 0, 224, 0.3);
-    backdrop-filter: blur(5px);
-}
-
-#galaxy-map h2 {
-    color: #00F5A0;
-    margin-top: 0;
-    font-size: 1.8em;
-    text-shadow: 0 0 10px rgba(0, 245, 160, 0.5);
-}
-
-.galaxy {
-    margin: 15px 0;
-    padding: 15px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s;
-    border: 1px solid transparent;
-}
-
-.galaxy h3 {
-    margin: 0 0 8px 0;
-    color: white;
-    font-size: 1.3em;
-}
-
-.galaxy p {
-    margin: 8px 0;
-    color: #ccc;
-    font-size: 0.9em;
-}
-
-.galaxy small {
-    display: block;
-    color: #ff5555;
-    font-size: 0.8em;
-    margin-top: 8px;
-}
-
-.galaxy.unlocked {
-    background: rgba(74, 0, 224, 0.2);
-    border-color: rgba(74, 0, 224, 0.5);
-}
-
-.galaxy.unlocked:hover {
-    background: rgba(74, 0, 224, 0.4);
-    transform: scale(1.02);
-    box-shadow: 0 5px 15px rgba(74, 0, 224, 0.3);
-}
-
-.galaxy.locked {
-    background: rgba(50, 50, 50, 0.3);
-    cursor: not-allowed;
-    opacity: 0.7;
-}
-
-#close-galaxy-map {
-    background: linear-gradient(145deg, #8e2de2, #4a00e0);
-    border: none;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 30px;
-    margin-top: 15px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: all 0.3s;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-}
-
-#close-galaxy-map:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.4);
-}
-
-#fps-counter {
-    position: fixed;
-    top: 10px;
-    right: 60px;
-    color: white;
-    background: rgba(0,0,0,0.5);
-    padding: 5px 10px;
-    border-radius: 3px;
-    font-family: monospace;
-    font-size: 12px;
-}
-
-#xp-bar-container {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 25px;
-    background: rgba(0,0,0,0.7);
-    z-index: 50;
-    display: flex;
-    align-items: center;
-    padding: 0 15px;
-    border-top: 1px solid rgba(74, 0, 224, 0.3);
-}
-
-#xp-bar {
-    height: 70%;
-    width: 0%;
-    background: linear-gradient(90deg, #4A00E0, #8E2DE2);
-    transition: width 0.3s;
-    border-radius: 3px;
-    box-shadow: 0 0 10px rgba(74, 0, 224, 0.5);
-}
-
-#xp-text {
-    color: white;
-    margin-left: 10px;
-    font-size: 12px;
-    font-family: Arial, sans-serif;
-    text-shadow: 0 0 5px rgba(0,0,0,0.5);
-}
-
-#health-bar-container {
-    position: fixed;
-    top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    height: 18px;
-    width: 250px;
-    background: rgba(0,0,0,0.7);
-    z-index: 50;
-    border-radius: 10px;
-    overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.1);
-}
-
-#health-bar {
-    height: 100%;
-    width: 100%;
-    transition: width 0.3s;
-}
-
-#bigbang-cooldown {
-    position: fixed;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    height: 12px;
-    width: 200px;
-    background: rgba(0,0,0,0.7);
-    z-index: 50;
-    border-radius: 5px;
-    overflow: hidden;
-    border: 1px solid rgba(255,255,255,0.1);
-}
-
-#bigbang-progress {
-    height: 100%;
-    width: 0%;
-    background: linear-gradient(90deg, #FF00FF, #00FFFF);
-    transition: width 0.1s;
-}
-
-.enemy {
-    position: absolute;
-    border-radius: 50%;
-    box-shadow: 0 0 15px currentColor;
-    z-index: 10;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-size: 20px;
-    font-family: monospace;
-    text-shadow: 0 0 5px black;
-}
-
-.enemy-face {
-    transform: scale(1.2);
-}
-
-.particle-trail {
-    position: absolute;
-    border-radius: 50%;
-    background: currentColor;
-    pointer-events: none;
-    z-index: 5;
-}
-
-#bigbang-btn {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 220px;
-    height: 65px;
-    border-radius: 30px;
-    background: linear-gradient(145deg, #8e2de2, #4a00e0);
-    border: none;
-    color: white;
-    font-size: 24px;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 100;
-    box-shadow: 0 8px 25px rgba(142, 45, 226, 0.5),
-                0 0 0 2px rgba(255, 255, 255, 0.1),
-                inset 0 0 15px rgba(255, 255, 255, 0.2);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    transition: all 0.3s ease;
-    overflow: hidden;
-    display: none; /* Inicialmente escondido */
-}
-
-#bigbang-btn::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: linear-gradient(
-        to bottom right,
-        rgba(255, 255, 255, 0.3) 0%,
-        rgba(255, 255, 255, 0) 60%
-    );
-    transform: rotate(30deg);
-    transition: all 0.3s;
-}
-
-#bigbang-btn:hover::before {
-    left: 100%;
-}
-
-#bigbang-btn:active {
-    transform: translateX(-50%) scale(0.95);
-    box-shadow: 0 4px 15px rgba(142, 45, 226, 0.5),
-                0 0 0 2px rgba(255, 255, 255, 0.1),
-                inset 0 0 10px rgba(255, 255, 255, 0.3);
-}
-
-#bigbang-btn span {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-#bigbang-btn .cooldown-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.3);
-    width: 0%;
-    border-radius: 30px;
-    transition: width 0.1s linear;
-}
-
-.unlock-message {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) scale(0.5);
-    background-color: rgba(0,0,0,0.9);
-    color: #00F5A0;
-    padding: 20px 30px;
-    border-radius: 10px;
-    z-index: 10000;
-    text-align: center;
-    font-size: 24px;
-    box-shadow: 0 0 20px #00F5A0;
-    border: 2px solid #00F5A0;
-    font-weight: bold;
-    opacity: 0;
-    transition: all 0.3s ease-out;
-    pointer-events: none;
-    width: 80%;
-    max-width: 400px;
-    backdrop-filter: blur(2px);
-}
-
-#skill-tree {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0,0,0,0.95);
-    padding: 25px;
-    border-radius: 15px;
-    color: white;
-    z-index: 1000;
-    display: none;
-    text-align: center;
-    max-width: 90%;
-    max-height: 90%;
-    overflow-y: auto;
-    box-shadow: 0 0 30px rgba(74, 0, 224, 0.5);
-    border: 1px solid rgba(74, 0, 224, 0.3);
-    backdrop-filter: blur(5px);
-}
-
-#stats-panel {
-    position: fixed;
-    top: 10px;
-    left: 10px;
-    background: rgba(0,0,0,0.7);
-    padding: 10px 15px;
-    border-radius: 8px;
-    color: white;
-    font-family: monospace;
-    font-size: 12px;
-    z-index: 50;
-    border: 1px solid rgba(74, 0, 224, 0.3);
-    box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-    max-width: 180px;
-}
-
-.skill {
-    background: rgba(0, 0, 0, 0.3);
-    padding: 15px;
-    margin: 10px 0;
-    border-radius: 8px;
-    border-left: 3px solid #4A00E0;
-}
-
-.skill.unlocked {
-    border-left-color: #00F5A0;
-}
-
-.skill.locked {
-    opacity: 0.6;
-    background: rgba(0, 0, 0, 0.1);
-}
-
-.skill.maxed {
-    border-left-color: gold;
-}
-
-.skill-cost {
-    color: #8E2DE2;
-    font-weight: bold;
-    margin: 5px 0;
-}
-
-.skill-requires {
-    color: #FF5555;
-    font-size: 0.9em;
-    margin: 5px 0;
-}
-
-.upgrade-btn {
-    background: linear-gradient(145deg, #8e2de2, #4a00e0);
-    border: none;
-    color: white;
-    padding: 8px 15px;
-    border-radius: 20px;
-    margin-top: 10px;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.upgrade-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 10px rgba(142, 45, 226, 0.5);
-}
-
-@keyframes pulse-ready {
-    0% { box-shadow: 0 0 0 0 rgba(142, 45, 226, 0.7); }
-    70% { box-shadow: 0 0 0 15px rgba(142, 45, 226, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(142, 45, 226, 0); }
-}
-
-.bigbang-ready {
-    animation: pulse-ready 2s infinite;
-}
-
-@keyframes slowmo {
-    from { filter: brightness(100%) sepia(0); }
-    to { filter: brightness(150%) sepia(1); }
-}
-
-.game-over-screen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: radial-gradient(ellipse at center, 
-        rgba(139, 0, 139, 0.9) 0%, 
-        rgba(0, 0, 80, 0.95) 100%);
-    z-index: 10000;
-    display: none;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    color: white;
-    font-family: 'Arial', sans-serif;
-    text-align: center;
-    backdrop-filter: blur(5px);
-}
-
-.game-over-title {
-    font-size: 5rem;
-    margin-bottom: 2rem;
-    text-shadow: 0 0 20px #ff00ff, 
-                 0 0 40px #00ffff;
-    animation: pulse 2s infinite alternate;
-}
-
-.game-over-stats {
-    background: rgba(0,0,0,0.7);
-    padding: 20px;
-    border-radius: 10px;
-    margin-bottom: 30px;
-    border: 1px solid rgba(255,255,255,0.2);
-    box-shadow: 0 0 30px rgba(142, 45, 226, 0.5);
-}
-
-.restart-btn {
-    background: linear-gradient(145deg, #ff00ff, #00ffff);
-    border: none;
-    color: white;
-    padding: 15px 40px;
-    font-size: 1.5rem;
-    border-radius: 50px;
-    cursor: pointer;
-    transition: all 0.3s;
-    box-shadow: 0 0 20px rgba(255,255,255,0.5),
-                inset 0 0 10px rgba(255,255,255,0.3);
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    font-weight: bold;
-}
-
-.restart-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 30px rgba(255,255,255,0.8),
-                inset 0 0 15px rgba(255,255,255,0.5);
-}
-
-.stars {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: -1;
-}
-
-.star {
-    position: absolute;
-    background: white;
-    border-radius: 50%;
-    animation: twinkle 5s infinite;
-}
-
-@keyframes twinkle {
-    0%, 100% { opacity: 0.3; }
-    50% { opacity: 1; }
-}
-
-.big-bang-message {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: white;
-    font-size: 3rem;
-    text-align: center;
-    text-shadow: 0 0 10px #ff00ff, 
-                 0 0 20px #00ffff,
-                 0 0 30px #ffffff;
-    z-index: 10000;
-    opacity: 0;
-    transition: opacity 0.5s;
-    font-weight: bold;
-    pointer-events: none;
-}
-
-.supernova {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    border-radius: 50%;
-    background: radial-gradient(circle, 
-        rgba(255,255,255,0.8) 0%, 
-        rgba(255,200,0,0.7) 20%, 
-        rgba(255,0,100,0.6) 40%, 
-        rgba(100,0,255,0.4) 60%, 
-        rgba(0,0,0,0) 80%);
-    z-index: 9999;
-    pointer-events: none;
-    opacity: 0;
-}
-
-.shockwave {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.8);
-    z-index: 9998;
-    pointer-events: none;
-    opacity: 0;
-}
-
-@keyframes supernova-explosion {
-    0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
-    100% { transform: translate(-50%, -50%) scale(3); opacity: 0; }
-}
-
-@keyframes shockwave {
-    0% { transform: translate(-50%, -50%) scale(0); opacity: 1; width: 10px; height: 10px; }
-    100% { transform: translate(-50%, -50%) scale(20); opacity: 0; width: 100px; height: 100px; }
-}
-
-@keyframes cosmic-flash {
-    0% { background-color: rgba(255, 255, 255, 0); }
-    50% { background-color: rgba(255, 255, 255, 0.8); }
-    100% { background-color: rgba(255, 255, 255, 0); }
-}
-
-.camera-shake {
-    animation: cameraShake 0.5s linear infinite;
-}
-
-@keyframes cameraShake {
-    0%, 100% { transform: translate(0, 0); }
-    10%, 30%, 50%, 70%, 90% { transform: translate(-10px, -10px); }
-    20%, 40%, 60%, 80% { transform: translate(10px, 10px); }
-}
-
-@keyframes pulse {
-    from { transform: scale(1); }
-    to { transform: scale(1.05); }
-}
-
-.bigbang-level-requirement {
-    position: absolute;
-    top: -25px;
-    left: 0;
-    right: 0;
-    text-align: center;
-    color: gold;
-    font-size: 14px;
-    text-shadow: 0 0 5px black;
-}
-
-.quest-panel {
-    position: fixed;
-    top: 150px;
-    left: 10px;
-    background: rgba(0,0,0,0.7);
-    padding: 10px;
-    border-radius: 8px;
-    color: white;
-    font-size: 12px;
-    max-width: 200px;
-    border-left: 3px solid #4A00E0;
-    z-index: 50;
-}
-
-.quest-item {
-    margin: 5px 0;
-    padding: 5px;
-    border-radius: 4px;
-    background: rgba(74, 0, 224, 0.2);
-}
-
-.quest-progress {
-    height: 4px;
-    background: rgba(255,255,255,0.2);
-    margin-top: 3px;
-    border-radius: 2px;
-    overflow: hidden;
-}
-
-.quest-progress-bar {
-    height: 100%;
-    background: linear-gradient(90deg, #00F5A0, #4A00E0);
-    width: 0%;
-    transition: width 0.3s;
-}
-
-/* Modo História */
-.story-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.9);
-    z-index: 10000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: white;
-    font-family: 'Arial', sans-serif;
-}
-
-.cutscene {
-    width: 80%;
-    max-width: 800px;
-    text-align: center;
-    position: relative;
-}
-
-.story-npc {
-    font-size: 100px;
-    margin-bottom: 30px;
-    animation: float 3s ease-in-out infinite;
-}
-
-.story-dialog-box {
-    background: rgba(0,0,0,0.7);
-    border: 2px solid #4A00E0;
-    border-radius: 10px;
-    padding: 20px;
-    box-shadow: 0 0 20px rgba(74,0,224,0.5);
-}
-
-.story-dialog-text {
-    font-size: 20px;
-    margin-bottom: 20px;
-    min-height: 100px;
-    line-height: 1.5;
-}
-
-.next-dialog-btn {
-    background: linear-gradient(145deg, #8e2de2, #4a00e0);
-    border: none;
-    color: white;
-    padding: 10px 20px;
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 16px;
-    transition: all 0.3s;
-}
-
-.next-dialog-btn:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 10px rgba(142,45,226,0.5);
-}
-
-/* NPC Fixo */
-.npc-container {
-    position: fixed;
-    left: 20px;
-    bottom: 20px;
-    display: flex;
-    align-items: flex-end;
-    gap: 10px;
-    z-index: 9999;
-    pointer-events: none;
-}
-
-.npc-face {
-    font-size: 50px;
-    filter: drop-shadow(0 0 10px rgba(100, 0, 255, 0.7));
-    animation: float 3s ease-in-out infinite;
-}
-
-.npc-dialog {
-    background: rgba(0, 0, 0, 0.8);
-    border: 2px solid #4A00E0;
-    border-radius: 15px;
-    padding: 10px 15px;
-    max-width: 250px;
-    color: white;
-    font-family: 'Arial', sans-serif;
-    opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.3s, transform 0.3s;
-}
-
-.npc-dialog.show {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-/* Skins Modal */
-.skins-modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.9);
-    z-index: 1000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.skins-modal-content {
-    background: rgba(0,0,0,0.95);
-    padding: 30px;
-    border-radius: 15px;
-    color: white;
-    max-width: 800px;
-    width: 90%;
-    max-height: 90vh;
-    overflow-y: auto;
-    border: 2px solid #4A00E0;
-    box-shadow: 0 0 30px rgba(74,0,224,0.5);
-}
-
-.skins-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-    gap: 15px;
-    margin: 20px 0;
-}
-
-.skin-card {
-    background: rgba(74,0,224,0.2);
-    border: 1px solid #4A00E0;
-    border-radius: 10px;
-    padding: 15px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.skin-card:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 15px rgba(74,0,224,0.5);
-}
-
-.skin-card.selected {
-    border-color: #00F5A0;
-    box-shadow: 0 0 15px rgba(0,245,160,0.5);
-}
-
-.skin-card.premium {
-    border-color: gold;
-    background: rgba(255,215,0,0.1);
-}
-
-.skin-card.locked {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-.skin-emoji {
-    font-size: 40px;
-    margin-bottom: 10px;
-}
-
-.skin-name {
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-
-.skin-type {
-    font-size: 12px;
-    color: #aaa;
-}
-
-.skin-requirement {
-    font-size: 11px;
-    color: #ff5555;
-    margin-top: 5px;
-}
-
-/* Estilo do Boss & Tentáculos */
-#boss-npc {
-    font-size: 120px;
-    filter: drop-shadow(0 0 20px #ff0000);
-    animation: pulse 1s infinite alternate, float 3s ease-in-out infinite;
-    display: none;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 9999;
-}
-
-#tentacles-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 9998;
-    display: none;
-}
-
-.tentacle {
-    position: absolute;
-    background: linear-gradient(45deg, #8e2de2, #4a00e0);
-    width: 8px;
-    height: 120px;
-    border-radius: 50%;
-    opacity: 0.7;
-    animation: tentacleMove 4s ease-in-out infinite;
-    animation-delay: calc(var(--i) * 0.5s);
-    transform-origin: top;
-}
-
-@keyframes tentacleMove {
-    0%, 100% { transform: rotate(0deg) translateY(0); }
-    50% { transform: rotate(calc(var(--i) * 10deg)) translateY(50px); }
-}
-
-/* Efeito de Terror */
-.story-container.terror {
-    background: radial-gradient(ellipse at center, 
-        rgba(139, 0, 0, 0.9) 0%, 
-        rgba(0, 0, 0, 0.95) 100%);
-}
-
-.story-dialog-box.terror {
-    border: 2px solid #ff0000;
-    box-shadow: 0 0 30px #ff0000;
-}
-
-@media (max-width: 768px) {
-    .mobile-controls { display: flex; }
-    #menu {
-        width: 85%;
-        right: 10px;
-        left: 10px;
-        margin: 0 auto;
+// ===== CONFIGURAÇÕES =====
+const config = {
+    particleCount: 150,
+    mouseRadius: 120,
+    mode: 'attract',
+    lineThreshold: 100,
+    starCount: 200,
+    power: 0,
+    health: 100,
+    blackHoleActive: false,
+    doubleBlackHole: false,
+    particleColorRange: [0, 360] // Padrão para todas as cores
+};
+
+// ===== ELEMENTOS DOM =====
+const canvas = document.getElementById("particleCanvas");
+const ctx = canvas.getContext("2d");
+const fpsCounter = document.getElementById("fps-counter");
+const particleCounter = document.getElementById("particle-counter");
+
+// ===== BOSS (OLHO) =====
+class Boss {
+    constructor() {
+        this.x = canvas.width / 2;
+        this.y = canvas.height / 4;
+        this.size = 80;
+        this.pupilSize = 30;
+        this.health = 100;
+        this.color = '#FF5555';
+        this.pulseSize = 0;
+        this.pulsing = true;
     }
-    #bigbang-btn {
-        width: 180px;
-        height: 50px;
-        font-size: 20px;
-        bottom: 15px;
-    }
-    #health-bar-container {
-        width: 200px;
-        height: 15px;
-    }
-    #bigbang-cooldown {
-        width: 180px;
-    }
-    #xp-bar-container {
-        height: 20px;
-        padding: 0 10px;
-    }
-    #xp-text {
-        font-size: 11px;
-    }
-    .game-over-title {
-        font-size: 3rem;
-    }
-    .restart-btn {
-        padding: 12px 30px;
-        font-size: 1.2rem;
-    }
-    .big-bang-message {
-        font-size: 2rem;
-    }
-    #stats-panel {
-        top: 60px;
-        left: 10px;
-        max-width: 160px;
-        font-size: 11px;
-    }
-    .quest-panel {
-        top: 220px;
-        left: 10px;
-        max-width: 180px;
-    }
-    .npc-container {
-        left: 10px;
-        bottom: 100px;
-    }
-    .npc-face {
-        font-size: 40px;
-    }
-    .npc-dialog {
-        max-width: 200px;
-        font-size: 14px;
-    }
-    #boss-npc {
-        font-size: 80px;
-    }
-    .tentacle {
-        height: 80px;
+    
+    draw() {
+        if (this.pulsing) {
+            this.pulseSize = Math.sin(Date.now() / 300) * 5;
+        }
+        
+        ctx.save();
+        
+        // Branco do olho
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size + this.pulseSize, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Íris (vermelha)
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, (this.size * 0.6) + this.pulseSize/2, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Pupila (preta)
+        ctx.fillStyle = 'black';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.pupilSize, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // Brilho
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.beginPath();
+        ctx.arc(this.x - this.size/3, this.y - this.size/3, this.size/5, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.restore();
     }
 }
+
+const boss = new Boss();
+
+// ===== SISTEMA DE SKINS E LOJA =====
+const skinsSystem = {
+    currentSkin: 'default',
+    coins: 1000,
+    unlockedSkins: ['default'],
+    
+    skins: {
+        default: {
+            name: "Clássico",
+            emoji: "🌌",
+            description: "Aparência padrão do universo",
+            price: 0,
+            effect: () => {
+                config.particleColorRange = [0, 360];
+            }
+        },
+        neon: {
+            name: "Neon",
+            emoji: "💠",
+            description: "Cores vibrantes e brilhantes",
+            price: 500,
+            effect: () => {
+                config.particleColorRange = [120, 240];
+            }
+        },
+        fire: {
+            name: "Inferno",
+            emoji: "🔥",
+            description: "Universo em chamas",
+            price: 750,
+            effect: () => {
+                config.particleColorRange = [0, 40];
+            }
+        },
+        ice: {
+            name: "Gélido",
+            emoji: "❄️",
+            description: "Congele o universo",
+            price: 750,
+            effect: () => {
+                config.particleColorRange = [180, 220];
+            }
+        },
+        rainbow: {
+            name: "Arco-Íris",
+            emoji: "🌈",
+            description: "Cores psicodélicas",
+            price: 1000,
+            effect: () => {
+                config.particleColorRange = [0, 360];
+            }
+        },
+        cosmic: {
+            name: "Cósmico",
+            emoji: "👁️",
+            description: "Olho que tudo vê",
+            price: 1500,
+            effect: () => {
+                config.particleColorRange = [240, 300];
+            }
+        }
+    },
+    
+    applySkin: function(skinId) {
+        if (!this.unlockedSkins.includes(skinId)) return false;
+        
+        this.currentSkin = skinId;
+        const skin = this.skins[skinId];
+        
+        if (skin.effect) skin.effect();
+        localStorage.setItem('currentSkin', skinId);
+        
+        return true;
+    },
+    
+    purchaseSkin: function(skinId) {
+        const skin = this.skins[skinId];
+        if (!skin || this.unlockedSkins.includes(skinId)) return false;
+        if (this.coins < skin.price) return false;
+        
+        this.coins -= skin.price;
+        this.unlockedSkins.push(skinId);
+        
+        localStorage.setItem('unlockedSkins', JSON.stringify(this.unlockedSkins));
+        localStorage.setItem('coins', this.coins);
+        
+        return true;
+    },
+    
+    loadData: function() {
+        const savedSkin = localStorage.getItem('currentSkin');
+        const savedSkins = localStorage.getItem('unlockedSkins');
+        const savedCoins = localStorage.getItem('coins');
+        
+        if (savedSkin) this.currentSkin = savedSkin;
+        if (savedSkins) this.unlockedSkins = JSON.parse(savedSkins);
+        if (savedCoins) this.coins = parseInt(savedCoins);
+        
+        this.applySkin(this.currentSkin);
+    },
+    
+    renderShop: function() {
+        const skinsGrid = document.getElementById('skins-grid');
+        skinsGrid.innerHTML = '';
+        
+        for (const [skinId, skinData] of Object.entries(this.skins)) {
+            const isUnlocked = this.unlockedSkins.includes(skinId);
+            const isEquipped = this.currentSkin === skinId;
+            
+            const skinCard = document.createElement('div');
+            skinCard.className = `skin-card ${isEquipped ? 'equipped' : ''} ${!isUnlocked ? 'locked' : ''}`;
+            skinCard.dataset.skinId = skinId;
+            
+            skinCard.innerHTML = `
+                <div class="skin-preview">${skinData.emoji}</div>
+                <div class="skin-name">${skinData.name}</div>
+                ${!isUnlocked ? `<div class="skin-price">${skinData.price} moedas</div>` : ''}
+                <div class="skin-description">${skinData.description}</div>
+            `;
+            
+            skinCard.addEventListener('click', () => {
+                if (isUnlocked) {
+                    this.applySkin(skinId);
+                    this.renderShop();
+                } else if (confirm(`Deseja comprar "${skinData.name}" por ${skinData.price} moedas?`)) {
+                    if (this.purchaseSkin(skinId)) {
+                        this.renderShop();
+                        updateCurrencyDisplay();
+                    } else {
+                        alert("Moedas insuficientes!");
+                    }
+                }
+            });
+            
+            skinsGrid.appendChild(skinCard);
+        }
+    }
+};
+
+// Inicializa o sistema de skins
+skinsSystem.loadData();
+
+// Atualiza o display de moedas
+function updateCurrencyDisplay() {
+    const currencyDisplay = document.getElementById('currency-display');
+    if (!currencyDisplay) return;
+    currencyDisplay.textContent = skinsSystem.coins;
+}
+
+// Cria o display de moedas
+function createCurrencyDisplay() {
+    if (document.getElementById('currency-display')) return;
+    
+    const display = document.createElement('div');
+    display.id = 'currency-display';
+    display.textContent = skinsSystem.coins;
+    document.body.appendChild(display);
+}
+
+// Mostra/oculta a loja de skins
+function toggleSkinsModal() {
+    const modal = document.getElementById('skins-modal');
+    if (modal.style.display === 'block') {
+        modal.style.display = 'none';
+    } else {
+        modal.style.display = 'block';
+        skinsSystem.renderShop();
+    }
+}
+
+// Adiciona moedas
+function addCoins(amount) {
+    skinsSystem.coins += amount;
+    localStorage.setItem('coins', skinsSystem.coins);
+    updateCurrencyDisplay();
+    
+    const coinEffect = document.createElement('div');
+    coinEffect.className = 'coin-effect';
+    coinEffect.textContent = `+${amount}💰`;
+    coinEffect.style.position = 'fixed';
+    coinEffect.style.bottom = '20px';
+    coinEffect.style.right = '20px';
+    coinEffect.style.color = '#FFD700';
+    coinEffect.style.fontSize = '24px';
+    coinEffect.style.fontWeight = 'bold';
+    coinEffect.style.animation = 'coinFloat 2s forwards';
+    document.body.appendChild(coinEffect);
+    
+    setTimeout(() => {
+        coinEffect.remove();
+    }, 2000);
+}
+
+// ===== SISTEMA DE POOL DE PARTÍCULAS =====
+class Particle {
+    constructor() {
+        this.reset();
+        this.trail = [];
+        this.maxTrailLength = 5;
+    }
+    
+    reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.size = 2;
+        this.speedX = (Math.random() - 0.5) * 2;
+        this.speedY = (Math.random() - 0.5) * 2;
+        this.color = `hsl(${Math.random() * (config.particleColorRange[1] - config.particleColorRange[0]) + config.particleColorRange[0]}, 80%, 60%)`;
+        this.alive = true;
+    }
+    
+    update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        
+        this.trail.push({x: this.x, y: this.y});
+        if (this.trail.length > this.maxTrailLength) {
+            this.trail.shift();
+        }
+    }
+    
+    draw() {
+        ctx.save();
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        
+        if (this.trail.length > 1) {
+            ctx.strokeStyle = `${this.color}60`;
+            ctx.lineWidth = this.size / 2;
+            ctx.beginPath();
+            ctx.moveTo(this.trail[0].x, this.trail[0].y);
+            for (let i = 1; i < this.trail.length; i++) {
+                ctx.lineTo(this.trail[i].x, this.trail[i].y);
+            }
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+}
+
+class ParticlePool {
+    constructor(size) {
+        this.pool = Array(size).fill().map(() => new Particle());
+    }
+    
+    get() {
+        const particle = this.pool.find(p => !p.alive) || new Particle();
+        particle.reset();
+        return particle;
+    }
+}
+
+const particlePool = new ParticlePool(1000);
+let particles = Array(config.particleCount).fill().map(() => particlePool.get());
+
+// ===== WORMHOLES =====
+const wormholes = [
+    { x: 100, y: 100, target: { x: canvas.width-100, y: canvas.height-100 }, size: 30, color: '#8A2BE2' },
+    { x: canvas.width-100, y: canvas.height-100, target: { x: 100, y: 100 }, size: 30, color: '#00FFFF' }
+];
+
+function updateWormholes() {
+    wormholes.forEach(w => {
+        ctx.save();
+        ctx.fillStyle = `${w.color}60`;
+        ctx.beginPath();
+        ctx.arc(w.x, w.y, w.size, 0, Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+
+        particles.forEach(p => {
+            const dist = Math.sqrt((p.x - w.x) ** 2 + (p.y - w.y) ** 2);
+            if (dist < w.size) {
+                p.x = w.target.x + (Math.random() - 0.5) * 20;
+                p.y = w.target.y + (Math.random() - 0.5) * 20;
+                p.color = `hsl(${Math.random() * 360}, 100%, 70%)`;
+            }
+        });
+    });
+}
+
+// ===== SISTEMA DE ESTRELAS DE FUNDO =====
+let stars = [];
+
+function initStars() {
+    stars = Array(config.starCount).fill().map(() => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        size: Math.random() * 1.5,
+        alpha: Math.random() * 0.8 + 0.2
+    }));
+}
+
+function drawStars() {
+    ctx.save();
+    stars.forEach(star => {
+        ctx.fillStyle = `rgba(255, 255, 255, ${star.alpha})`;
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+        ctx.fill();
+    });
+    ctx.restore();
+}
+
+// ===== DEBUG SYSTEM =====
+let lastTime = performance.now();
+let fps = 0;
+
+function updateDebugPanel() {
+    const now = performance.now();
+    fps = Math.round(1000 / (now - lastTime));
+    lastTime = now;
+    
+    fpsCounter.textContent = fps;
+    particleCounter.textContent = particles.length;
+    
+    requestAnimationFrame(updateDebugPanel);
+}
+updateDebugPanel();
+
+// ===== ANIMAÇÃO PRINCIPAL =====
+function animate() {
+    ctx.fillStyle = 'rgba(0, 0, 20, 0.1)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    drawStars();
+    updateWormholes();
+    boss.draw();
+
+    particles.forEach(p => {
+        p.update();
+        p.draw();
+    });
+
+    particles = particles.filter(p => {
+        if (!p.alive || p.x < 0 || p.x > canvas.width || p.y < 0 || p.y > canvas.height) {
+            particlePool.pool.push(p);
+            return false;
+        }
+        return true;
+    });
+
+    while (particles.length < config.particleCount) {
+        particles.push(particlePool.get());
+    }
+
+    requestAnimationFrame(animate);
+}
+
+// Inicialização
+function init() {
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        boss.x = canvas.width / 2;
+        boss.y = canvas.height / 4;
+    }
+    
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    
+    // Event listeners para a loja
+    document.querySelector('[data-action="showSkins"]').addEventListener('click', toggleSkinsModal);
+    document.getElementById('close-skins').addEventListener('click', toggleSkinsModal);
+    
+    createCurrencyDisplay();
+    initStars();
+    animate();
+    
+    // Adiciona algumas moedas iniciais (para teste)
+    setTimeout(() => addCoins(500), 3000);
+}
+
+init();
